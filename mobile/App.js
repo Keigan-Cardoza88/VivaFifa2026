@@ -103,6 +103,31 @@ const getTeamFlag = (teamName) => {
   return flags[teamName] || '';
 };
 
+const isToday = (timestamp) => {
+  if (!timestamp) return false;
+  const matchDate = new Date(timestamp.seconds * 1000);
+  
+  // Get date strings in Asia/Kolkata timezone (IST)
+  const options = { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' };
+  const formatter = new Intl.DateTimeFormat('en-CA', options); // returns YYYY-MM-DD
+  
+  const matchIST = formatter.format(matchDate);
+  const nowIST = formatter.format(new Date());
+  
+  return matchIST === nowIST;
+};
+
+const formatISTDate = (timestamp) => {
+  if (!timestamp) return '';
+  const date = new Date(timestamp.seconds * 1000);
+  return date.toLocaleDateString('en-US', {
+    timeZone: 'Asia/Kolkata',
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short'
+  });
+};
+
 export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
@@ -438,6 +463,46 @@ export default function App() {
   const netProfit = userProfile ? (leaderboardMoney.find(l => l.userId === currentUser.uid)?.netProfit || 0) : 0;
   const accuracy = userProfile ? (leaderboardAccuracy.find(l => l.userId === currentUser.uid)?.accuracyPercent || 0) : 0;
   const rankMoney = leaderboardMoney.findIndex(l => l.userId === currentUser.uid) + 1;
+
+  const renderMatchCard = (match) => {
+    const bet = myBets[match.matchId];
+    const isLocked = new Date().getTime() >= (match.bettingLockTimeIST ? match.bettingLockTimeIST.seconds * 1000 : 0);
+    return (
+      <View style={[styles.matchCard, styles.glassCard]} key={match.id}>
+        <View style={styles.matchHeaderRow}>
+          <Text style={styles.matchStage}>{match.stage.toUpperCase()}</Text>
+          <Text style={styles.matchTime}>
+            {new Date(match.kickoffTimeIST.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} IST
+          </Text>
+        </View>
+        <View style={styles.matchTeamsContainer}>
+          <Text style={styles.matchTeamText}>{getTeamFlag(match.teamA)} {match.teamA}</Text>
+          <Text style={styles.matchVS}>VS</Text>
+          <Text style={styles.matchTeamText}>{match.teamB} {getTeamFlag(match.teamB)}</Text>
+        </View>
+        <View style={styles.matchFooterRow}>
+          {bet ? (
+            <View style={styles.betPlacedBadge}>
+              <Text style={styles.betPlacedText}>
+                Bet Placed: {bet.teamPrediction === 'teamA' ? `${getTeamFlag(match.teamA)} ${match.teamA}` : (bet.teamPrediction === 'teamB' ? `${match.teamB} ${getTeamFlag(match.teamB)}` : 'Draw')} ({bet.goalsTeamA}-{bet.goalsTeamB})
+              </Text>
+            </View>
+          ) : (
+            <Text style={styles.noBetPlacedText}>No bet submitted</Text>
+          )}
+          {!isLocked && match.status === 'upcoming' ? (
+            <TouchableOpacity style={styles.btnAction} onPress={() => handleOpenBet(match)}>
+              <Text style={styles.btnActionText}>{bet ? 'Edit Bet' : 'Bet Now'}</Text>
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.lockedBadge}>
+              <Text style={styles.lockedText}>LOCKED</Text>
+            </View>
+          )}
+        </View>
+      </View>
+    );
+  };
 
   if (loading) {
     return (
@@ -816,46 +881,49 @@ export default function App() {
               </View>
             )}
 
+            {/* Today's Fixtures */}
             <Text style={styles.sectionHeader}>Today's Fixtures</Text>
-            {matches.filter(m => m.status === 'upcoming' || m.status === 'betting_closed' || m.status === 'live').map((match) => {
-              const bet = myBets[match.matchId];
-              const isLocked = new Date().getTime() >= (match.bettingLockTimeIST ? match.bettingLockTimeIST.seconds * 1000 : 0);
-              return (
-                <View style={[styles.matchCard, styles.glassCard]} key={match.id}>
-                  <View style={styles.matchHeaderRow}>
-                    <Text style={styles.matchStage}>{match.stage.toUpperCase()}</Text>
-                    <Text style={styles.matchTime}>
-                      {new Date(match.kickoffTimeIST.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} IST
-                    </Text>
-                  </View>
-                  <View style={styles.matchTeamsContainer}>
-                    <Text style={styles.matchTeamText}>{getTeamFlag(match.teamA)} {match.teamA}</Text>
-                    <Text style={styles.matchVS}>VS</Text>
-                    <Text style={styles.matchTeamText}>{match.teamB} {getTeamFlag(match.teamB)}</Text>
-                  </View>
-                  <View style={styles.matchFooterRow}>
-                    {bet ? (
-                      <View style={styles.betPlacedBadge}>
-                        <Text style={styles.betPlacedText}>
-                          Bet Placed: {bet.teamPrediction === 'teamA' ? `${getTeamFlag(match.teamA)} ${match.teamA}` : (bet.teamPrediction === 'teamB' ? `${match.teamB} ${getTeamFlag(match.teamB)}` : 'Draw')} ({bet.goalsTeamA}-{bet.goalsTeamB})
-                        </Text>
-                      </View>
-                    ) : (
-                      <Text style={styles.noBetPlacedText}>No bet submitted</Text>
-                    )}
-                    {!isLocked && match.status === 'upcoming' ? (
-                      <TouchableOpacity style={styles.btnAction} onPress={() => handleOpenBet(match)}>
-                        <Text style={styles.btnActionText}>{bet ? 'Edit Bet' : 'Bet Now'}</Text>
-                      </TouchableOpacity>
-                    ) : (
-                      <View style={styles.lockedBadge}>
-                        <Text style={styles.lockedText}>LOCKED</Text>
-                      </View>
-                    )}
-                  </View>
+            {(() => {
+              const todayMatches = matches.filter(m => (m.status === 'upcoming' || m.status === 'betting_closed' || m.status === 'live') && isToday(m.kickoffTimeIST));
+              if (todayMatches.length === 0) {
+                return (
+                  <Text style={{ color: '#82776a', fontSize: 13, fontStyle: 'italic', marginBottom: 24, textAlign: 'center', paddingVertical: 10 }}>
+                    No fixtures scheduled for today.
+                  </Text>
+                );
+              }
+              return todayMatches.map((match) => renderMatchCard(match));
+            })()}
+
+            {/* Upcoming Fixtures */}
+            <Text style={styles.sectionHeader}>Upcoming Fixtures</Text>
+            {(() => {
+              const futureMatches = matches.filter(m => (m.status === 'upcoming' || m.status === 'betting_closed') && !isToday(m.kickoffTimeIST));
+              if (futureMatches.length === 0) {
+                return (
+                  <Text style={{ color: '#82776a', fontSize: 13, fontStyle: 'italic', marginBottom: 24, textAlign: 'center', paddingVertical: 10 }}>
+                    No upcoming fixtures.
+                  </Text>
+                );
+              }
+
+              // Group wagers by formatted date string
+              const groups = {};
+              futureMatches.forEach(m => {
+                const dateStr = formatISTDate(m.kickoffTimeIST);
+                if (!groups[dateStr]) groups[dateStr] = [];
+                groups[dateStr].push(m);
+              });
+
+              return Object.keys(groups).map(dateStr => (
+                <View key={dateStr} style={{ marginBottom: 18 }}>
+                  <Text style={{ fontSize: 12, fontWeight: '800', color: '#b45309', marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.8 }}>
+                    📅 {dateStr}
+                  </Text>
+                  {groups[dateStr].map(match => renderMatchCard(match))}
                 </View>
-              );
-            })}
+              ));
+            })()}
           </View>
         )}
 
@@ -1395,10 +1463,12 @@ const styles = StyleSheet.create({
   statsCardGrid: {
     flexDirection: 'row',
     gap: 12,
-    marginBottom: 20
+    marginBottom: 20,
+    flexWrap: 'wrap'
   },
   statWidget: {
     flex: 1,
+    minWidth: 90,
     backgroundColor: 'rgba(250, 247, 238, 0.85)',
     borderColor: 'rgba(62, 56, 48, 0.12)',
     borderWidth: 1.5,
@@ -1424,13 +1494,13 @@ const styles = StyleSheet.create({
     color: '#302b25'
   },
   analyticsSection: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     gap: 16,
     marginBottom: 24,
     width: '100%',
   },
   chartCard: {
-    flex: 2,
+    width: '100%',
     backgroundColor: 'rgba(250, 247, 238, 0.85)',
     borderColor: 'rgba(62, 56, 48, 0.12)',
     borderWidth: 1.5,
@@ -1442,7 +1512,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
   },
   ringCard: {
-    flex: 1.2,
+    width: '100%',
     backgroundColor: 'rgba(250, 247, 238, 0.85)',
     borderColor: 'rgba(62, 56, 48, 0.12)',
     borderWidth: 1.5,

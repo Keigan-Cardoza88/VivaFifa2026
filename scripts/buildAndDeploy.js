@@ -81,6 +81,11 @@ if (!html.includes('manifest.json')) {
 }
 // Replace standard favicon with VivaFifaLogo
 html = html.replace('href="/favicon.ico"', 'type="image/jpeg" href="/VivaFifaLogo.jpeg"');
+// Disable user scalable viewport zooming
+html = html.replace(
+  'content="width=device-width, initial-scale=1, shrink-to-fit=no"',
+  'content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no"'
+);
 // Replace default title
 html = html.replace('<title>mobile</title>', '<title>VivaFifa2026</title>');
 
