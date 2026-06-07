@@ -458,7 +458,7 @@ export default function App() {
 
         <View style={styles.card}>
           <Text style={styles.cardHeader}>Authentication Required</Text>
-          <Text style={{ color: '#94a3b8', fontSize: 14, marginBottom: 20, textAlign: 'center', lineHeight: 20 }}>
+          <Text style={{ color: '#82776a', fontSize: 14, marginBottom: 20, textAlign: 'center', lineHeight: 20 }}>
             This betting arena is closed. Only authorized members can enter. Sign in with your Google Account below.
           </Text>
           <TouchableOpacity 
@@ -487,7 +487,7 @@ export default function App() {
 
         <View style={styles.card}>
           <Text style={styles.cardHeader}>Submit Join Request</Text>
-          <Text style={{ color: '#94a3b8', fontSize: 13, marginBottom: 18, textAlign: 'center', lineHeight: 20 }}>
+          <Text style={{ color: '#82776a', fontSize: 13, marginBottom: 18, textAlign: 'center', lineHeight: 20 }}>
             Enter your name and select a payment plan. Your request will be sent to the referee for approval.
           </Text>
           <TextInput 
@@ -542,17 +542,17 @@ export default function App() {
 
         <View style={styles.card}>
           <Text style={styles.cardHeader}>Request Submitted ✓</Text>
-          <Text style={{ color: '#94a3b8', fontSize: 14, textAlign: 'center', lineHeight: 22, marginBottom: 20 }}>
+          <Text style={{ color: '#82776a', fontSize: 14, textAlign: 'center', lineHeight: 22, marginBottom: 20 }}>
             Your join request has been sent to the referee.{'\n\n'}You will automatically gain access once your account is approved. Please check back shortly.
           </Text>
-          <View style={{ backgroundColor: '#0b0f19', borderRadius: 10, padding: 16, marginBottom: 20, borderWidth: 1, borderColor: '#1e294b', gap: 8 }}>
+          <View style={{ backgroundColor: '#fdfcf9', borderRadius: 10, padding: 16, marginBottom: 20, borderWidth: 1.5, borderColor: 'rgba(62, 56, 48, 0.15)', gap: 8 }}>
             <View style={[styles.paymentSelect, { justifyContent: 'flex-start', marginBottom: 0 }]}>
-              <Text style={{ color: '#ffd700', fontWeight: '700', fontSize: 13, width: 60 }}>Name: </Text>
-              <Text style={{ color: 'white', fontWeight: '600', fontSize: 13 }}>{userProfile.name}</Text>
+              <Text style={{ color: '#b45309', fontWeight: '700', fontSize: 13, width: 60 }}>Name: </Text>
+              <Text style={{ color: '#302b25', fontWeight: '600', fontSize: 13 }}>{userProfile.name}</Text>
             </View>
             <View style={[styles.paymentSelect, { justifyContent: 'flex-start', marginBottom: 0 }]}>
-              <Text style={{ color: '#ffd700', fontWeight: '700', fontSize: 13, width: 60 }}>Plan: </Text>
-              <Text style={{ color: 'white', fontWeight: '600', fontSize: 13, textTransform: 'capitalize' }}>{userProfile.paymentPlan}</Text>
+              <Text style={{ color: '#b45309', fontWeight: '700', fontSize: 13, width: 60 }}>Plan: </Text>
+              <Text style={{ color: '#302b25', fontWeight: '600', fontSize: 13, textTransform: 'capitalize' }}>{userProfile.paymentPlan}</Text>
             </View>
           </View>
           <TouchableOpacity style={styles.btnSecondary} onPress={handleLogout}>
@@ -628,11 +628,11 @@ export default function App() {
             <stop offset="100%" stopColor={strokeColor} stopOpacity="0"/>
           </linearGradient>
         </defs>
-        <line x1={padding} y1={height/2} x2={width-padding} y2={height/2} stroke="#1e294b" strokeWidth="1" strokeDasharray="3" />
+        <line x1={padding} y1={height/2} x2={width-padding} y2={height/2} stroke="rgba(62, 56, 48, 0.2)" strokeWidth="1" strokeDasharray="3" />
         {areaPath ? <path d={areaPath} fill={`url(#${gradId})`} /> : null}
         {linePath ? <path d={linePath} fill="none" stroke={strokeColor} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" /> : null}
         {points.map((p, idx) => (
-          <circle key={idx} cx={p.x} cy={p.y} r="3" fill="#131b2e" stroke={strokeColor} strokeWidth="1.5" />
+          <circle key={idx} cx={p.x} cy={p.y} r="3" fill="#fcfaf6" stroke={strokeColor} strokeWidth="1.5" />
         ))}
       </svg>
     );
@@ -646,12 +646,12 @@ export default function App() {
     
     return (
       <svg width="70" height="70" viewBox="0 0 70 70">
-        <circle cx="35" cy="35" r={radius} stroke="#1e294b" strokeWidth={stroke} fill="transparent" />
+        <circle cx="35" cy="35" r={radius} stroke="rgba(62, 56, 48, 0.15)" strokeWidth={stroke} fill="transparent" />
         <circle 
           cx="35" 
           cy="35" 
           r={radius} 
-          stroke="#ffd700" 
+          stroke="#b45309" 
           strokeWidth={stroke} 
           fill="transparent"
           strokeDasharray={circumference}
@@ -768,27 +768,27 @@ export default function App() {
                     <View style={{ width: '100%', marginTop: 8 }}>
                       <View style={styles.consensusBar}>
                         {pctA > 0 && (
-                          <View style={[styles.consensusBarSegment, { width: `${pctA}%`, backgroundColor: '#3b82f6' }]} />
+                          <View style={[styles.consensusBarSegment, { width: `${pctA}%`, backgroundColor: '#5489be' }]} />
                         )}
                         {pctD > 0 && (
-                          <View style={[styles.consensusBarSegment, { width: `${pctD}%`, backgroundColor: '#64748b' }]} />
+                          <View style={[styles.consensusBarSegment, { width: `${pctD}%`, backgroundColor: '#82776a' }]} />
                         )}
                         {pctB > 0 && (
-                          <View style={[styles.consensusBarSegment, { width: `${pctB}%`, backgroundColor: '#ffd700' }]} />
+                          <View style={[styles.consensusBarSegment, { width: `${pctB}%`, backgroundColor: '#b45309' }]} />
                         )}
                         {total === 0 && (
-                          <View style={[styles.consensusBarSegment, { width: '100%', backgroundColor: '#1e294b' }]} />
+                          <View style={[styles.consensusBarSegment, { width: '100%', backgroundColor: '#eae2d3' }]} />
                         )}
                       </View>
 
                       <View style={styles.consensusLabelsRow}>
-                        <Text style={[styles.consensusLabelText, { color: '#60a5fa' }]}>
+                        <Text style={[styles.consensusLabelText, { color: '#5489be' }]}>
                           {firstUpcomingMatch.teamA}: {countA} ({pctA}%)
                         </Text>
-                        <Text style={[styles.consensusLabelText, { color: '#94a3b8' }]}>
+                        <Text style={[styles.consensusLabelText, { color: '#82776a' }]}>
                           Draw: {countD} ({pctD}%)
                         </Text>
-                        <Text style={[styles.consensusLabelText, { color: '#ffd700' }]}>
+                        <Text style={[styles.consensusLabelText, { color: '#b45309' }]}>
                           {firstUpcomingMatch.teamB}: {countB} ({pctB}%)
                         </Text>
                       </View>
@@ -1134,12 +1134,12 @@ export default function App() {
               <Text style={styles.inputLabel}>Step 2: Predict Exact Scoreline</Text>
               <View style={styles.scoreInputRow}>
                 <View style={{ flex: 1, alignItems: 'center' }}>
-                  <Text style={{ color: '#94a3b8', fontSize: 12, marginBottom: 4 }}>{getTeamFlag(selectedMatch.teamA)} {selectedMatch.teamA}</Text>
+                  <Text style={{ color: '#82776a', fontSize: 12, marginBottom: 4 }}>{getTeamFlag(selectedMatch.teamA)} {selectedMatch.teamA}</Text>
                   <TextInput style={styles.scoreInput} keyboardType="numeric" value={goalsA} onChangeText={setGoalsA} />
                 </View>
                 <Text style={styles.scoreDivider}>:</Text>
                 <View style={{ flex: 1, alignItems: 'center' }}>
-                  <Text style={{ color: '#94a3b8', fontSize: 12, marginBottom: 4 }}>{selectedMatch.teamB} {getTeamFlag(selectedMatch.teamB)}</Text>
+                  <Text style={{ color: '#82776a', fontSize: 12, marginBottom: 4 }}>{selectedMatch.teamB} {getTeamFlag(selectedMatch.teamB)}</Text>
                   <TextInput style={styles.scoreInput} keyboardType="numeric" value={goalsB} onChangeText={setGoalsB} />
                 </View>
               </View>
@@ -1165,13 +1165,13 @@ export default function App() {
           <View style={styles.modalOverlay}>
             <View style={[styles.confirmContent, styles.glassCard]}>
               <Text style={styles.confirmHeader}>Confirm Submission</Text>
-              <Text style={{ color: '#94a3b8', fontSize: 13, textAlign: 'center', marginVertical: 12 }}>You can edit this bet until the lock time.</Text>
+              <Text style={{ color: '#82776a', fontSize: 13, textAlign: 'center', marginVertical: 12 }}>You can edit this bet until the lock time.</Text>
               
               <View style={styles.confirmDetails}>
-                <Text style={styles.confirmText}>Outcome: <Text style={{ fontWeight: '800', color: '#ffd700' }}>
+                <Text style={styles.confirmText}>Outcome: <Text style={{ fontWeight: '800', color: '#b45309' }}>
                   {teamPrediction === 'teamA' ? `${getTeamFlag(selectedMatch.teamA)} ${selectedMatch.teamA}` : (teamPrediction === 'teamB' ? `${selectedMatch.teamB} ${getTeamFlag(selectedMatch.teamB)}` : 'Draw')}
                 </Text></Text>
-                <Text style={styles.confirmText}>Exact Score: <Text style={{ fontWeight: '800', color: '#ffd700' }}>{goalsA} - {goalsB}</Text></Text>
+                <Text style={styles.confirmText}>Exact Score: <Text style={{ fontWeight: '800', color: '#b45309' }}>{goalsA} - {goalsB}</Text></Text>
               </View>
 
               <View style={styles.modalBtnRow}>
@@ -1195,39 +1195,39 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#0b0f19',
+    backgroundColor: '#fcfaf6',
   },
   loadingText: {
-    color: '#94a3b8',
+    color: '#82776a',
     marginTop: 14,
     fontSize: 16,
     fontWeight: '600'
   },
   appContainer: {
     flex: 1,
-    backgroundColor: '#0b0f19',
+    backgroundColor: '#fcfaf6',
     paddingTop: Platform.OS === 'ios' ? 44 : 20,
     width: '100%',
   },
   header: {
     height: 60,
     borderBottomWidth: 1.5,
-    borderBottomColor: '#1e294b',
+    borderBottomColor: 'rgba(62, 56, 48, 0.12)',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    backgroundColor: '#0d1324'
+    backgroundColor: '#f5ede0'
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '800',
-    color: '#ffd700',
+    color: '#b45309',
     letterSpacing: 1
   },
   headerUser: {
     fontSize: 12,
-    color: '#94a3b8'
+    color: '#82776a'
   },
   mainScroll: {
     flex: 1,
@@ -1238,7 +1238,7 @@ const styles = StyleSheet.create({
     padding: 24,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#0b0f19',
+    backgroundColor: '#fcfaf6',
     minHeight: '100%',
     width: '100%',
     flex: 1,
@@ -1246,52 +1246,52 @@ const styles = StyleSheet.create({
   loginLogo: {
     fontSize: 32,
     fontWeight: '900',
-    color: '#ffd700',
+    color: '#b45309',
     letterSpacing: 2,
     marginTop: 20
   },
   loginSubtitle: {
-    color: '#94a3b8',
+    color: '#82776a',
     fontSize: 14,
     marginBottom: 40,
     textTransform: 'uppercase',
     letterSpacing: 1.5
   },
   card: {
-    backgroundColor: 'rgba(19, 27, 46, 0.65)',
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(247, 243, 235, 0.75)',
+    borderColor: 'rgba(62, 56, 48, 0.12)',
     borderWidth: 1,
     borderRadius: 16,
     padding: 24,
     width: '100%',
     marginBottom: 20,
-    shadowColor: '#000',
+    shadowColor: '#3e3830',
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.1,
     shadowRadius: 10,
   },
   glassCard: {
-    backgroundColor: 'rgba(19, 27, 46, 0.55)',
-    borderColor: 'rgba(255, 255, 255, 0.15)',
+    backgroundColor: 'rgba(247, 243, 235, 0.75)',
+    borderColor: 'rgba(62, 56, 48, 0.15)',
     borderWidth: 1,
     backdropFilter: 'blur(10px)', // For web compatibility
   },
   cardHeader: {
     fontSize: 16,
     fontWeight: '800',
-    color: '#f8fafc',
+    color: '#302b25',
     marginBottom: 16,
     textTransform: 'uppercase',
     borderBottomWidth: 1,
-    borderBottomColor: '#1e294b',
+    borderBottomColor: 'rgba(62, 56, 48, 0.12)',
     paddingBottom: 8,
     textAlign: 'center'
   },
   input: {
-    backgroundColor: '#0b0f19',
+    backgroundColor: '#fdfcf9',
     borderWidth: 1.5,
-    borderColor: '#1e294b',
-    color: '#f8fafc',
+    borderColor: 'rgba(62, 56, 48, 0.15)',
+    color: '#302b25',
     borderRadius: 8,
     paddingHorizontal: 14,
     paddingVertical: 12,
@@ -1305,27 +1305,27 @@ const styles = StyleSheet.create({
     gap: 8
   },
   paymentLabel: {
-    color: '#94a3b8',
+    color: '#82776a',
     fontSize: 13
   },
   paymentBtn: {
     paddingVertical: 6,
     paddingHorizontal: 12,
-    backgroundColor: '#1e294b',
+    backgroundColor: '#eae2d3',
     borderRadius: 6,
   },
   paymentActive: {
-    backgroundColor: '#3b82f6',
+    backgroundColor: '#b45309',
     borderWidth: 1,
-    borderColor: '#93c5fd'
+    borderColor: '#d97706'
   },
   paymentBtnText: {
-    color: 'white',
+    color: '#302b25',
     fontSize: 12,
     fontWeight: '700'
   },
   btnPrimary: {
-    backgroundColor: '#3b82f6',
+    backgroundColor: '#b45309',
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 8,
@@ -1334,7 +1334,7 @@ const styles = StyleSheet.create({
     width: '100%'
   },
   btnSuccess: {
-    backgroundColor: '#009c3b',
+    backgroundColor: '#27773f',
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 8,
@@ -1343,18 +1343,18 @@ const styles = StyleSheet.create({
     width: '100%'
   },
   btnSecondary: {
-    backgroundColor: '#1e294b',
+    backgroundColor: '#eae2d3',
     paddingVertical: 10,
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: 'rgba(62, 56, 48, 0.15)',
     marginTop: 10,
     width: '100%'
   },
   btnSecondaryText: {
-    color: '#f8fafc',
+    color: '#302b25',
     fontWeight: '700'
   },
   btnText: {
@@ -1363,32 +1363,32 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   errorText: {
-    color: '#ff3d71',
+    color: '#b92028',
     fontWeight: '600',
     marginTop: 12,
     textAlign: 'center'
   },
   warningBanner: {
-    backgroundColor: '#ff3d711f',
-    borderColor: '#ff3d71',
+    backgroundColor: '#b9202814',
+    borderColor: '#b92028',
     borderWidth: 1,
     padding: 10,
     alignItems: 'center'
   },
   warningBannerText: {
-    color: '#ff3d71',
+    color: '#b92028',
     fontSize: 12,
     fontWeight: '700'
   },
   paymentBanner: {
-    backgroundColor: '#ffa0001f',
-    borderColor: '#ffa000',
+    backgroundColor: '#d9770614',
+    borderColor: '#d97706',
     borderWidth: 1,
     padding: 10,
     alignItems: 'center'
   },
   paymentBannerText: {
-    color: '#ffa000',
+    color: '#d97706',
     fontSize: 12,
     fontWeight: '700'
   },
@@ -1399,20 +1399,20 @@ const styles = StyleSheet.create({
   },
   statWidget: {
     flex: 1,
-    backgroundColor: '#131b2e',
-    borderColor: '#1e294b',
+    backgroundColor: 'rgba(247, 243, 235, 0.75)',
+    borderColor: 'rgba(62, 56, 48, 0.12)',
     borderWidth: 1.5,
     borderLeftWidth: 4,
     borderRadius: 12,
     padding: 14,
-    shadowColor: '#000',
+    shadowColor: '#3e3830',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.08,
     shadowRadius: 6,
   },
   statWidgetLabel: {
     fontSize: 10,
-    color: '#94a3b8',
+    color: '#82776a',
     fontWeight: '800',
     textTransform: 'uppercase',
     letterSpacing: 0.8
@@ -1421,7 +1421,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '800',
     marginTop: 6,
-    color: 'white'
+    color: '#302b25'
   },
   analyticsSection: {
     flexDirection: 'row',
@@ -1431,33 +1431,33 @@ const styles = StyleSheet.create({
   },
   chartCard: {
     flex: 2,
-    backgroundColor: '#131b2e',
-    borderColor: '#1e294b',
+    backgroundColor: 'rgba(247, 243, 235, 0.75)',
+    borderColor: 'rgba(62, 56, 48, 0.12)',
     borderWidth: 1.5,
     borderRadius: 12,
     padding: 16,
-    shadowColor: '#000',
+    shadowColor: '#3e3830',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.08,
     shadowRadius: 8,
   },
   ringCard: {
     flex: 1.2,
-    backgroundColor: '#131b2e',
-    borderColor: '#1e294b',
+    backgroundColor: 'rgba(247, 243, 235, 0.75)',
+    borderColor: 'rgba(62, 56, 48, 0.12)',
     borderWidth: 1.5,
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
+    shadowColor: '#3e3830',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.08,
     shadowRadius: 8,
   },
   chartTitle: {
     fontSize: 11,
-    color: '#94a3b8',
+    color: '#82776a',
     fontWeight: '800',
     textTransform: 'uppercase',
     letterSpacing: 0.8,
@@ -1469,7 +1469,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   chartFooterText: {
-    color: '#64748b',
+    color: '#82776a',
     fontSize: 10,
     fontWeight: '600',
   },
@@ -1485,33 +1485,33 @@ const styles = StyleSheet.create({
   },
   ringPercentText: {
     fontSize: 15,
-    color: '#ffd700',
+    color: '#b45309',
     fontWeight: '900',
   },
   ringSubText: {
     fontSize: 8,
-    color: '#64748b',
+    color: '#82776a',
     textTransform: 'uppercase',
     fontWeight: '700',
   },
   sectionHeader: {
     fontSize: 15,
     fontWeight: '800',
-    color: '#f8fafc',
+    color: '#302b25',
     marginBottom: 14,
     textTransform: 'uppercase',
     letterSpacing: 1.2
   },
   matchCard: {
-    backgroundColor: '#131b2e',
-    borderColor: '#1e294b',
+    backgroundColor: 'rgba(247, 243, 235, 0.75)',
+    borderColor: 'rgba(62, 56, 48, 0.12)',
     borderWidth: 1.5,
     borderRadius: 14,
     padding: 18,
     marginBottom: 16,
-    shadowColor: '#000',
+    shadowColor: '#3e3830',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
+    shadowOpacity: 0.08,
     shadowRadius: 6,
   },
   matchHeaderRow: {
@@ -1522,12 +1522,12 @@ const styles = StyleSheet.create({
   matchStage: {
     fontSize: 10,
     fontWeight: '800',
-    color: '#ffd700',
+    color: '#b45309',
     letterSpacing: 0.5
   },
   matchTime: {
     fontSize: 11,
-    color: '#94a3b8',
+    color: '#82776a',
     fontWeight: '600'
   },
   matchTeamsContainer: {
@@ -1538,26 +1538,26 @@ const styles = StyleSheet.create({
     gap: 12
   },
   matchTeamText: {
-    color: 'white',
+    color: '#302b25',
     fontSize: 15,
     fontWeight: '700',
     flex: 1,
     textAlign: 'center'
   },
   matchVS: {
-    color: '#ffd700',
-    backgroundColor: '#1e294b',
+    color: '#b45309',
+    backgroundColor: '#eae2d3',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
     fontWeight: '900',
     fontSize: 10,
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: 'rgba(62, 56, 48, 0.15)',
     overflow: 'hidden',
   },
   scoreText: {
-    color: '#ffd700',
+    color: '#b45309',
     fontWeight: '800',
     fontSize: 16,
     marginHorizontal: 10
@@ -1567,49 +1567,49 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     borderTopWidth: 1.5,
-    borderTopColor: '#1e294b',
+    borderTopColor: 'rgba(62, 56, 48, 0.12)',
     paddingTop: 14,
     marginTop: 8
   },
   betPlacedBadge: {
-    backgroundColor: '#009c3b1a',
-    borderColor: '#009c3b',
+    backgroundColor: '#27773f14',
+    borderColor: '#27773f',
     borderWidth: 1,
     borderRadius: 6,
     paddingVertical: 5,
     paddingHorizontal: 10
   },
   betPlacedText: {
-    color: '#00e676',
+    color: '#27773f',
     fontSize: 11,
     fontWeight: '700'
   },
   noBetPlacedText: {
-    color: '#ff3d71',
+    color: '#b92028',
     fontSize: 11,
     fontWeight: '700'
   },
   lockedBadge: {
-    backgroundColor: '#1e293b',
+    backgroundColor: '#eae2d3',
     paddingVertical: 5,
     paddingHorizontal: 10,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: '#334155'
+    borderColor: 'rgba(62, 56, 48, 0.15)'
   },
   lockedText: {
-    color: '#94a3b8',
+    color: '#82776a',
     fontSize: 10,
     fontWeight: '800'
   },
   btnAction: {
-    backgroundColor: '#2563eb',
+    backgroundColor: '#b45309',
     paddingVertical: 6,
     paddingHorizontal: 14,
     borderRadius: 6,
-    shadowColor: '#2563eb',
+    shadowColor: '#b45309',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.4,
+    shadowOpacity: 0.2,
     shadowRadius: 4,
   },
   btnActionText: {
@@ -1625,34 +1625,34 @@ const styles = StyleSheet.create({
   toggleBtn: {
     flex: 1,
     paddingVertical: 12,
-    backgroundColor: '#131b2e',
-    borderColor: '#1e294b',
+    backgroundColor: '#eae2d3',
+    borderColor: 'rgba(62, 56, 48, 0.12)',
     borderWidth: 1.5,
     borderRadius: 10,
     alignItems: 'center',
-    shadowColor: '#000',
+    shadowColor: '#3e3830',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.08,
     shadowRadius: 4,
   },
   toggleActive: {
-    backgroundColor: '#2563eb',
-    borderColor: '#3b82f6'
+    backgroundColor: '#b45309',
+    borderColor: '#d97706'
   },
   toggleText: {
-    color: 'white',
+    color: '#302b25',
     fontWeight: '700',
     fontSize: 13
   },
   tableCard: {
-    backgroundColor: 'rgba(19, 27, 46, 0.65)',
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(247, 243, 235, 0.75)',
+    borderColor: 'rgba(62, 56, 48, 0.12)',
     borderWidth: 1,
     borderRadius: 14,
     paddingVertical: 8,
-    shadowColor: '#000',
+    shadowColor: '#3e3830',
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.08,
     shadowRadius: 10,
     backdropFilter: 'blur(10px)',
   },
@@ -1661,10 +1661,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingVertical: 12,
     borderBottomWidth: 1.5,
-    borderBottomColor: '#1e294b'
+    borderBottomColor: 'rgba(62, 56, 48, 0.12)'
   },
   tableHeadCell: {
-    color: '#94a3b8',
+    color: '#82776a',
     fontSize: 11,
     fontWeight: '800',
     textTransform: 'uppercase',
@@ -1675,28 +1675,28 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#1e294b',
+    borderBottomColor: 'rgba(62, 56, 48, 0.08)',
     alignItems: 'center'
   },
   meRow: {
-    backgroundColor: '#2563eb1f',
+    backgroundColor: '#b4530914',
     borderWidth: 1.5,
-    borderColor: '#2563eb',
+    borderColor: '#b45309',
   },
   tableCell: {
-    color: '#f8fafc',
+    color: '#302b25',
     fontSize: 14
   },
   historyCard: {
-    backgroundColor: 'rgba(19, 27, 46, 0.65)',
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(247, 243, 235, 0.75)',
+    borderColor: 'rgba(62, 56, 48, 0.12)',
     borderWidth: 1,
     borderRadius: 14,
     padding: 18,
     marginBottom: 16,
-    shadowColor: '#000',
+    shadowColor: '#3e3830',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
+    shadowOpacity: 0.08,
     shadowRadius: 6,
     backdropFilter: 'blur(10px)',
   },
@@ -1705,25 +1705,25 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-end',
     borderTopWidth: 1.5,
-    borderTopColor: '#1e294b',
+    borderTopColor: 'rgba(62, 56, 48, 0.12)',
     paddingTop: 14,
     marginTop: 8
   },
   historyBetTitle: {
     fontSize: 10,
-    color: '#94a3b8',
+    color: '#82776a',
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 0.5
   },
   historyBetValue: {
     fontSize: 13,
-    color: 'white',
+    color: '#302b25',
     fontWeight: '700',
     marginTop: 4
   },
   historyNoBet: {
-    color: '#ff3d71',
+    color: '#b92028',
     fontWeight: '700',
     fontSize: 12
   },
@@ -1738,41 +1738,41 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   badgeWin: {
-    backgroundColor: '#00e6761f',
-    borderColor: '#00e676',
+    backgroundColor: '#27773f14',
+    borderColor: '#27773f',
     borderWidth: 0.8
   },
   badgeLoss: {
-    backgroundColor: '#ff3d711f',
-    borderColor: '#ff3d71',
+    backgroundColor: '#b9202814',
+    borderColor: '#b92028',
     borderWidth: 0.8
   },
   badgeText: {
     fontSize: 9,
     fontWeight: '800',
-    color: 'white',
+    color: '#302b25',
     textTransform: 'uppercase'
   },
   bracketStageCard: {
-    backgroundColor: 'rgba(19, 27, 46, 0.65)',
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(247, 243, 235, 0.75)',
+    borderColor: 'rgba(62, 56, 48, 0.12)',
     borderWidth: 1,
     borderRadius: 14,
     padding: 18,
     marginBottom: 16,
-    shadowColor: '#000',
+    shadowColor: '#3e3830',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
+    shadowOpacity: 0.08,
     shadowRadius: 6,
     backdropFilter: 'blur(10px)',
   },
   bracketStageTitle: {
-    color: '#ffd700',
+    color: '#b45309',
     fontWeight: '800',
     fontSize: 13,
     marginBottom: 12,
     borderBottomWidth: 1.5,
-    borderBottomColor: '#1e294b',
+    borderBottomColor: 'rgba(62, 56, 48, 0.12)',
     paddingBottom: 8,
     textTransform: 'uppercase',
     letterSpacing: 0.8
@@ -1784,14 +1784,14 @@ const styles = StyleSheet.create({
     gap: 8
   },
   bracketTeamLeft: {
-    color: 'white',
+    color: '#302b25',
     fontWeight: '700',
     fontSize: 13,
     flex: 1,
     textAlign: 'left'
   },
   bracketTeamRight: {
-    color: 'white',
+    color: '#302b25',
     fontWeight: '700',
     fontSize: 13,
     textAlign: 'right'
@@ -1804,41 +1804,41 @@ const styles = StyleSheet.create({
     gap: 8
   },
   bracketVs: {
-    color: '#94a3b8',
+    color: '#82776a',
     fontSize: 11,
     width: 24,
     textAlign: 'center'
   },
   bracketWinner: {
-    color: '#00e676',
+    color: '#27773f',
     fontWeight: '800',
     fontSize: 12
   },
   profileCard: {
-    backgroundColor: '#131b2e',
-    borderColor: '#1e294b',
+    backgroundColor: 'rgba(247, 243, 235, 0.75)',
+    borderColor: 'rgba(62, 56, 48, 0.12)',
     borderWidth: 1.5,
     borderRadius: 14,
     padding: 24,
     alignItems: 'center',
-    shadowColor: '#000',
+    shadowColor: '#3e3830',
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.08,
     shadowRadius: 10,
   },
   profileName: {
     fontSize: 22,
     fontWeight: '800',
-    color: '#f8fafc'
+    color: '#302b25'
   },
   profileEmail: {
-    color: '#94a3b8',
+    color: '#82776a',
     fontSize: 14,
     marginTop: 4
   },
   profileDivider: {
     height: 1.5,
-    backgroundColor: '#1e294b',
+    backgroundColor: 'rgba(62, 56, 48, 0.12)',
     width: '100%',
     marginVertical: 20
   },
@@ -1849,21 +1849,21 @@ const styles = StyleSheet.create({
     marginBottom: 14
   },
   profileLabel: {
-    color: '#94a3b8',
+    color: '#82776a',
     fontSize: 14,
     fontWeight: '600'
   },
   profileValue: {
-    color: 'white',
+    color: '#302b25',
     fontWeight: '700',
     fontSize: 14
   },
   footerTabBar: {
     height: 65,
     borderTopWidth: 1.5,
-    borderTopColor: '#1e294b',
+    borderTopColor: 'rgba(62, 56, 48, 0.12)',
     flexDirection: 'row',
-    backgroundColor: '#0d1324',
+    backgroundColor: '#f5ede0',
     paddingBottom: Platform.OS === 'ios' ? 15 : 0,
   },
   tabItem: {
@@ -1874,11 +1874,11 @@ const styles = StyleSheet.create({
   },
   tabActive: {
     borderTopWidth: 3,
-    borderTopColor: '#2563eb',
-    backgroundColor: '#141c30'
+    borderTopColor: '#b45309',
+    backgroundColor: '#fdfcf9'
   },
   tabText: {
-    color: 'white',
+    color: '#82776a',
     fontSize: 11,
     fontWeight: '700'
   },
@@ -1886,39 +1886,39 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#000000bb',
+    backgroundColor: 'rgba(62, 56, 48, 0.4)',
     padding: 20
   },
   modalContent: {
-    backgroundColor: '#131b2e',
-    borderColor: '#ffd700',
+    backgroundColor: '#fcfaf6',
+    borderColor: '#b45309',
     borderWidth: 2,
     borderRadius: 16,
     padding: 24,
     width: '100%',
     maxWidth: 360,
-    shadowColor: '#000',
+    shadowColor: '#3e3830',
     shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.5,
+    shadowOpacity: 0.12,
     shadowRadius: 15,
   },
   confirmContent: {
-    backgroundColor: '#131b2e',
-    borderColor: '#ff2d37',
+    backgroundColor: '#fcfaf6',
+    borderColor: '#b92028',
     borderWidth: 2,
     borderRadius: 16,
     padding: 24,
     width: '100%',
     maxWidth: 340,
-    shadowColor: '#000',
+    shadowColor: '#3e3830',
     shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.5,
+    shadowOpacity: 0.12,
     shadowRadius: 15,
   },
   modalHeader: {
     fontSize: 18,
     fontWeight: '800',
-    color: '#f8fafc',
+    color: '#302b25',
     textAlign: 'center',
     textTransform: 'uppercase',
     letterSpacing: 0.8
@@ -1926,19 +1926,19 @@ const styles = StyleSheet.create({
   confirmHeader: {
     fontSize: 18,
     fontWeight: '800',
-    color: '#ff3d71',
+    color: '#b92028',
     textAlign: 'center',
     textTransform: 'uppercase',
     letterSpacing: 0.8
   },
   modalSubHeader: {
-    color: '#94a3b8',
+    color: '#82776a',
     textAlign: 'center',
     fontSize: 13,
     marginBottom: 20
   },
   confirmWarning: {
-    color: '#ffa000',
+    color: '#d97706',
     fontSize: 12,
     fontWeight: '700',
     textAlign: 'center',
@@ -1946,20 +1946,20 @@ const styles = StyleSheet.create({
     lineHeight: 18
   },
   confirmDetails: {
-    backgroundColor: '#0b0f19',
+    backgroundColor: '#fdfcf9',
     padding: 16,
     borderRadius: 10,
     marginVertical: 14,
     gap: 8,
     borderWidth: 1,
-    borderColor: '#1e294b'
+    borderColor: 'rgba(62, 56, 48, 0.15)'
   },
   confirmText: {
-    color: 'white',
+    color: '#302b25',
     fontSize: 14
   },
   inputLabel: {
-    color: '#94a3b8',
+    color: '#82776a',
     fontSize: 12,
     fontWeight: '700',
     marginBottom: 8,
@@ -1974,18 +1974,18 @@ const styles = StyleSheet.create({
   teamSelectBtn: {
     flex: 1,
     paddingVertical: 10,
-    backgroundColor: '#1e294b',
+    backgroundColor: '#eae2d3',
     borderRadius: 8,
     alignItems: 'center',
     borderWidth: 1.5,
-    borderColor: '#334155'
+    borderColor: 'rgba(62, 56, 48, 0.15)'
   },
   teamSelectActive: {
-    backgroundColor: '#2563eb',
-    borderColor: '#60a5fa'
+    backgroundColor: '#b45309',
+    borderColor: '#d97706'
   },
   teamSelectText: {
-    color: 'white',
+    color: '#302b25',
     fontSize: 12,
     fontWeight: '800',
     textAlign: 'center'
@@ -1998,10 +1998,10 @@ const styles = StyleSheet.create({
     marginVertical: 12
   },
   scoreInput: {
-    backgroundColor: '#0b0f19',
+    backgroundColor: '#fdfcf9',
     borderWidth: 2,
-    borderColor: '#1e294b',
-    color: 'white',
+    borderColor: 'rgba(62, 56, 48, 0.15)',
+    color: '#302b25',
     fontSize: 24,
     fontWeight: '800',
     width: 65,
@@ -2010,13 +2010,13 @@ const styles = StyleSheet.create({
     borderRadius: 10
   },
   scoreDivider: {
-    color: 'white',
+    color: '#302b25',
     fontSize: 24,
     fontWeight: '800',
     marginTop: 20
   },
   modalError: {
-    color: '#ff3d71',
+    color: '#b92028',
     fontSize: 12,
     fontWeight: '700',
     marginTop: 12,
@@ -2035,7 +2035,7 @@ const styles = StyleSheet.create({
     width: 350,
     height: 350,
     borderRadius: 175,
-    backgroundColor: 'rgba(37, 99, 235, 0.16)',
+    backgroundColor: 'rgba(180, 83, 9, 0.1)',
     filter: 'blur(80px)',
     pointerEvents: 'none',
   },
@@ -2046,7 +2046,7 @@ const styles = StyleSheet.create({
     width: 450,
     height: 450,
     borderRadius: 225,
-    backgroundColor: 'rgba(251, 191, 36, 0.08)',
+    backgroundColor: 'rgba(217, 119, 6, 0.05)',
     filter: 'blur(100px)',
     pointerEvents: 'none',
   },
@@ -2055,9 +2055,9 @@ const styles = StyleSheet.create({
     padding: 20,
     borderRadius: 16,
     marginBottom: 24,
-    shadowColor: '#000',
+    shadowColor: '#3e3830',
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.35,
+    shadowOpacity: 0.1,
     shadowRadius: 12,
   },
   consensusHeader: {
@@ -2069,19 +2069,19 @@ const styles = StyleSheet.create({
   consensusHeaderLabel: {
     fontSize: 11,
     fontWeight: '800',
-    color: '#ffd700',
+    color: '#b45309',
     letterSpacing: 1.2,
   },
   liveBadge: {
-    backgroundColor: '#3b82f62b',
-    borderColor: '#3b82f6',
+    backgroundColor: '#b4530915',
+    borderColor: '#b45309',
     borderWidth: 1.2,
     borderRadius: 6,
     paddingHorizontal: 8,
     paddingVertical: 3,
   },
   liveBadgeText: {
-    color: '#60a5fa',
+    color: '#b45309',
     fontSize: 9,
     fontWeight: '900',
   },
@@ -2105,18 +2105,18 @@ const styles = StyleSheet.create({
   consensusTeamName: {
     fontSize: 16,
     fontWeight: '800',
-    color: '#ffffff',
+    color: '#302b25',
   },
   consensusVs: {
     fontSize: 11,
     fontWeight: '900',
-    color: '#ffd700',
-    backgroundColor: '#1b2234',
+    color: '#b45309',
+    backgroundColor: '#eae2d3',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: '#2e3a5a',
+    borderColor: 'rgba(62, 56, 48, 0.15)',
     overflow: 'hidden',
   },
   consensusStatsRow: {
@@ -2124,18 +2124,18 @@ const styles = StyleSheet.create({
   },
   consensusStatLabel: {
     fontSize: 12,
-    color: '#94a3b8',
+    color: '#82776a',
     fontWeight: '700',
   },
   consensusBar: {
     height: 12,
     borderRadius: 6,
-    backgroundColor: '#111726',
+    backgroundColor: '#eae2d3',
     flexDirection: 'row',
     overflow: 'hidden',
     width: '100%',
     borderWidth: 1,
-    borderColor: '#1e294b',
+    borderColor: 'rgba(62, 56, 48, 0.15)',
   },
   consensusBarSegment: {
     height: '100%',
@@ -2151,21 +2151,21 @@ const styles = StyleSheet.create({
   },
   consensusTotalLabel: {
     fontSize: 10,
-    color: '#64748b',
+    color: '#82776a',
     textAlign: 'center',
     marginTop: 10,
     fontWeight: '600',
   },
   consensusActionButton: {
-    backgroundColor: '#2563eb',
+    backgroundColor: '#b45309',
     paddingVertical: 10,
     paddingHorizontal: 24,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#3b82f6',
-    shadowColor: '#2563eb',
+    borderColor: '#d97706',
+    shadowColor: '#b45309',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
+    shadowOpacity: 0.2,
     shadowRadius: 6,
   },
   consensusActionText: {
@@ -2180,42 +2180,42 @@ const styles = StyleSheet.create({
   },
   expandedBetsDivider: {
     height: 1.5,
-    backgroundColor: '#1e294b',
+    backgroundColor: 'rgba(62, 56, 48, 0.12)',
     marginBottom: 12,
   },
   expandedBetsTitle: {
     fontSize: 12,
     fontWeight: '800',
-    color: '#ffd700',
+    color: '#b45309',
     marginBottom: 10,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
   },
   expandedBetsEmpty: {
     fontSize: 12,
-    color: '#64748b',
+    color: '#82776a',
     textAlign: 'center',
     paddingVertical: 10,
   },
   expandedBetsTable: {
     borderWidth: 1,
-    borderColor: '#1e294b',
+    borderColor: 'rgba(62, 56, 48, 0.12)',
     borderRadius: 8,
     overflow: 'hidden',
-    backgroundColor: '#0a0d18',
+    backgroundColor: '#fdfcf9',
   },
   expandedBetsHeader: {
     flexDirection: 'row',
-    backgroundColor: '#111726',
+    backgroundColor: '#eae2d3',
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#1e294b',
+    borderBottomColor: 'rgba(62, 56, 48, 0.12)',
   },
   expandedBetsHeadCell: {
     fontSize: 10,
     fontWeight: '800',
-    color: '#94a3b8',
+    color: '#82776a',
     textTransform: 'uppercase',
   },
   expandedBetsRow: {
@@ -2223,11 +2223,12 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 12,
     borderBottomWidth: 0.8,
-    borderBottomColor: '#141b2c',
+    borderBottomColor: 'rgba(62, 56, 48, 0.08)',
     alignItems: 'center',
   },
   expandedBetsCell: {
     fontSize: 12,
-    color: '#f8fafc',
+    color: '#302b25',
   }
+});
 });
