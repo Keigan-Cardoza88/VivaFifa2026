@@ -1,5 +1,9 @@
 import { initializeApp } from 'firebase/app';
-import { initializeAuth, getReactNativePersistence } from 'firebase/auth';
+import { 
+  initializeAuth, 
+  getReactNativePersistence, 
+  browserLocalPersistence 
+} from 'firebase/auth';
 import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
@@ -15,9 +19,11 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 
-// Set up persistence for mobile to keep session logged in
+// Set up platform-appropriate persistence
 const auth = initializeAuth(app, {
-  persistence: getReactNativePersistence(AsyncStorage)
+  persistence: Platform.OS === 'web' 
+    ? browserLocalPersistence 
+    : getReactNativePersistence(AsyncStorage)
 });
 
 const db = getFirestore(app);
