@@ -593,6 +593,7 @@ function App() {
       await setDoc(betRef, newBet);
       setStatusMessage({ type: 'success', text: `Bet overridden for user ${overrideBetForm.userId}.` });
       setOverrideBetForm({ userId: '', teamPrediction: '', goalsTeamA: '', goalsTeamB: '' });
+      await handleViewBets(matchId); // reload bets
     } catch (err) {
       setStatusMessage({ type: 'error', text: `Failed to override bet: ${err.message}` });
     } finally {
