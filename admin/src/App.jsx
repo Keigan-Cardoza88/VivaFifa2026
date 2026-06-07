@@ -54,36 +54,45 @@ function App() {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setLoading(true);
       setAuthError(null);
-      if (currentUser) {
-        const email = currentUser.email;
-        const isSysAdmin = ADMIN_EMAILS.includes(email);
+      try {
+        if (currentUser) {
+          const email = currentUser.email;
+          const isSysAdmin = ADMIN_EMAILS.includes(email);
 
-        // Fetch user document to check if auditor role exists
-        const userDocRef = doc(db, 'users', currentUser.uid);
-        const userDoc = await getDoc(userDocRef);
-        const role = userDoc.exists() ? userDoc.data().role : null;
-        const isSysAuditor = role === 'auditor';
+          // Fetch user document to check if auditor role exists
+          const userDocRef = doc(db, 'users', currentUser.uid);
+          const userDoc = await getDoc(userDocRef);
+          const role = userDoc.exists() ? userDoc.data().role : null;
+          const isSysAuditor = role === 'auditor';
 
-        if (isSysAdmin || isSysAuditor) {
-          setUser(currentUser);
-          setIsAdmin(isSysAdmin);
-          setIsAuditor(isSysAuditor);
-        } else {
-          // Check if they are trying to register as admin on first setup
-          if (ADMIN_EMAILS.includes(email)) {
-             setUser(currentUser);
-             setIsAdmin(true);
+          if (isSysAdmin || isSysAuditor) {
+            setUser(currentUser);
+            setIsAdmin(isSysAdmin);
+            setIsAuditor(isSysAuditor);
           } else {
-             await signOut(auth);
-             setAuthError('Unauthorized: Access denied. This portal is for Referees and Auditors only.');
+            // Check if they are trying to register as admin on first setup
+            if (ADMIN_EMAILS.includes(email)) {
+               setUser(currentUser);
+               setIsAdmin(true);
+            } else {
+               await signOut(auth);
+               setAuthError('Unauthorized: Access denied. This portal is for Referees and Auditors only.');
+            }
           }
+        } else {
+          setUser(null);
+          setIsAdmin(false);
+          setIsAuditor(false);
         }
-      } else {
+      } catch (err) {
+        console.error("Auth sync error:", err);
+        setAuthError(`Connection Error: ${err.message}`);
         setUser(null);
         setIsAdmin(false);
         setIsAuditor(false);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     return () => unsubscribe();

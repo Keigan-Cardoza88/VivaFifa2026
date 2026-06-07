@@ -119,56 +119,64 @@ export default function App() {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setLoading(true);
       setAuthError('');
-      if (user) {
-        // Fetch user document from Firestore to check if they are registered
-        const userRef = doc(db, 'users', user.uid);
-        const userDoc = await getDoc(userRef);
+      try {
+        if (user) {
+          // Fetch user document from Firestore to check if they are registered
+          const userRef = doc(db, 'users', user.uid);
+          const userDoc = await getDoc(userRef);
 
-        if (userDoc.exists()) {
-          setCurrentUser(user);
-          setUserProfile(userDoc.data());
-        } else {
-          // If in admin list but profile doesn't exist, create it dynamically
-          if (ADMIN_EMAILS.includes(user.email)) {
-            const adminProfile = {
-              uid: user.uid,
-              name: user.displayName || 'System Admin',
-              email: user.email,
-              role: 'admin',
-              paymentStatus: 'paid',
-              paymentPlan: 'lumpsum',
-              entryFee: 0,
-              joinedAt: new Date(),
-              isLateEntry: false
-            };
-            await setDoc(userRef, adminProfile);
+          if (userDoc.exists()) {
             setCurrentUser(user);
-            setUserProfile(adminProfile);
-
-            // Create leaderboard doc
-            await setDoc(doc(db, 'leaderboard', user.uid), {
-              userId: user.uid,
-              userName: adminProfile.name,
-              netProfit: 0,
-              totalWon: 0,
-              totalLost: 0,
-              correctPredictions: 0,
-              totalPredictions: 0,
-              accuracyPercent: 0
-            });
+            setUserProfile(userDoc.data());
           } else {
-             // Non-admin not registered yet: store authenticated user temporarily in state
-             // to show the registration screen, but do not consider them fully logged in.
-             setCurrentUser(user);
-             setUserProfile(null); // Triggers registration form
-             setNameInput(user.displayName || '');
+            // If in admin list but profile doesn't exist, create it dynamically
+            if (ADMIN_EMAILS.includes(user.email)) {
+              const adminProfile = {
+                uid: user.uid,
+                name: user.displayName || 'System Admin',
+                email: user.email,
+                role: 'admin',
+                paymentStatus: 'paid',
+                paymentPlan: 'lumpsum',
+                entryFee: 0,
+                joinedAt: new Date(),
+                isLateEntry: false
+              };
+              await setDoc(userRef, adminProfile);
+              setCurrentUser(user);
+              setUserProfile(adminProfile);
+
+              // Create leaderboard doc
+              await setDoc(doc(db, 'leaderboard', user.uid), {
+                userId: user.uid,
+                userName: adminProfile.name,
+                netProfit: 0,
+                totalWon: 0,
+                totalLost: 0,
+                correctPredictions: 0,
+                totalPredictions: 0,
+                accuracyPercent: 0
+              });
+            } else {
+               // Non-admin not registered yet: store authenticated user temporarily in state
+               // to show the registration screen, but do not consider them fully logged in.
+               setCurrentUser(user);
+               setUserProfile(null); // Triggers registration form
+               setNameInput(user.displayName || '');
+            }
           }
+        } else {
+          setCurrentUser(null);
+          setUserProfile(null);
         }
-      } else {
+      } catch (err) {
+        console.error("Mobile auth sync error:", err);
+        setAuthError(`Connection Error: ${err.message}`);
         setCurrentUser(null);
         setUserProfile(null);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     return () => unsubscribe();
