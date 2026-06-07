@@ -41,8 +41,8 @@ const ADMIN_EMAILS = [
 ];
 
 const API_BASE = Platform.OS === 'web' 
-  ? (window.location.hostname === 'localhost' ? 'http://localhost:3000' : '')
-  : 'https://fifa-warroom-backend.vercel.app'; // Replace with user's actual Vercel URL once deployed
+  ? (window.location.hostname === 'localhost' ? 'http://localhost:3000' : 'https://vivafifa2026.vercel.app')
+  : 'https://vivafifa2026.vercel.app';
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState(null);

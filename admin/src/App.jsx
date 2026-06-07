@@ -25,7 +25,7 @@ const ADMIN_EMAILS = [
   'cardoza.joseph@gmail.com'
 ];
 
-const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:3000' : '';
+const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:3000' : 'https://vivafifa2026.vercel.app';
 
 function App() {
   const [user, setUser] = useState(null);
