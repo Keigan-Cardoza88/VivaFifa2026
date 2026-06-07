@@ -67,50 +67,109 @@ function generateMatches() {
     });
   };
 
-  // 1. Group Stage (72 matches) - e.g., June 11 to June 27, 2026. 4 matches/day
-  // Group names/teams as place-holders or actual teams
-  const groupTeams = [
-    ['Mexico', 'South Africa', 'South Korea', 'Czechia'],         // Group A
-    ['Canada', 'Bosnia and Herzegovina', 'Qatar', 'Switzerland'],  // Group B
-    ['Brazil', 'Haiti', 'Morocco', 'Scotland'],                     // Group C
-    ['USA', 'Australia', 'Paraguay', 'Turkiye'],                   // Group D
-    ['Germany', 'Ecuador', 'Curacao', 'Ivory Coast'],               // Group E
-    ['Netherlands', 'Japan', 'Sweden', 'Tunisia'],                  // Group F
-    ['Belgium', 'Egypt', 'Iran', 'New Zealand'],                    // Group G
-    ['Spain', 'Saudi Arabia', 'Cape Verde', 'Uruguay'],            // Group H
-    ['France', 'Iraq', 'Norway', 'Senegal'],                        // Group I
-    ['Argentina', 'Algeria', 'Austria', 'Jordan'],                  // Group J
-    ['Portugal', 'Colombia', 'DR Congo', 'Uzbekistan'],             // Group K
-    ['England', 'Croatia', 'Ghana', 'Panama']                       // Group L
+  // 1. Group Stage Explicit Fixtures (72 matches)
+  const groupSpecs = [
+    { teamA: 'Mexico', teamB: 'South Africa', date: '2026-06-12' },
+    { teamA: 'South Korea', teamB: 'Czechia', date: '2026-06-12' },
+    { teamA: 'Canada', teamB: 'Bosnia and Herzegovina', date: '2026-06-13' },
+    { teamA: 'USA', teamB: 'Paraguay', date: '2026-06-13' },
+    { teamA: 'Qatar', teamB: 'Switzerland', date: '2026-06-14' },
+    { teamA: 'Brazil', teamB: 'Morocco', date: '2026-06-14' },
+    { teamA: 'Haiti', teamB: 'Scotland', date: '2026-06-14' },
+    { teamA: 'Australia', teamB: 'Turkey', date: '2026-06-14' },
+    { teamA: 'Germany', teamB: 'Curaçao', date: '2026-06-14' },
+    { teamA: 'Netherlands', teamB: 'Japan', date: '2026-06-15' },
+    { teamA: 'Ivory Coast', teamB: 'Ecuador', date: '2026-06-15' },
+    { teamA: 'Sweden', teamB: 'Tunisia', date: '2026-06-15' },
+    { teamA: 'Spain', teamB: 'Cabo Verde', date: '2026-06-15' },
+    { teamA: 'Belgium', teamB: 'Egypt', date: '2026-06-16' },
+    { teamA: 'Saudi Arabia', teamB: 'Uruguay', date: '2026-06-16' },
+    { teamA: 'Iran', teamB: 'New Zealand', date: '2026-06-16' },
+    { teamA: 'France', teamB: 'Senegal', date: '2026-06-17' },
+    { teamA: 'Iraq', teamB: 'Norway', date: '2026-06-17' },
+    { teamA: 'Argentina', teamB: 'Algeria', date: '2026-06-17' },
+    { teamA: 'Austria', teamB: 'Jordan', date: '2026-06-17' },
+    { teamA: 'Portugal', teamB: 'DR Congo', date: '2026-06-17' },
+    { teamA: 'England', teamB: 'Croatia', date: '2026-06-18' },
+    { teamA: 'Ghana', teamB: 'Panama', date: '2026-06-18' },
+    { teamA: 'Uzbekistan', teamB: 'Colombia', date: '2026-06-18' },
+    { teamA: 'Czechia', teamB: 'South Africa', date: '2026-06-18' },
+    { teamA: 'Switzerland', teamB: 'Bosnia and Herzegovina', date: '2026-06-19' },
+    { teamA: 'Canada', teamB: 'Qatar', date: '2026-06-19' },
+    { teamA: 'Mexico', teamB: 'South Korea', date: '2026-06-19' },
+    { teamA: 'USA', teamB: 'Australia', date: '2026-06-20' },
+    { teamA: 'Scotland', teamB: 'Morocco', date: '2026-06-20' },
+    { teamA: 'Brazil', teamB: 'Haiti', date: '2026-06-20' },
+    { teamA: 'Turkey', teamB: 'Paraguay', date: '2026-06-20' },
+    { teamA: 'Netherlands', teamB: 'Sweden', date: '2026-06-20' },
+    { teamA: 'Germany', teamB: 'Ivory Coast', date: '2026-06-21' },
+    { teamA: 'Ecuador', teamB: 'Curacao', date: '2026-06-21' },
+    { teamA: 'Tunisia', teamB: 'Japan', date: '2026-06-21' },
+    { teamA: 'Spain', teamB: 'Saudi Arabia', date: '2026-06-21' },
+    { teamA: 'Belgium', teamB: 'Iran', date: '2026-06-22' },
+    { teamA: 'Uruguay', teamB: 'Cabo Verde', date: '2026-06-22' },
+    { teamA: 'New Zealand', teamB: 'Egypt', date: '2026-06-22' },
+    { teamA: 'Argentina', teamB: 'Austria', date: '2026-06-22' },
+    { teamA: 'France', teamB: 'Iraq', date: '2026-06-23' },
+    { teamA: 'Norway', teamB: 'Senegal', date: '2026-06-23' },
+    { teamA: 'Jordan', teamB: 'Algeria', date: '2026-06-23' },
+    { teamA: 'Portugal', teamB: 'Uzbekistan', date: '2026-06-23' },
+    { teamA: 'England', teamB: 'Ghana', date: '2026-06-24' },
+    { teamA: 'Panama', teamB: 'Croatia', date: '2026-06-24' },
+    { teamA: 'Colombia', teamB: 'DR Congo', date: '2026-06-24' },
+    { teamA: 'Switzerland', teamB: 'Canada', date: '2026-06-25' },
+    { teamA: 'Bosnia and Herzegovina', teamB: 'Qatar', date: '2026-06-25' },
+    { teamA: 'Morocco', teamB: 'Haiti', date: '2026-06-25' },
+    { teamA: 'Scotland', teamB: 'Brazil', date: '2026-06-25' },
+    { teamA: 'South Africa', teamB: 'South Korea', date: '2026-06-25' },
+    { teamA: 'Czechia', teamB: 'Mexico', date: '2026-06-25' },
+    { teamA: 'Curacao', teamB: 'Ivory Coast', date: '2026-06-26' },
+    { teamA: 'Ecuador', teamB: 'Germany', date: '2026-06-26' },
+    { teamA: 'Tunisia', teamB: 'Netherlands', date: '2026-06-26' },
+    { teamA: 'Japan', teamB: 'Sweden', date: '2026-06-26' },
+    { teamA: 'Turkey', teamB: 'USA', date: '2026-06-26' },
+    { teamA: 'Paraguay', teamB: 'Australia', date: '2026-06-26' },
+    { teamA: 'Norway', teamB: 'France', date: '2026-06-27' },
+    { teamA: 'Senegal', teamB: 'Iraq', date: '2026-06-27' },
+    { teamA: 'Cabo Verde', teamB: 'Saudi Arabia', date: '2026-06-27' },
+    { teamA: 'Uruguay', teamB: 'Spain', date: '2026-06-27' },
+    { teamA: 'New Zealand', teamB: 'Belgium', date: '2026-06-27' },
+    { teamA: 'Egypt', teamB: 'Iran', date: '2026-06-27' },
+    { teamA: 'Panama', teamB: 'England', date: '2026-06-28' },
+    { teamA: 'Croatia', teamB: 'Ghana', date: '2026-06-28' },
+    { teamA: 'Colombia', teamB: 'Portugal', date: '2026-06-28' },
+    { teamA: 'DR Congo', teamB: 'Uzbekistan', date: '2026-06-28' },
+    { teamA: 'Algeria', teamB: 'Austria', date: '2026-06-28' },
+    { teamA: 'Jordan', teamB: 'Argentina', date: '2026-06-28' }
   ];
 
-  let currentDate = new Date('2026-06-11');
-  for (let g = 0; g < 12; g++) {
-    const teams = groupTeams[g];
-    // Each group has 6 matches
-    const matchups = [
-      [teams[0], teams[1]],
-      [teams[2], teams[3]],
-      [teams[0], teams[2]],
-      [teams[1], teams[3]],
-      [teams[3], teams[0]],
-      [teams[1], teams[2]]
-    ];
+  const getSlotsForDay = (numMatches) => {
+    if (numMatches === 1) return ['20:00'];
+    if (numMatches === 2) return ['20:00', '22:30'];
+    if (numMatches === 3) return ['17:30', '20:00', '22:30'];
+    if (numMatches === 4) return ['15:00', '17:30', '20:00', '22:30'];
+    if (numMatches === 5) return ['12:30', '15:00', '17:30', '20:00', '22:30'];
+    return ['10:00', '12:30', '15:00', '17:30', '20:00', '22:30'];
+  };
 
-    matchups.forEach((pair, index) => {
-      const dateStr = currentDate.toISOString().split('T')[0];
-      const hour = 20 + (index % 2) * 2.5; // e.g. 8:00 PM, 10:30 PM
-      const timeStr = `${Math.floor(hour)}:${(hour % 1 === 0 ? '00' : '30')}`;
-      addMatch(pair[0], pair[1], 'group', dateStr, timeStr);
-      // Advance date every 4 matches
-      if (matchId % 4 === 0) {
-        currentDate.setDate(currentDate.getDate() + 1);
-      }
-    });
-  }
+  const dateCounter = {};
+  groupSpecs.forEach((spec) => {
+    const d = spec.date;
+    dateCounter[d] = (dateCounter[d] || 0) + 1;
+  });
+
+  const dateIndex = {};
+  groupSpecs.forEach((spec) => {
+    const d = spec.date;
+    const idx = dateIndex[d] || 0;
+    dateIndex[d] = idx + 1;
+    const slots = getSlotsForDay(dateCounter[d]);
+    const timeStr = slots[idx] || '20:00';
+    addMatch(spec.teamA, spec.teamB, 'group', spec.date, timeStr);
+  });
 
   // Set date for knockout rounds
-  currentDate = new Date('2026-06-29');
+  let currentDate = new Date('2026-06-29');
 
   // 2. Round of 32 (16 matches)
   for (let i = 1; i <= 16; i++) {
@@ -166,6 +225,21 @@ async function main() {
     console.log("Seeding global settings...");
     await db.collection('settings').doc('global').set(DEFAULT_SETTINGS);
     console.log("Global settings seeded successfully!");
+
+    console.log("Deleting all existing matches from Firestore...");
+    const matchesSnapshot = await db.collection('matches').get();
+    console.log(`Found ${matchesSnapshot.size} matches to delete.`);
+    const deleteBatchSize = 100;
+    const docs = matchesSnapshot.docs;
+    for (let i = 0; i < docs.length; i += deleteBatchSize) {
+      const batch = db.batch();
+      const chunk = docs.slice(i, i + deleteBatchSize);
+      chunk.forEach(doc => {
+        batch.delete(doc.ref);
+      });
+      await batch.commit();
+      console.log(`Deleted matches ${i + 1} to ${Math.min(i + deleteBatchSize, docs.length)}`);
+    }
 
     console.log("Generating 104 fixtures...");
     const matches = generateMatches();
