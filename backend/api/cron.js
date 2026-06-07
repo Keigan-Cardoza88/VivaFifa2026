@@ -1,9 +1,13 @@
 const { db, admin, messaging } = require('../utils/firebase');
 
 module.exports = async (req, res) => {
-  // Allow Vercel Cron verification
+  // Allow Vercel Cron verification (via Header or URL query parameter)
   const cronAuth = req.headers.authorization;
-  const isVercelCron = cronAuth === `Bearer ${process.env.CRON_SECRET}` || process.env.NODE_ENV === 'development';
+  const cronSecret = process.env.CRON_SECRET || 'development';
+  const isVercelCron = 
+    cronAuth === `Bearer ${cronSecret}` || 
+    req.query.secret === cronSecret || 
+    process.env.NODE_ENV === 'development';
 
   if (!isVercelCron) {
     return res.status(401).json({ error: 'Unauthorized: Cron requests only' });
