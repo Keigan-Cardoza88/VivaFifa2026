@@ -1193,7 +1193,11 @@ export default function App() {
                                 {m.status === 'completed' && <Text style={styles.bracketScore}>{m.resultTeamAGoals}</Text>}
                               </View>
                               
-                              <View style={styles.bracketDivider} />
+                              <View style={styles.bracketVsContainer}>
+                                <View style={styles.bracketVsLine} />
+                                <Text style={styles.bracketVsTextCard}>VS</Text>
+                                <View style={styles.bracketVsLine} />
+                              </View>
                               
                               <View style={[styles.bracketTeamRow, m.status === 'completed' && m.winner === 'teamA' && styles.bracketTeamLost]}>
                                 <Text style={styles.bracketTeamText} numberOfLines={1}>
@@ -2716,10 +2720,23 @@ const styles = StyleSheet.create({
     color: '#b45309',
     marginLeft: 6,
   },
-  bracketDivider: {
+  bracketVsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 2,
+    gap: 8,
+  },
+  bracketVsLine: {
+    flex: 1,
     height: 1,
     backgroundColor: 'rgba(62, 56, 48, 0.1)',
-    marginVertical: 4,
+  },
+  bracketVsTextCard: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#82776a',
+    letterSpacing: 0.5,
   },
   thirdPlaceBadge: {
     position: 'absolute',
