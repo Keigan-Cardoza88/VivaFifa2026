@@ -1,33 +1,33 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  StyleSheet, 
-  Text, 
-  View, 
-  ScrollView, 
-  TextInput, 
-  TouchableOpacity, 
-  Modal, 
-  ActivityIndicator, 
-  Platform, 
+import {
+  StyleSheet,
+  Text,
+  View,
+  ScrollView,
+  TextInput,
+  TouchableOpacity,
+  Modal,
+  ActivityIndicator,
+  Platform,
   Linking,
   StatusBar
 } from 'react-native';
-import { 
-  signOut, 
+import {
+  signOut,
   onAuthStateChanged,
   signInWithCredential,
   GoogleAuthProvider,
   signInWithPopup
 } from 'firebase/auth';
-import { 
-  collection, 
-  doc, 
-  getDoc, 
-  setDoc, 
-  query, 
-  where, 
-  orderBy, 
-  onSnapshot 
+import {
+  collection,
+  doc,
+  getDoc,
+  setDoc,
+  query,
+  where,
+  orderBy,
+  onSnapshot
 } from 'firebase/firestore';
 import * as WebBrowser from 'expo-web-browser';
 import * as Google from 'expo-auth-session/providers/google';
@@ -41,7 +41,7 @@ const ADMIN_EMAILS = [
   'cardoza.joseph@gmail.com'
 ];
 
-const API_BASE = Platform.OS === 'web' 
+const API_BASE = Platform.OS === 'web'
   ? (window.location.hostname === 'localhost' ? 'http://localhost:3000' : 'https://vivafifa2026.vercel.app')
   : 'https://vivafifa2026.vercel.app';
 
@@ -326,7 +326,7 @@ export default function App() {
       const idToken = await currentUser.getIdToken();
       const response = await fetch(`${API_BASE}/api/requestToJoin`, {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${idToken}`
         },
@@ -383,8 +383,8 @@ export default function App() {
     const numB = Number(goalsB);
 
     if (!teamPrediction) {
-       setBetError('Please select a team prediction.');
-       return;
+      setBetError('Please select a team prediction.');
+      return;
     }
     if (isNaN(numA) || isNaN(numB) || numA < 0 || numB < 0) {
       setBetError('Goals must be non-negative integers.');
@@ -412,7 +412,7 @@ export default function App() {
     try {
       const betId = `${currentUser.uid}_${selectedMatch.matchId}`;
       const betRef = doc(db, 'bets', betId);
-      
+
       const newBet = {
         betId,
         userId: currentUser.uid,
@@ -461,8 +461,8 @@ export default function App() {
           <Text style={{ color: '#82776a', fontSize: 14, marginBottom: 20, textAlign: 'center', lineHeight: 20 }}>
             This betting arena is closed. Only authorized members can enter. Sign in with your Google Account below.
           </Text>
-          <TouchableOpacity 
-            style={styles.btnPrimary} 
+          <TouchableOpacity
+            style={styles.btnPrimary}
             disabled={Platform.OS !== 'web' && !request}
             onPress={handleGoogleSignIn}
           >
@@ -490,23 +490,23 @@ export default function App() {
           <Text style={{ color: '#82776a', fontSize: 13, marginBottom: 18, textAlign: 'center', lineHeight: 20 }}>
             Enter your name and select a payment plan. Your request will be sent to the referee for approval.
           </Text>
-          <TextInput 
-            style={styles.input} 
-            placeholder="Full Name" 
+          <TextInput
+            style={styles.input}
+            placeholder="Full Name"
             placeholderTextColor="#64748b"
             value={nameInput}
             onChangeText={setNameInput}
           />
           <View style={styles.paymentSelect}>
             <Text style={styles.paymentLabel}>Payment Plan:</Text>
-            <TouchableOpacity 
-              style={[styles.paymentBtn, paymentPlan === 'installments' && styles.paymentActive]} 
+            <TouchableOpacity
+              style={[styles.paymentBtn, paymentPlan === 'installments' && styles.paymentActive]}
               onPress={() => setPaymentPlan('installments')}
             >
               <Text style={styles.paymentBtnText}>Installments</Text>
             </TouchableOpacity>
-            <TouchableOpacity 
-              style={[styles.paymentBtn, paymentPlan === 'lumpsum' && styles.paymentActive]} 
+            <TouchableOpacity
+              style={[styles.paymentBtn, paymentPlan === 'lumpsum' && styles.paymentActive]}
               onPress={() => setPaymentPlan('lumpsum')}
             >
               <Text style={styles.paymentBtnText}>Lumpsum</Text>
@@ -600,22 +600,22 @@ export default function App() {
     const width = 300;
     const height = 100;
     const padding = 10;
-    
+
     const max = Math.max(...data, 100);
     const min = Math.min(...data, -100);
     const range = max - min || 1;
-    
+
     const points = data.map((val, idx) => {
       const x = padding + (idx / (data.length - 1)) * (width - padding * 2);
       const y = height - padding - ((val - min) / range) * (height - padding * 2);
       return { x, y };
     });
-    
+
     const linePath = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
-    const areaPath = points.length > 0 
+    const areaPath = points.length > 0
       ? `${linePath} L ${points[points.length - 1].x} ${height - padding} L ${points[0].x} ${height - padding} Z`
       : '';
-      
+
     const isProfit = netProfit >= 0;
     const strokeColor = isProfit ? '#00e676' : '#ff3d71';
     const gradId = `profitGrad_${Math.random().toString(36).substr(2, 9)}`;
@@ -624,11 +624,11 @@ export default function App() {
       <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} style={{ overflow: 'visible' }}>
         <defs>
           <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={strokeColor} stopOpacity="0.25"/>
-            <stop offset="100%" stopColor={strokeColor} stopOpacity="0"/>
+            <stop offset="0%" stopColor={strokeColor} stopOpacity="0.25" />
+            <stop offset="100%" stopColor={strokeColor} stopOpacity="0" />
           </linearGradient>
         </defs>
-        <line x1={padding} y1={height/2} x2={width-padding} y2={height/2} stroke="rgba(62, 56, 48, 0.2)" strokeWidth="1" strokeDasharray="3" />
+        <line x1={padding} y1={height / 2} x2={width - padding} y2={height / 2} stroke="rgba(62, 56, 48, 0.2)" strokeWidth="1" strokeDasharray="3" />
         {areaPath ? <path d={areaPath} fill={`url(#${gradId})`} /> : null}
         {linePath ? <path d={linePath} fill="none" stroke={strokeColor} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" /> : null}
         {points.map((p, idx) => (
@@ -643,16 +643,16 @@ export default function App() {
     const stroke = 5;
     const circumference = 2 * Math.PI * radius;
     const strokeDashoffset = circumference - (accuracy / 100) * circumference;
-    
+
     return (
       <svg width="70" height="70" viewBox="0 0 70 70">
         <circle cx="35" cy="35" r={radius} stroke="rgba(62, 56, 48, 0.15)" strokeWidth={stroke} fill="transparent" />
-        <circle 
-          cx="35" 
-          cy="35" 
-          r={radius} 
-          stroke="#b45309" 
-          strokeWidth={stroke} 
+        <circle
+          cx="35"
+          cy="35"
+          r={radius}
+          stroke="#b45309"
+          strokeWidth={stroke}
           fill="transparent"
           strokeDasharray={circumference}
           strokeDashoffset={strokeDashoffset}
@@ -717,7 +717,7 @@ export default function App() {
                   <Text style={styles.chartFooterText}>Current: ₹{netProfit}</Text>
                 </View>
               </View>
-              
+
               <View style={[styles.ringCard, styles.glassCard]}>
                 <Text style={styles.chartTitle}>Accuracy</Text>
                 <View style={styles.ringContainer}>
@@ -799,8 +799,8 @@ export default function App() {
                         {(() => {
                           const bet = myBets[firstUpcomingMatch.matchId];
                           return (
-                            <TouchableOpacity 
-                              style={styles.consensusActionButton} 
+                            <TouchableOpacity
+                              style={styles.consensusActionButton}
                               onPress={() => handleOpenBet(firstUpcomingMatch)}
                             >
                               <Text style={styles.consensusActionText}>
@@ -863,13 +863,13 @@ export default function App() {
         {activeTab === 'leaderboard' && (
           <View>
             <View style={styles.toggleRow}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[styles.toggleBtn, leaderboardType === 'money' && styles.toggleActive]}
                 onPress={() => setLeaderboardType('money')}
               >
                 <Text style={styles.toggleText}>Money (Net Profit)</Text>
               </TouchableOpacity>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[styles.toggleBtn, leaderboardType === 'accuracy' && styles.toggleActive]}
                 onPress={() => setLeaderboardType('accuracy')}
               >
@@ -962,7 +962,7 @@ export default function App() {
                       ) : (
                         <Text style={styles.historyNoBet}>Forfeited (Did not place bet)</Text>
                       )}
-                      
+
                       {bet && (
                         <View style={{ alignItems: 'flex-end' }}>
                           <Text style={{ fontSize: 11, color: '#94a3b8' }}>Payout</Text>
@@ -1051,7 +1051,7 @@ export default function App() {
             <View style={styles.profileCard}>
               <Text style={styles.profileName}>{userProfile?.name || 'Player'}</Text>
               <Text style={styles.profileEmail}>{currentUser.email}</Text>
-              
+
               <View style={styles.profileDivider} />
 
               <View style={styles.profileRow}>
@@ -1107,7 +1107,7 @@ export default function App() {
 
               <Text style={styles.inputLabel}>Step 1: Pick Match Outcome</Text>
               <View style={styles.teamSelectRow}>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={[styles.teamSelectBtn, teamPrediction === 'teamA' && styles.teamSelectActive]}
                   onPress={() => setTeamPrediction('teamA')}
                 >
@@ -1115,7 +1115,7 @@ export default function App() {
                 </TouchableOpacity>
 
                 {selectedMatch.stage === 'group' && (
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={[styles.teamSelectBtn, teamPrediction === 'draw' && styles.teamSelectActive]}
                     onPress={() => setTeamPrediction('draw')}
                   >
@@ -1123,7 +1123,7 @@ export default function App() {
                   </TouchableOpacity>
                 )}
 
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={[styles.teamSelectBtn, teamPrediction === 'teamB' && styles.teamSelectActive]}
                   onPress={() => setTeamPrediction('teamB')}
                 >
@@ -1166,7 +1166,7 @@ export default function App() {
             <View style={[styles.confirmContent, styles.glassCard]}>
               <Text style={styles.confirmHeader}>Confirm Submission</Text>
               <Text style={{ color: '#82776a', fontSize: 13, textAlign: 'center', marginVertical: 12 }}>You can edit this bet until the lock time.</Text>
-              
+
               <View style={styles.confirmDetails}>
                 <Text style={styles.confirmText}>Outcome: <Text style={{ fontWeight: '800', color: '#b45309' }}>
                   {teamPrediction === 'teamA' ? `${getTeamFlag(selectedMatch.teamA)} ${selectedMatch.teamA}` : (teamPrediction === 'teamB' ? `${selectedMatch.teamB} ${getTeamFlag(selectedMatch.teamB)}` : 'Draw')}
@@ -2231,4 +2231,4 @@ const styles = StyleSheet.create({
     color: '#302b25',
   }
 });
-});
+
