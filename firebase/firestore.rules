@@ -21,9 +21,11 @@ service cloud.firestore {
     }
 
     function isRegistered() {
+      // A user is considered fully registered only if their role is NOT 'pending'
       return signedIn() && (
         isAdmin() || 
-        exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role != 'pending')
       );
     }
 
@@ -40,8 +42,8 @@ service cloud.firestore {
     // User profiles rules
     match /users/{userId} {
       allow read: if signedIn() && (isAdmin() || isUserDoc(userId) || isAuditor());
-      // Only admins can create/update profiles (to override payment status or roles)
-      // Users can update their own profile during invite registration if not already existing
+      // Admins can create/update any profile.
+      // Users can create their own pending join request profile if they don't already have one.
       allow create: if signedIn() && (isAdmin() || (isUserDoc(userId) && !exists(/databases/$(database)/documents/users/$(userId))));
       allow update: if signedIn() && isAdmin();
       allow delete: if signedIn() && isAdmin();
@@ -105,12 +107,6 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    // Invite links rules
-    match /invites/{inviteId} {
-      // Anyone signed in with Google can read an invite to validate it before claiming
-      allow read: if signedIn();
-      allow write: if isAdmin();
-    }
 
     // Global Settings rules
     match /settings/global {

@@ -113,9 +113,8 @@ export default function App() {
   const [leaderboardAccuracy, setLeaderboardAccuracy] = useState([]);
   const [settings, setSettings] = useState(null);
 
-  // Invite Registration Forms
+  // Join Request Registration
   const [nameInput, setNameInput] = useState('');
-  const [inviteIdInput, setInviteIdInput] = useState('');
   const [paymentPlan, setPaymentPlan] = useState('installments');
   const [authError, setAuthError] = useState('');
   const [registering, setRegistering] = useState(false);
@@ -171,17 +170,11 @@ export default function App() {
     }
   }, [response]);
 
-  // Deep link listener (inviteId extractor)
+  // Deep link listener (general URL handler)
   useEffect(() => {
     const parseUrl = (url) => {
       if (!url) return;
       console.log('Opened with URL:', url);
-      const inviteIdParam = url.split('inviteId=')[1];
-      if (inviteIdParam) {
-        const code = inviteIdParam.split('&')[0];
-        setInviteIdInput(code);
-        setAuthError(`Invite code ${code} loaded from link!`);
-      }
     };
 
     Linking.getInitialURL().then(parseUrl);
@@ -275,40 +268,39 @@ export default function App() {
   }, [currentUser, userProfile]);
 
   const handleRegister = async () => {
-    if (!nameInput || !inviteIdInput) {
-      setAuthError('Name and Invite Code are required to complete signup.');
+    if (!nameInput.trim()) {
+      setAuthError('Please enter your name to submit the join request.');
       return;
     }
     setRegistering(true);
     setAuthError('');
     try {
       const idToken = await currentUser.getIdToken();
-      const response = await fetch(`${API_BASE}/api/registerWithInvite`, {
+      const response = await fetch(`${API_BASE}/api/requestToJoin`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${idToken}`
         },
         body: JSON.stringify({
-          name: nameInput,
-          inviteId: inviteIdInput,
+          name: nameInput.trim(),
           paymentPlan: paymentPlan
         })
       });
 
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.error || 'Registration failed');
+        throw new Error(data.error || 'Request failed');
       }
 
-      // Re-fetch user document to sync profile
+      // Re-fetch user document to sync profile (will be pending)
       const userRef = doc(db, 'users', currentUser.uid);
       const userDoc = await getDoc(userRef);
       if (userDoc.exists()) {
         setUserProfile(userDoc.data());
       }
     } catch (err) {
-      setAuthError(`Registration error: ${err.message}`);
+      setAuthError(`Request error: ${err.message}`);
     } finally {
       setRegistering(false);
     }
@@ -442,25 +434,20 @@ export default function App() {
     return (
       <ScrollView contentContainerStyle={styles.loginContainer}>
         <StatusBar barStyle="light-content" />
-        <Text style={styles.loginLogo}>COMPLETE REGISTRATION</Text>
+        <Text style={styles.loginLogo}>REQUEST TO JOIN</Text>
         <Text style={styles.loginSubtitle}>{currentUser.email}</Text>
 
         <View style={styles.card}>
-          <Text style={styles.cardHeader}>Enter Invite Credentials</Text>
+          <Text style={styles.cardHeader}>Submit Join Request</Text>
+          <Text style={{ color: '#94a3b8', fontSize: 13, marginBottom: 18, textAlign: 'center', lineHeight: 20 }}>
+            Enter your name and select a payment plan. Your request will be sent to the referee for approval.
+          </Text>
           <TextInput 
             style={styles.input} 
             placeholder="Full Name" 
             placeholderTextColor="#64748b"
             value={nameInput}
             onChangeText={setNameInput}
-          />
-          <TextInput 
-            style={styles.input} 
-            placeholder="Invite Code (e.g., AD3K98F)" 
-            placeholderTextColor="#64748b"
-            value={inviteIdInput}
-            onChangeText={setInviteIdInput}
-            autoCapitalize="characters"
           />
           <View style={styles.paymentSelect}>
             <Text style={styles.paymentLabel}>Payment Plan:</Text>
@@ -477,12 +464,11 @@ export default function App() {
               <Text style={styles.paymentBtnText}>Lumpsum</Text>
             </TouchableOpacity>
           </View>
-          
           <TouchableOpacity style={styles.btnSuccess} onPress={handleRegister} disabled={registering}>
             {registering ? (
               <ActivityIndicator color="white" />
             ) : (
-              <Text style={styles.btnText}>Verify & Join Arena</Text>
+              <Text style={styles.btnText}>Send Join Request</Text>
             )}
           </TouchableOpacity>
 
@@ -497,6 +483,38 @@ export default function App() {
       </ScrollView>
     );
   }
+
+  // 2b. PENDING APPROVAL SCREEN (Request submitted but referee hasn't approved yet)
+  if (currentUser && userProfile && userProfile.role === 'pending') {
+    return (
+      <ScrollView contentContainerStyle={styles.loginContainer}>
+        <StatusBar barStyle="light-content" />
+        <Text style={styles.loginLogo}>⏳ AWAITING APPROVAL</Text>
+        <Text style={styles.loginSubtitle}>{currentUser.email}</Text>
+
+        <View style={styles.card}>
+          <Text style={styles.cardHeader}>Request Submitted ✓</Text>
+          <Text style={{ color: '#94a3b8', fontSize: 14, textAlign: 'center', lineHeight: 22, marginBottom: 20 }}>
+            Your join request has been sent to the referee.{'\n\n'}You will automatically gain access once your account is approved. Please check back shortly.
+          </Text>
+          <View style={{ backgroundColor: '#0b0f19', borderRadius: 10, padding: 16, marginBottom: 20, borderWidth: 1, borderColor: '#1e294b', gap: 8 }}>
+            <View style={[styles.paymentSelect, { justifyContent: 'flex-start', marginBottom: 0 }]}>
+              <Text style={{ color: '#ffd700', fontWeight: '700', fontSize: 13, width: 60 }}>Name: </Text>
+              <Text style={{ color: 'white', fontWeight: '600', fontSize: 13 }}>{userProfile.name}</Text>
+            </View>
+            <View style={[styles.paymentSelect, { justifyContent: 'flex-start', marginBottom: 0 }]}>
+              <Text style={{ color: '#ffd700', fontWeight: '700', fontSize: 13, width: 60 }}>Plan: </Text>
+              <Text style={{ color: 'white', fontWeight: '600', fontSize: 13, textTransform: 'capitalize' }}>{userProfile.paymentPlan}</Text>
+            </View>
+          </View>
+          <TouchableOpacity style={styles.btnSecondary} onPress={handleLogout}>
+            <Text style={styles.btnSecondaryText}>Sign Out</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    );
+  }
+
 
   // 3. MAIN DASHBOARD VIEW
   const isPast7PM = new Date().getHours() >= 19;

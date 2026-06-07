@@ -98,8 +98,6 @@ function App() {
   const [globalSettings, setGlobalSettings] = useState(null);
 
   // Forms states
-  const [inviteEmail, setInviteEmail] = useState('');
-  const [inviteLink, setInviteLink] = useState('');
   const [scoreInput, setScoreInput] = useState({ matchId: '', teamAGoals: 0, teamBGoals: 0, winner: '' });
   const [selectedMatch, setSelectedMatch] = useState(null);
   const [statusMessage, setStatusMessage] = useState({ type: '', text: '' });
@@ -217,36 +215,65 @@ function App() {
   };
 
   // 3. Actions
-  // A. Generate Single-use Invite Code
-  const handleGenerateInvite = async (e) => {
-    e.preventDefault();
+  // A. Approve a pending user's join request
+  const handleApproveUser = async (pendingUser) => {
     if (isAuditor) return;
     setActionLoading(true);
     try {
-      const inviteId = Math.random().toString(36).substring(2, 10).toUpperCase();
-      const expiresAt = new Date();
-      expiresAt.setHours(expiresAt.getHours() + 48); // 48 hours expiry
+      // Determine late entry fee
+      const match1Doc = await getDoc(doc(db, 'matches', '1'));
+      const now = new Date();
+      const tournamentStart = match1Doc.exists() ? match1Doc.data().kickoffTimeIST.toDate() : new Date('2026-06-11T20:00:00+05:30');
+      const isLateEntry = now > tournamentStart;
+      const settingsDoc = await getDoc(doc(db, 'settings', 'global'));
+      const settings = settingsDoc.exists() ? settingsDoc.data() : { lateEntryFeeDefault: 1500 };
+      const entryFee = isLateEntry ? (settings.lateEntryFeeDefault || 1500) : 0;
 
-      const inviteRef = doc(db, 'invites', inviteId);
-      await setDoc(inviteRef, {
-        inviteId,
-        createdBy: user.uid,
-        expiresAt,
-        used: false
+      const userRef = doc(db, 'users', pendingUser.uid);
+      await updateDoc(userRef, {
+        role: 'participant',
+        entryFee,
+        isLateEntry,
+        paymentStatus: 'unpaid',
+        approvedAt: Timestamp.now()
       });
 
-      // Construct a generic invite link structure that the mobile app will process via query params
-      const generatedLink = `fifawarroom://register?inviteId=${inviteId}`;
-      setInviteLink(generatedLink);
-      setStatusMessage({ type: 'success', text: `Invite generated successfully: ${inviteId}` });
+      // Create leaderboard entry
+      await setDoc(doc(db, 'leaderboard', pendingUser.uid), {
+        userId: pendingUser.uid,
+        userName: pendingUser.name,
+        netProfit: 0,
+        totalWon: 0,
+        totalLost: 0,
+        correctPredictions: 0,
+        totalPredictions: 0,
+        accuracyPercent: 0
+      });
+
+      setStatusMessage({ type: 'success', text: `✅ ${pendingUser.name} approved and added as a participant.` });
     } catch (err) {
-      setStatusMessage({ type: 'error', text: `Failed to generate invite: ${err.message}` });
+      setStatusMessage({ type: 'error', text: `Failed to approve user: ${err.message}` });
     } finally {
       setActionLoading(false);
     }
   };
 
-  // B. Payout Settlement (Settle Match)
+  // B. Reject a pending user's join request (deletes their profile)
+  const handleRejectUser = async (pendingUser) => {
+    if (isAuditor) return;
+    if (!window.confirm(`Reject ${pendingUser.name}'s join request? Their profile will be deleted.`)) return;
+    setActionLoading(true);
+    try {
+      await deleteDoc(doc(db, 'users', pendingUser.uid));
+      setStatusMessage({ type: 'success', text: `❌ ${pendingUser.name}'s request rejected and profile removed.` });
+    } catch (err) {
+      setStatusMessage({ type: 'error', text: `Failed to reject user: ${err.message}` });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // C. Payout Settlement (Settle Match)
   const handleSettleMatch = async (e) => {
     e.preventDefault();
     if (isAuditor) return;
@@ -601,7 +628,15 @@ function App() {
           </li>
           <li className="menu-item">
             <a className={`menu-link ${activeTab === 'participants' ? 'active' : ''}`} onClick={() => { setActiveTab('participants'); setIsSidebarOpen(false); }}>
-              Participants ({totalParticipants})
+              Participants ({users.filter(u => u.role === 'participant').length})
+              {users.filter(u => u.role === 'pending').length > 0 && (
+                <span style={{
+                  marginLeft: '8px', backgroundColor: '#ffd700', color: '#0b0f19',
+                  borderRadius: '10px', padding: '1px 7px', fontSize: '0.7rem', fontWeight: '800'
+                }}>
+                  {users.filter(u => u.role === 'pending').length}
+                </span>
+              )}
             </a>
           </li>
           <li className="menu-item">
@@ -881,29 +916,60 @@ function App() {
           <div>
             <div className="page-header">
               <h2 className="page-title">Participant Management</h2>
-              <p className="page-subtitle">Generate single-use invite links, verify player roles, and track payments.</p>
+              <p className="page-subtitle">Review join requests, verify player roles, and track payments.</p>
             </div>
 
-            {!isAuditor && (
-              <div className="content-card">
-                <h3 className="card-title">Generate Single-Use Invite Token</h3>
-                <form onSubmit={handleGenerateInvite} style={{ display: 'flex', gap: '16px', alignItems: 'flex-end' }}>
-                  <div style={{ flex: 1 }}>
-                    <label className="form-label">Single-use tokens expire in 48 hours</label>
-                    <input className="form-control" type="text" readOnly placeholder="Token link will appear here..." value={inviteLink}/>
-                  </div>
-                  <button className="btn btn-primary" type="submit" disabled={actionLoading}>
-                    Generate Code
-                  </button>
-                </form>
-                {inviteLink && (
-                  <p style={{ marginTop: '12px', fontSize: '0.85rem', color: 'var(--brazil-gold)' }}>
-                    Share this URL structure with the player to open their mobile app registration: <strong>{inviteLink}</strong>
-                  </p>
-                )}
+            {/* PENDING JOIN REQUESTS */}
+            {!isAuditor && users.filter(u => u.role === 'pending').length > 0 && (
+              <div className="content-card" style={{ borderColor: '#ffd700', borderWidth: '2px' }}>
+                <h3 className="card-title" style={{ color: '#ffd700' }}>⏳ Pending Join Requests ({users.filter(u => u.role === 'pending').length})</h3>
+                <div className="table-responsive">
+                  <table className="scoreboard-table">
+                    <thead>
+                      <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Payment Plan</th>
+                        <th>Requested At</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {users.filter(u => u.role === 'pending').map((u) => (
+                        <tr key={u.id}>
+                          <td><strong>{u.name}</strong></td>
+                          <td>{u.email}</td>
+                          <td><span className="badge secondary">{u.paymentPlan || 'installments'}</span></td>
+                          <td>{u.joinedAt ? new Date(u.joinedAt.seconds * 1000).toLocaleString() : 'N/A'}</td>
+                          <td>
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                              <button
+                                className="btn btn-success"
+                                style={{ padding: '5px 14px', fontSize: '0.8rem' }}
+                                disabled={actionLoading}
+                                onClick={() => handleApproveUser(u)}
+                              >
+                                ✓ Accept
+                              </button>
+                              <button
+                                className="btn"
+                                style={{ padding: '5px 14px', fontSize: '0.8rem', backgroundColor: 'var(--loss-red)', border: 'none', color: '#fff', borderRadius: '4px', cursor: 'pointer' }}
+                                disabled={actionLoading}
+                                onClick={() => handleRejectUser(u)}
+                              >
+                                ✕ Reject
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             )}
 
+            {/* ACTIVE MEMBERS REGISTRY */}
             <div className="content-card">
               <h3 className="card-title">Active Members Registry</h3>
               <div className="table-responsive">
@@ -920,7 +986,7 @@ function App() {
                     </tr>
                   </thead>
                   <tbody>
-                    {users.map((u) => (
+                    {users.filter(u => u.role !== 'pending').map((u) => (
                       <tr key={u.id}>
                         <td><strong>{u.name}</strong></td>
                         <td>{u.email}</td>
