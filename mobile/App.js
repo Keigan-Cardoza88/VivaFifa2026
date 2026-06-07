@@ -45,6 +45,61 @@ const API_BASE = Platform.OS === 'web'
   ? (window.location.hostname === 'localhost' ? 'http://localhost:3000' : 'https://vivafifa2026.vercel.app')
   : 'https://vivafifa2026.vercel.app';
 
+const getTeamFlag = (teamName) => {
+  if (!teamName) return '';
+  const flags = {
+    'Mexico': '🇲🇽',
+    'South Africa': '🇿🇦',
+    'South Korea': '🇰🇷',
+    'Czechia': '🇨🇿',
+    'Canada': '🇨🇦',
+    'Bosnia and Herzegovina': '🇧🇦',
+    'Qatar': '🇶🇦',
+    'Switzerland': '🇨🇭',
+    'Brazil': '🇧🇷',
+    'Haiti': '🇭🇹',
+    'Morocco': '🇲🇦',
+    'Scotland': '🏴󠁧󠁢󠁳󠁣󠁴󠁿',
+    'USA': '🇺🇸',
+    'Australia': '🇦🇺',
+    'Paraguay': '🇵🇾',
+    'Turkiye': '🇹🇷',
+    'Germany': '🇩🇪',
+    'Ecuador': '🇪🇨',
+    'Curacao': '🇨🇼',
+    'Ivory Coast': '🇨🇮',
+    'Netherlands': '🇳🇱',
+    'Japan': '🇯🇵',
+    'Sweden': '🇸🇪',
+    'Tunisia': '🇹🇳',
+    'Belgium': '🇧🇪',
+    'Egypt': '🇪🇬',
+    'Iran': '🇮🇷',
+    'New Zealand': '🇳🇿',
+    'Spain': '🇪🇸',
+    'Saudi Arabia': '🇸🇦',
+    'Cape Verde': '🇨🇻',
+    'Uruguay': '🇺🇾',
+    'France': '🇫🇷',
+    'Iraq': '🇮🇶',
+    'Norway': '🇳🇴',
+    'Senegal': '🇸🇳',
+    'Argentina': '🇦🇷',
+    'Algeria': '🇩🇿',
+    'Austria': '🇦🇹',
+    'Jordan': '🇯🇴',
+    'Portugal': '🇵🇹',
+    'Colombia': '🇨🇴',
+    'DR Congo': '🇨🇩',
+    'Uzbekistan': '🇺🇿',
+    'England': '🏴󠁧󠁢󠁥󠁮󠁧󠁿',
+    'Croatia': '🇭🇷',
+    'Ghana': '🇬🇭',
+    'Panama': '🇵🇦'
+  };
+  return flags[teamName] || '';
+};
+
 export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
@@ -446,6 +501,102 @@ export default function App() {
   // 3. MAIN DASHBOARD VIEW
   const isPast7PM = new Date().getHours() >= 19;
 
+  const getProfitHistory = () => {
+    const settledBets = [];
+    matches.forEach(m => {
+      const bet = myBets[m.matchId];
+      if (bet && (bet.amountWon !== undefined || bet.amountLost !== undefined)) {
+        settledBets.push({
+          matchId: m.matchId,
+          kickoff: m.kickoffTimeIST?.seconds || 0,
+          profit: (bet.amountWon || 0) - (bet.amountLost || 0)
+        });
+      }
+    });
+
+    settledBets.sort((a, b) => a.kickoff - b.kickoff);
+
+    let cumulative = 0;
+    const data = [0];
+    settledBets.forEach(b => {
+      cumulative += b.profit;
+      data.push(cumulative);
+    });
+
+    if (data.length === 1) {
+      data.push(0);
+    }
+    return data;
+  };
+
+  const renderProfitChart = () => {
+    const data = getProfitHistory();
+    const width = 300;
+    const height = 100;
+    const padding = 10;
+    
+    const max = Math.max(...data, 100);
+    const min = Math.min(...data, -100);
+    const range = max - min || 1;
+    
+    const points = data.map((val, idx) => {
+      const x = padding + (idx / (data.length - 1)) * (width - padding * 2);
+      const y = height - padding - ((val - min) / range) * (height - padding * 2);
+      return { x, y };
+    });
+    
+    const linePath = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+    const areaPath = points.length > 0 
+      ? `${linePath} L ${points[points.length - 1].x} ${height - padding} L ${points[0].x} ${height - padding} Z`
+      : '';
+      
+    const isProfit = netProfit >= 0;
+    const strokeColor = isProfit ? '#00e676' : '#ff3d71';
+    const gradId = `profitGrad_${Math.random().toString(36).substr(2, 9)}`;
+
+    return (
+      <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} style={{ overflow: 'visible' }}>
+        <defs>
+          <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={strokeColor} stopOpacity="0.25"/>
+            <stop offset="100%" stopColor={strokeColor} stopOpacity="0"/>
+          </linearGradient>
+        </defs>
+        <line x1={padding} y1={height/2} x2={width-padding} y2={height/2} stroke="#1e294b" strokeWidth="1" strokeDasharray="3" />
+        {areaPath ? <path d={areaPath} fill={`url(#${gradId})`} /> : null}
+        {linePath ? <path d={linePath} fill="none" stroke={strokeColor} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" /> : null}
+        {points.map((p, idx) => (
+          <circle key={idx} cx={p.x} cy={p.y} r="3" fill="#131b2e" stroke={strokeColor} strokeWidth="1.5" />
+        ))}
+      </svg>
+    );
+  };
+
+  const renderAccuracyRing = () => {
+    const radius = 26;
+    const stroke = 5;
+    const circumference = 2 * Math.PI * radius;
+    const strokeDashoffset = circumference - (accuracy / 100) * circumference;
+    
+    return (
+      <svg width="70" height="70" viewBox="0 0 70 70">
+        <circle cx="35" cy="35" r={radius} stroke="#1e294b" strokeWidth={stroke} fill="transparent" />
+        <circle 
+          cx="35" 
+          cy="35" 
+          r={radius} 
+          stroke="#ffd700" 
+          strokeWidth={stroke} 
+          fill="transparent"
+          strokeDasharray={circumference}
+          strokeDashoffset={strokeDashoffset}
+          strokeLinecap="round"
+          transform="rotate(-90 35 35)"
+        />
+      </svg>
+    );
+  };
+
   return (
     <View style={styles.appContainer}>
       <StatusBar barStyle="light-content" />
@@ -488,6 +639,29 @@ export default function App() {
               </View>
             </View>
 
+            {/* ANALYTICS CHARTS SECTION */}
+            <View style={styles.analyticsSection}>
+              <View style={styles.chartCard}>
+                <Text style={styles.chartTitle}>Profit Trend</Text>
+                {renderProfitChart()}
+                <View style={styles.chartFooter}>
+                  <Text style={styles.chartFooterText}>Start</Text>
+                  <Text style={styles.chartFooterText}>Current: ₹{netProfit}</Text>
+                </View>
+              </View>
+              
+              <View style={styles.ringCard}>
+                <Text style={styles.chartTitle}>Accuracy</Text>
+                <View style={styles.ringContainer}>
+                  {renderAccuracyRing()}
+                  <View style={styles.ringLabelContainer}>
+                    <Text style={styles.ringPercentText}>{accuracy}%</Text>
+                    <Text style={styles.ringSubText}>Correct</Text>
+                  </View>
+                </View>
+              </View>
+            </View>
+
             <Text style={styles.sectionHeader}>Today's Fixtures</Text>
             {matches.filter(m => m.status === 'upcoming' || m.status === 'betting_closed' || m.status === 'live').map((match) => {
               const bet = myBets[match.matchId];
@@ -500,15 +674,15 @@ export default function App() {
                     </Text>
                   </View>
                   <View style={styles.matchTeamsContainer}>
-                    <Text style={styles.matchTeamText}>{match.teamA}</Text>
+                    <Text style={styles.matchTeamText}>{getTeamFlag(match.teamA)} {match.teamA}</Text>
                     <Text style={styles.matchVS}>VS</Text>
-                    <Text style={styles.matchTeamText}>{match.teamB}</Text>
+                    <Text style={styles.matchTeamText}>{match.teamB} {getTeamFlag(match.teamB)}</Text>
                   </View>
                   <View style={styles.matchFooterRow}>
                     {bet ? (
                       <View style={styles.betPlacedBadge}>
                         <Text style={styles.betPlacedText}>
-                          Bet Placed: {bet.teamPrediction === 'teamA' ? match.teamA : (bet.teamPrediction === 'teamB' ? match.teamB : 'Draw')} ({bet.goalsTeamA}-{bet.goalsTeamB})
+                          Bet Placed: {bet.teamPrediction === 'teamA' ? `${getTeamFlag(match.teamA)} ${match.teamA}` : (bet.teamPrediction === 'teamB' ? `${match.teamB} ${getTeamFlag(match.teamB)}` : 'Draw')} ({bet.goalsTeamA}-{bet.goalsTeamB})
                         </Text>
                       </View>
                     ) : (
@@ -563,7 +737,9 @@ export default function App() {
                 const isMe = player.userId === currentUser.uid;
                 return (
                   <View style={[styles.tableDataRow, isMe && styles.meRow]} key={player.userId}>
-                    <Text style={[styles.tableCell, { flex: 1, fontWeight: '800' }]}>#{idx + 1}</Text>
+                    <Text style={[styles.tableCell, { flex: 1, fontWeight: '800' }]}>
+                      {idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx + 1}`}
+                    </Text>
                     <Text style={[styles.tableCell, { flex: 3, fontWeight: '700' }]}>{player.userName}</Text>
                     {leaderboardType === 'money' ? (
                       <Text style={[styles.tableCell, { flex: 2, textAlign: 'right', fontWeight: '800', color: player.netProfit >= 0 ? '#00e676' : '#ff3d71' }]}>
@@ -596,18 +772,18 @@ export default function App() {
                     <Text style={styles.matchTime}>Completed</Text>
                   </View>
                   <View style={styles.matchTeamsContainer}>
-                    <Text style={styles.matchTeamText}>{match.teamA}</Text>
+                    <Text style={styles.matchTeamText}>{getTeamFlag(match.teamA)} {match.teamA}</Text>
                     <Text style={styles.scoreText}>
                       {isPostponed ? 'P-P' : `${match.resultTeamAGoals} - ${match.resultTeamBGoals}`}
                     </Text>
-                    <Text style={styles.matchTeamText}>{match.teamB}</Text>
+                    <Text style={styles.matchTeamText}>{match.teamB} {getTeamFlag(match.teamB)}</Text>
                   </View>
                   <View style={styles.historyBetRow}>
                     {bet ? (
                       <View style={{ flex: 1 }}>
                         <Text style={styles.historyBetTitle}>Your Prediction:</Text>
                         <Text style={styles.historyBetValue}>
-                          {bet.teamPrediction === 'teamA' ? match.teamA : (bet.teamPrediction === 'teamB' ? match.teamB : 'Draw')} ({bet.goalsTeamA}-{bet.goalsTeamB})
+                          {bet.teamPrediction === 'teamA' ? `${getTeamFlag(match.teamA)} ${match.teamA}` : (bet.teamPrediction === 'teamB' ? `${match.teamB} ${getTeamFlag(match.teamB)}` : 'Draw')} ({bet.goalsTeamA}-{bet.goalsTeamB})
                         </Text>
                         <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
                           <View style={[styles.badge, bet.teamBetResult === 'won' || bet.teamBetResult === 'draw_win' ? styles.badgeWin : styles.badgeLoss]}>
@@ -648,11 +824,11 @@ export default function App() {
                   <Text style={styles.bracketStageTitle}>{stage.toUpperCase()}</Text>
                   {stageMatches.map(m => (
                     <View style={styles.bracketMatchRow} key={m.id}>
-                      <Text style={styles.bracketTeam}>{m.teamA}</Text>
+                      <Text style={styles.bracketTeam}>{getTeamFlag(m.teamA)} {m.teamA}</Text>
                       <Text style={styles.bracketVs}>vs</Text>
-                      <Text style={styles.bracketTeam}>{m.teamB}</Text>
+                      <Text style={styles.bracketTeam}>{m.teamB} {getTeamFlag(m.teamB)}</Text>
                       {m.status === 'completed' && (
-                        <Text style={styles.bracketWinner}>({m.winner === 'teamA' ? m.teamA : m.teamB})</Text>
+                        <Text style={styles.bracketWinner}>({m.winner === 'teamA' ? `${getTeamFlag(m.teamA)} ${m.teamA}` : `${m.teamB} ${getTeamFlag(m.teamB)}`})</Text>
                       )}
                     </View>
                   ))}
@@ -1001,7 +1177,7 @@ const styles = StyleSheet.create({
   },
   statsCardGrid: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 12,
     marginBottom: 20
   },
   statWidget: {
@@ -1010,58 +1186,139 @@ const styles = StyleSheet.create({
     borderColor: '#1e294b',
     borderWidth: 1.5,
     borderLeftWidth: 4,
-    borderRadius: 8,
-    padding: 12,
+    borderRadius: 12,
+    padding: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
   },
   statWidgetLabel: {
     fontSize: 10,
     color: '#94a3b8',
     fontWeight: '800',
     textTransform: 'uppercase',
-    letterSpacing: 0.5
+    letterSpacing: 0.8
   },
   statWidgetValue: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '800',
-    marginTop: 4,
+    marginTop: 6,
     color: 'white'
   },
+  analyticsSection: {
+    flexDirection: 'row',
+    gap: 16,
+    marginBottom: 24,
+    width: '100%',
+  },
+  chartCard: {
+    flex: 2,
+    backgroundColor: '#131b2e',
+    borderColor: '#1e294b',
+    borderWidth: 1.5,
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  },
+  ringCard: {
+    flex: 1.2,
+    backgroundColor: '#131b2e',
+    borderColor: '#1e294b',
+    borderWidth: 1.5,
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  },
+  chartTitle: {
+    fontSize: 11,
+    color: '#94a3b8',
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+    marginBottom: 14,
+  },
+  chartFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 10,
+  },
+  chartFooterText: {
+    color: '#64748b',
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  ringContainer: {
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ringLabelContainer: {
+    position: 'absolute',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ringPercentText: {
+    fontSize: 15,
+    color: '#ffd700',
+    fontWeight: '900',
+  },
+  ringSubText: {
+    fontSize: 8,
+    color: '#64748b',
+    textTransform: 'uppercase',
+    fontWeight: '700',
+  },
   sectionHeader: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '800',
     color: '#f8fafc',
-    marginBottom: 12,
+    marginBottom: 14,
     textTransform: 'uppercase',
-    letterSpacing: 1
+    letterSpacing: 1.2
   },
   matchCard: {
     backgroundColor: '#131b2e',
     borderColor: '#1e294b',
     borderWidth: 1.5,
-    borderRadius: 10,
-    padding: 16,
-    marginBottom: 14,
+    borderRadius: 14,
+    padding: 18,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
   },
   matchHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 10
+    marginBottom: 12
   },
   matchStage: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '800',
-    color: '#ffd700'
+    color: '#ffd700',
+    letterSpacing: 0.5
   },
   matchTime: {
     fontSize: 11,
-    color: '#94a3b8'
+    color: '#94a3b8',
+    fontWeight: '600'
   },
   matchTeamsContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 10,
-    gap: 16
+    paddingVertical: 14,
+    gap: 12
   },
   matchTeamText: {
     color: 'white',
@@ -1071,9 +1328,16 @@ const styles = StyleSheet.create({
     textAlign: 'center'
   },
   matchVS: {
-    color: '#ff2d37',
-    fontWeight: '800',
-    fontSize: 12
+    color: '#ffd700',
+    backgroundColor: '#1e294b',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    fontWeight: '900',
+    fontSize: 10,
+    borderWidth: 1,
+    borderColor: '#334155',
+    overflow: 'hidden',
   },
   scoreText: {
     color: '#ffd700',
@@ -1085,18 +1349,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    borderTopWidth: 1,
+    borderTopWidth: 1.5,
     borderTopColor: '#1e294b',
-    paddingTop: 12,
+    paddingTop: 14,
     marginTop: 8
   },
   betPlacedBadge: {
     backgroundColor: '#009c3b1a',
     borderColor: '#009c3b',
     borderWidth: 1,
-    borderRadius: 4,
-    paddingVertical: 4,
-    paddingHorizontal: 8
+    borderRadius: 6,
+    paddingVertical: 5,
+    paddingHorizontal: 10
   },
   betPlacedText: {
     color: '#00e676',
@@ -1109,10 +1373,12 @@ const styles = StyleSheet.create({
     fontWeight: '700'
   },
   lockedBadge: {
-    backgroundColor: '#334155',
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderRadius: 4
+    backgroundColor: '#1e293b',
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#334155'
   },
   lockedText: {
     color: '#94a3b8',
@@ -1120,10 +1386,14 @@ const styles = StyleSheet.create({
     fontWeight: '800'
   },
   btnAction: {
-    backgroundColor: '#3b82f6',
+    backgroundColor: '#2563eb',
     paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 6
+    paddingHorizontal: 14,
+    borderRadius: 6,
+    shadowColor: '#2563eb',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 4,
   },
   btnActionText: {
     color: 'white',
@@ -1132,21 +1402,25 @@ const styles = StyleSheet.create({
   },
   toggleRow: {
     flexDirection: 'row',
-    gap: 8,
-    marginBottom: 16
+    gap: 10,
+    marginBottom: 18
   },
   toggleBtn: {
     flex: 1,
-    paddingVertical: 10,
+    paddingVertical: 12,
     backgroundColor: '#131b2e',
     borderColor: '#1e294b',
     borderWidth: 1.5,
-    borderRadius: 8,
-    alignItems: 'center'
+    borderRadius: 10,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
   },
   toggleActive: {
-    backgroundColor: '#3b82f6',
-    borderColor: '#93c5fd'
+    backgroundColor: '#2563eb',
+    borderColor: '#3b82f6'
   },
   toggleText: {
     color: 'white',
@@ -1157,13 +1431,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#131b2e',
     borderColor: '#1e294b',
     borderWidth: 1.5,
-    borderRadius: 10,
-    paddingVertical: 8
+    borderRadius: 14,
+    paddingVertical: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
   },
   tableHeaderRow: {
     flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingHorizontal: 18,
+    paddingVertical: 12,
     borderBottomWidth: 1.5,
     borderBottomColor: '#1e294b'
   },
@@ -1171,20 +1449,21 @@ const styles = StyleSheet.create({
     color: '#94a3b8',
     fontSize: 11,
     fontWeight: '800',
-    textTransform: 'uppercase'
+    textTransform: 'uppercase',
+    letterSpacing: 0.5
   },
   tableDataRow: {
     flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
     borderBottomWidth: 1,
     borderBottomColor: '#1e294b',
     alignItems: 'center'
   },
   meRow: {
-    backgroundColor: '#1e294b80',
-    borderWidth: 1,
-    borderColor: '#3b82f6',
+    backgroundColor: '#2563eb1f',
+    borderWidth: 1.5,
+    borderColor: '#2563eb',
   },
   tableCell: {
     color: '#f8fafc',
@@ -1194,28 +1473,35 @@ const styles = StyleSheet.create({
     backgroundColor: '#131b2e',
     borderColor: '#1e294b',
     borderWidth: 1.5,
-    borderRadius: 10,
-    padding: 16,
-    marginBottom: 14,
+    borderRadius: 14,
+    padding: 18,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
   },
   historyBetRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-end',
-    borderTopWidth: 1,
+    borderTopWidth: 1.5,
     borderTopColor: '#1e294b',
-    paddingTop: 12,
+    paddingTop: 14,
     marginTop: 8
   },
   historyBetTitle: {
     fontSize: 10,
-    color: '#94a3b8'
+    color: '#94a3b8',
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5
   },
   historyBetValue: {
     fontSize: 13,
     color: 'white',
     fontWeight: '700',
-    marginTop: 2
+    marginTop: 4
   },
   historyNoBet: {
     color: '#ff3d71',
@@ -1223,50 +1509,57 @@ const styles = StyleSheet.create({
     fontSize: 12
   },
   payoutText: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '900',
     marginTop: 2
   },
   badge: {
-    paddingVertical: 2,
-    paddingHorizontal: 6,
-    borderRadius: 4,
+    paddingVertical: 3,
+    paddingHorizontal: 8,
+    borderRadius: 6,
   },
   badgeWin: {
-    backgroundColor: '#00e67620',
+    backgroundColor: '#00e6761f',
     borderColor: '#00e676',
-    borderWidth: 0.5
+    borderWidth: 0.8
   },
   badgeLoss: {
-    backgroundColor: '#ff3d7120',
+    backgroundColor: '#ff3d711f',
     borderColor: '#ff3d71',
-    borderWidth: 0.5
+    borderWidth: 0.8
   },
   badgeText: {
     fontSize: 9,
     fontWeight: '800',
-    color: 'white'
+    color: 'white',
+    textTransform: 'uppercase'
   },
   bracketStageCard: {
     backgroundColor: '#131b2e',
     borderColor: '#1e294b',
     borderWidth: 1.5,
-    borderRadius: 10,
-    padding: 16,
-    marginBottom: 14
+    borderRadius: 14,
+    padding: 18,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
   },
   bracketStageTitle: {
     color: '#ffd700',
     fontWeight: '800',
     fontSize: 13,
-    marginBottom: 10,
-    borderBottomWidth: 1,
+    marginBottom: 12,
+    borderBottomWidth: 1.5,
     borderBottomColor: '#1e294b',
-    paddingBottom: 6
+    paddingBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8
   },
   bracketMatchRow: {
     flexDirection: 'row',
-    paddingVertical: 6,
+    paddingVertical: 8,
     alignItems: 'center',
     gap: 8
   },
@@ -1282,16 +1575,20 @@ const styles = StyleSheet.create({
   },
   bracketWinner: {
     color: '#00e676',
-    fontWeight: '700',
+    fontWeight: '800',
     fontSize: 12
   },
   profileCard: {
     backgroundColor: '#131b2e',
     borderColor: '#1e294b',
     borderWidth: 1.5,
-    borderRadius: 12,
+    borderRadius: 14,
     padding: 24,
-    alignItems: 'center'
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
   },
   profileName: {
     fontSize: 22,
@@ -1304,7 +1601,7 @@ const styles = StyleSheet.create({
     marginTop: 4
   },
   profileDivider: {
-    height: 1,
+    height: 1.5,
     backgroundColor: '#1e294b',
     width: '100%',
     marginVertical: 20
@@ -1313,11 +1610,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     width: '100%',
-    marginBottom: 12
+    marginBottom: 14
   },
   profileLabel: {
     color: '#94a3b8',
-    fontSize: 14
+    fontSize: 14,
+    fontWeight: '600'
   },
   profileValue: {
     color: 'white',
@@ -1325,21 +1623,23 @@ const styles = StyleSheet.create({
     fontSize: 14
   },
   footerTabBar: {
-    height: 60,
+    height: 65,
     borderTopWidth: 1.5,
     borderTopColor: '#1e294b',
     flexDirection: 'row',
-    backgroundColor: '#0d1324'
+    backgroundColor: '#0d1324',
+    paddingBottom: Platform.OS === 'ios' ? 15 : 0,
   },
   tabItem: {
     flex: 1,
     justifyContent: 'center',
-    alignItems: 'center'
+    alignItems: 'center',
+    paddingVertical: 8,
   },
   tabActive: {
     borderTopWidth: 3,
-    borderTopColor: '#3b82f6',
-    backgroundColor: '#172036'
+    borderTopColor: '#2563eb',
+    backgroundColor: '#141c30'
   },
   tabText: {
     color: 'white',
@@ -1350,40 +1650,50 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#000000aa',
+    backgroundColor: '#000000bb',
     padding: 20
   },
   modalContent: {
     backgroundColor: '#131b2e',
     borderColor: '#ffd700',
     borderWidth: 2,
-    borderRadius: 14,
+    borderRadius: 16,
     padding: 24,
     width: '100%',
     maxWidth: 360,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.5,
+    shadowRadius: 15,
   },
   confirmContent: {
     backgroundColor: '#131b2e',
     borderColor: '#ff2d37',
     borderWidth: 2,
-    borderRadius: 14,
+    borderRadius: 16,
     padding: 24,
     width: '100%',
     maxWidth: 340,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.5,
+    shadowRadius: 15,
   },
   modalHeader: {
     fontSize: 18,
     fontWeight: '800',
     color: '#f8fafc',
     textAlign: 'center',
-    textTransform: 'uppercase'
+    textTransform: 'uppercase',
+    letterSpacing: 0.8
   },
   confirmHeader: {
     fontSize: 18,
     fontWeight: '800',
     color: '#ff3d71',
     textAlign: 'center',
-    textTransform: 'uppercase'
+    textTransform: 'uppercase',
+    letterSpacing: 0.8
   },
   modalSubHeader: {
     color: '#94a3b8',
@@ -1397,14 +1707,16 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textAlign: 'center',
     marginVertical: 12,
-    lineHeight: 16
+    lineHeight: 18
   },
   confirmDetails: {
     backgroundColor: '#0b0f19',
     padding: 16,
-    borderRadius: 8,
+    borderRadius: 10,
     marginVertical: 14,
-    gap: 8
+    gap: 8,
+    borderWidth: 1,
+    borderColor: '#1e294b'
   },
   confirmText: {
     color: 'white',
@@ -1416,7 +1728,8 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginBottom: 8,
     marginTop: 14,
-    textTransform: 'uppercase'
+    textTransform: 'uppercase',
+    letterSpacing: 0.5
   },
   teamSelectRow: {
     flexDirection: 'row',
@@ -1424,20 +1737,20 @@ const styles = StyleSheet.create({
   },
   teamSelectBtn: {
     flex: 1,
-    paddingVertical: 8,
+    paddingVertical: 10,
     backgroundColor: '#1e294b',
-    borderRadius: 6,
+    borderRadius: 8,
     alignItems: 'center',
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: '#334155'
   },
   teamSelectActive: {
-    backgroundColor: '#3b82f6',
-    borderColor: '#93c5fd'
+    backgroundColor: '#2563eb',
+    borderColor: '#60a5fa'
   },
   teamSelectText: {
     color: 'white',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '800',
     textAlign: 'center'
   },
@@ -1446,19 +1759,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     gap: 12,
-    marginVertical: 10
+    marginVertical: 12
   },
   scoreInput: {
     backgroundColor: '#0b0f19',
-    borderWidth: 1.5,
+    borderWidth: 2,
     borderColor: '#1e294b',
     color: 'white',
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: '800',
-    width: 60,
-    height: 50,
+    width: 65,
+    height: 55,
     textAlign: 'center',
-    borderRadius: 8
+    borderRadius: 10
   },
   scoreDivider: {
     color: 'white',

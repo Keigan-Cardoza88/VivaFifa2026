@@ -66,16 +66,22 @@ if (!html.includes('manifest.json')) {
 }
 const customStyles = `
     <style>
+      @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
       html, body {
         width: 100% !important;
         height: 100% !important;
         margin: 0 !important;
         padding: 0 !important;
         background-color: #0b0f19 !important;
+        font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif !important;
       }
       #root {
         width: 100% !important;
         height: 100% !important;
+        font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif !important;
+      }
+      div, span, p, input, button, textarea, select {
+        font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif !important;
       }
     </style>
 `;
