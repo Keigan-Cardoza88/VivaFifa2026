@@ -16,7 +16,8 @@ import {
   signOut, 
   onAuthStateChanged,
   signInWithCredential,
-  GoogleAuthProvider
+  GoogleAuthProvider,
+  signInWithPopup
 } from 'firebase/auth';
 import { 
   collection, 
@@ -77,12 +78,31 @@ export default function App() {
   // Leaderboard toggle
   const [leaderboardType, setLeaderboardType] = useState('money');
 
-  // Google Auth Request Config
+  // Google Auth Request Config for Mobile Native fallback
   const [request, response, promptAsync] = Google.useAuthRequest({
     webClientId: '56297030289-cdc4aathp3lsfskrsj1q3r9u5irqecbv.apps.googleusercontent.com',
   });
 
-  // Handle Google authentication response
+  // Handle Web or Mobile Google sign-in
+  const handleGoogleSignIn = async () => {
+    try {
+      setAuthError('');
+      if (Platform.OS === 'web') {
+        setLoading(true);
+        const provider = new GoogleAuthProvider();
+        provider.setCustomParameters({ prompt: 'select_account' });
+        await signInWithPopup(auth, provider);
+      } else {
+        promptAsync();
+      }
+    } catch (err) {
+      console.error("Google Sign-In failed:", err);
+      setAuthError(`Sign-in failed: ${err.message}`);
+      setLoading(false);
+    }
+  };
+
+  // Handle Google mobile token response
   useEffect(() => {
     if (response?.type === 'success') {
       const { id_token } = response.authentication;
@@ -348,8 +368,8 @@ export default function App() {
           </Text>
           <TouchableOpacity 
             style={styles.btnPrimary} 
-            disabled={!request}
-            onPress={() => promptAsync()}
+            disabled={Platform.OS !== 'web' && !request}
+            onPress={handleGoogleSignIn}
           >
             <Text style={styles.btnText}>Sign in with Google</Text>
           </TouchableOpacity>
