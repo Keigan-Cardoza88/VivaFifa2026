@@ -1155,13 +1155,76 @@ export default function App() {
             <ScrollView horizontal={true} style={styles.bracketHorizontalScroll} contentContainerStyle={styles.bracketHorizontalScrollContent}>
               <View style={[styles.bracketScaleContainer, { transform: [{ scale: bracketZoom }] }]}>
                 {['r32', 'r16', 'qf', 'sf', 'final'].map((stage) => {
-                  let stageMatches = matches.filter(m => m.stage === stage);
                   if (stage === 'final') {
-                    const thirdPlaceMatches = matches.filter(m => m.stage === 'third_place');
-                    stageMatches = [...stageMatches, ...thirdPlaceMatches];
+                    const finalMatch = matches.find(m => m.stage === 'final') || {
+                      id: 'placeholder_final',
+                      teamA: 'TBD',
+                      teamB: 'TBD',
+                      status: 'upcoming',
+                      stage: 'final'
+                    };
+                    const thirdPlaceMatch = matches.find(m => m.stage === 'third_place') || {
+                      id: 'placeholder_third_place',
+                      teamA: 'TBD',
+                      teamB: 'TBD',
+                      status: 'upcoming',
+                      stage: 'third_place'
+                    };
+
+                    const renderMatchCard = (m) => {
+                      const isPlaceholder = String(m.id).startsWith('placeholder');
+                      const teamAFlag = isPlaceholder ? null : getTeamFlag(m.teamA);
+                      const teamBFlag = isPlaceholder ? null : getTeamFlag(m.teamB);
+                      return (
+                        <View style={[styles.bracketMatchCard, styles.glassCard]} key={m.id}>
+                          <View style={[styles.bracketTeamRow, m.status === 'completed' && m.winner === 'teamB' && styles.bracketTeamLost]}>
+                            <Text style={styles.bracketTeamText} numberOfLines={1}>
+                              {teamAFlag} {m.teamA}
+                            </Text>
+                            {m.status === 'completed' && <Text style={styles.bracketScore}>{m.resultTeamAGoals}</Text>}
+                          </View>
+                          
+                          <View style={styles.bracketVsContainer}>
+                            <View style={styles.bracketVsLine} />
+                            <Text style={styles.bracketVsTextCard}>VS</Text>
+                            <View style={styles.bracketVsLine} />
+                          </View>
+                          
+                          <View style={[styles.bracketTeamRow, m.status === 'completed' && m.winner === 'teamA' && styles.bracketTeamLost]}>
+                            <Text style={styles.bracketTeamText} numberOfLines={1}>
+                              {teamBFlag} {m.teamB}
+                            </Text>
+                            {m.status === 'completed' && <Text style={styles.bracketScore}>{m.resultTeamBGoals}</Text>}
+                          </View>
+                          
+                          {m.stage === 'third_place' && (
+                            <View style={styles.thirdPlaceBadge}>
+                              <Text style={styles.thirdPlaceBadgeText}>3rd Place Playoff</Text>
+                            </View>
+                          )}
+                        </View>
+                      );
+                    };
+
+                    return (
+                      <View style={styles.bracketColumn} key={stage}>
+                        <Text style={styles.bracketColumnTitle}>Finals</Text>
+                        <View style={{ flex: 1, position: 'relative', paddingVertical: 10 }}>
+                          {/* Centered Final Match */}
+                          <View style={{ flex: 1, justifyContent: 'center' }}>
+                            {renderMatchCard(finalMatch)}
+                          </View>
+                          {/* Bottom-aligned Third Place Playoff */}
+                          <View style={{ position: 'absolute', bottom: 40, left: 0, right: 0 }}>
+                            {renderMatchCard(thirdPlaceMatch)}
+                          </View>
+                        </View>
+                      </View>
+                    );
                   }
-                  
-                  const expectedMatchCount = { 'r32': 16, 'r16': 8, 'qf': 4, 'sf': 2, 'final': 2 }[stage];
+
+                  const stageMatches = matches.filter(m => m.stage === stage);
+                  const expectedMatchCount = { 'r32': 16, 'r16': 8, 'qf': 4, 'sf': 2 }[stage];
                   const placeholdersNeeded = expectedMatchCount - stageMatches.length;
                   const displayMatches = [...stageMatches];
                   for (let idx = 0; idx < placeholdersNeeded; idx++) {
@@ -1170,14 +1233,14 @@ export default function App() {
                       teamA: 'TBD',
                       teamB: 'TBD',
                       status: 'upcoming',
-                      stage: stage === 'final' && idx === 1 ? 'third_place' : stage
+                      stage: stage
                     });
                   }
 
                   return (
                     <View style={styles.bracketColumn} key={stage}>
                       <Text style={styles.bracketColumnTitle}>
-                        {stage === 'r32' ? 'Round of 32' : stage === 'r16' ? 'Round of 16' : stage === 'qf' ? 'Quarter-Finals' : stage === 'sf' ? 'Semi-Finals' : 'Finals'}
+                        {stage === 'r32' ? 'Round of 32' : stage === 'r16' ? 'Round of 16' : stage === 'qf' ? 'Quarter-Finals' : 'Semi-Finals'}
                       </Text>
                       <View style={styles.bracketColumnMatches}>
                         {displayMatches.map(m => {
@@ -1205,12 +1268,6 @@ export default function App() {
                                 </Text>
                                 {m.status === 'completed' && <Text style={styles.bracketScore}>{m.resultTeamBGoals}</Text>}
                               </View>
-                              
-                              {m.stage === 'third_place' && (
-                                <View style={styles.thirdPlaceBadge}>
-                                  <Text style={styles.thirdPlaceBadgeText}>3rd Place Playoff</Text>
-                                </View>
-                              )}
                             </View>
                           );
                         })}
@@ -2669,7 +2726,6 @@ const styles = StyleSheet.create({
     width: 230,
     marginRight: 24,
     height: '100%',
-    flexDirection: 'column',
   },
   bracketColumnTitle: {
     fontSize: 12,
@@ -2687,7 +2743,6 @@ const styles = StyleSheet.create({
   },
   bracketColumnMatches: {
     flex: 1,
-    flexDirection: 'column',
     justifyContent: 'space-around',
     paddingVertical: 10,
   },
