@@ -337,7 +337,7 @@ function App() {
   if (loading) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        <h2>Loading FIFA War Room Codex...</h2>
+        <h2>Loading VivaFifa2026 Codex...</h2>
       </div>
     );
   }
@@ -347,7 +347,7 @@ function App() {
     return (
       <div className="login-page">
         <div className="login-card">
-          <h1 className="login-title">FIFA War Room</h1>
+          <h1 className="login-title">VivaFifa2026</h1>
           <p className="login-subtitle">Closed betting arena — World Cup 2026</p>
           <p className="login-description">
             Access to this referee panel is strictly restricted. Log in with your authorized Google Account.
@@ -392,7 +392,7 @@ function App() {
       {/* Sidebar Navigation */}
       <aside className="sidebar">
         <div className="sidebar-brand">
-          <span className="sidebar-title">FIFA War Room</span>
+          <span className="sidebar-title">VivaFifa2026</span>
           <span className="sidebar-subtitle">Referee Control</span>
         </div>
 

@@ -350,7 +350,7 @@ export default function App() {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#ffd700" />
-        <Text style={styles.loadingText}>Connecting to War Room...</Text>
+        <Text style={styles.loadingText}>Connecting to VivaFifa2026...</Text>
       </View>
     );
   }
@@ -360,7 +360,7 @@ export default function App() {
     return (
       <View style={styles.loginContainer}>
         <StatusBar barStyle="light-content" />
-        <Text style={styles.loginLogo}>FIFA WAR ROOM</Text>
+        <Text style={styles.loginLogo}>VIVAFIFA2026</Text>
         <Text style={styles.loginSubtitle}>World Cup 2026 Private Arena</Text>
 
         <View style={styles.card}>
@@ -452,7 +452,7 @@ export default function App() {
     <View style={styles.appContainer}>
       <StatusBar barStyle="light-content" />
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>FIFA WAR ROOM</Text>
+        <Text style={styles.headerTitle}>VIVAFIFA2026</Text>
         <Text style={styles.headerUser}>{currentUser.email}</Text>
       </View>
 

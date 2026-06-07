@@ -19,10 +19,10 @@ const db = getFirestore(app);
 const googleProvider = new GoogleAuthProvider();
 
 // Detect local development and connect to emulators
-if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-  console.log('[Firebase Client] Connecting to local Emulators...');
-  connectAuthEmulator(auth, 'http://localhost:9099');
-  connectFirestoreEmulator(db, 'localhost', 8080);
-}
+// if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+//   console.log('[Firebase Client] Connecting to local Emulators...');
+//   connectAuthEmulator(auth, 'http://localhost:9099');
+//   connectFirestoreEmulator(db, 'localhost', 8080);
+// }
 
 export { auth, db, googleProvider };

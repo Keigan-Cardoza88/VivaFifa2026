@@ -23,17 +23,17 @@ const auth = initializeAuth(app, {
 const db = getFirestore(app);
 
 // Local Emulator connection (use correct computer IP for Android emulator/physical devices)
-const isDev = __DEV__;
-if (isDev) {
-  // If running in Android emulator, localhost is 10.0.2.2. If iOS, it is localhost.
-  const host = Platform.OS === 'android' ? '10.0.2.2' : 'localhost';
-  console.log(`[Mobile Firebase] Connecting to emulators at ${host}...`);
-  try {
-    connectFirestoreEmulator(db, host, 8080);
-    // Auth emulator is handled inside sign in methods or connectAuthEmulator
-  } catch (e) {
-    console.warn('[Mobile Firebase] Emulator connection warning:', e.message);
-  }
-}
+// const isDev = __DEV__;
+// if (isDev) {
+//   // If running in Android emulator, localhost is 10.0.2.2. If iOS, it is localhost.
+//   const host = Platform.OS === 'android' ? '10.0.2.2' : 'localhost';
+//   console.log(`[Mobile Firebase] Connecting to emulators at ${host}...`);
+//   try {
+//     connectFirestoreEmulator(db, host, 8080);
+//     // Auth emulator is handled inside sign in methods or connectAuthEmulator
+//   } catch (e) {
+//     console.warn('[Mobile Firebase] Emulator connection warning:', e.message);
+//   }
+// }
 
 export { auth, db };
