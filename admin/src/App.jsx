@@ -28,6 +28,61 @@ const ADMIN_EMAILS = [
 
 const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:3000' : 'https://vivafifa2026.vercel.app';
 
+const getTeamFlag = (teamName) => {
+  if (!teamName) return '';
+  const flags = {
+    'Mexico': '🇲🇽',
+    'South Africa': '🇿🇦',
+    'South Korea': '🇰🇷',
+    'Czechia': '🇨🇿',
+    'Canada': '🇨🇦',
+    'Bosnia and Herzegovina': '🇧🇦',
+    'Qatar': '🇶🇦',
+    'Switzerland': '🇨🇭',
+    'Brazil': '🇧🇷',
+    'Haiti': '🇭🇹',
+    'Morocco': '🇲🇦',
+    'Scotland': '🏴󠁧󠁢󠁳󠁣󠁴󠁿',
+    'USA': '🇺🇸',
+    'Australia': '🇦🇺',
+    'Paraguay': '🇵🇾',
+    'Turkiye': '🇹🇷',
+    'Germany': '🇩🇪',
+    'Ecuador': '🇪🇨',
+    'Curacao': '🇨🇼',
+    'Ivory Coast': '🇨🇮',
+    'Netherlands': '🇳🇱',
+    'Japan': '🇯🇵',
+    'Sweden': '🇸🇪',
+    'Tunisia': '🇹🇳',
+    'Belgium': '🇧🇪',
+    'Egypt': '🇪🇬',
+    'Iran': '🇮🇷',
+    'New Zealand': '🇳🇿',
+    'Spain': '🇪🇸',
+    'Saudi Arabia': '🇸🇦',
+    'Cape Verde': '🇨🇻',
+    'Uruguay': '🇺🇾',
+    'France': '🇫🇷',
+    'Iraq': '🇮🇶',
+    'Norway': '🇳🇴',
+    'Senegal': '🇸🇳',
+    'Argentina': '🇦🇷',
+    'Algeria': '🇩🇿',
+    'Austria': '🇦🇹',
+    'Jordan': '🇯🇴',
+    'Portugal': '🇵🇹',
+    'Colombia': '🇨🇴',
+    'DR Congo': '🇨🇩',
+    'Uzbekistan': '🇺🇿',
+    'England': '🏴󠁧󠁢󠁥󠁮󠁧󠁿',
+    'Croatia': '🇭🇷',
+    'Ghana': '🇬🇭',
+    'Panama': '🇵🇦'
+  };
+  return flags[teamName] || '';
+};
+
 function App() {
   const [user, setUser] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -671,12 +726,12 @@ function App() {
                 <form onSubmit={handleSettleMatch}>
                   <div style={{ display: 'flex', gap: '20px', marginBottom: '20px' }}>
                     <div style={{ flex: 1 }}>
-                      <label className="form-label">{selectedMatch.teamA} Goals</label>
+                      <label className="form-label">{getTeamFlag(selectedMatch.teamA)} {selectedMatch.teamA} Goals</label>
                       <input className="form-control" type="number" min="0" required 
                              value={scoreInput.teamAGoals} onChange={e => setScoreInput({ ...scoreInput, teamAGoals: e.target.value })}/>
                     </div>
                     <div style={{ flex: 1 }}>
-                      <label className="form-label">{selectedMatch.teamB} Goals</label>
+                      <label className="form-label">{selectedMatch.teamB} {getTeamFlag(selectedMatch.teamB)} Goals</label>
                       <input className="form-control" type="number" min="0" required 
                              value={scoreInput.teamBGoals} onChange={e => setScoreInput({ ...scoreInput, teamBGoals: e.target.value })}/>
                     </div>
@@ -687,8 +742,8 @@ function App() {
                     <select className="form-control" required value={scoreInput.winner}
                             onChange={e => setScoreInput({ ...scoreInput, winner: e.target.value })}>
                       <option value="">-- Choose Winner --</option>
-                      <option value="teamA">{selectedMatch.teamA}</option>
-                      <option value="teamB">{selectedMatch.teamB}</option>
+                      <option value="teamA">{getTeamFlag(selectedMatch.teamA)} {selectedMatch.teamA}</option>
+                      <option value="teamB">{selectedMatch.teamB} {getTeamFlag(selectedMatch.teamB)}</option>
                       {selectedMatch.stage === 'group' && <option value="draw">Draw</option>}
                     </select>
                   </div>
@@ -760,11 +815,11 @@ function App() {
                   </div>
 
                   <div className="match-team-row">
-                    <span>{match.teamA}</span>
+                    <span>{getTeamFlag(match.teamA)} {match.teamA}</span>
                     <span className="match-score-bubble">{match.resultTeamAGoals !== undefined ? match.resultTeamAGoals : '-'}</span>
                   </div>
                   <div className="match-team-row">
-                    <span>{match.teamB}</span>
+                    <span>{match.teamB} {getTeamFlag(match.teamB)}</span>
                     <span className="match-score-bubble">{match.resultTeamBGoals !== undefined ? match.resultTeamBGoals : '-'}</span>
                   </div>
 
@@ -791,7 +846,7 @@ function App() {
                           </>
                         ) : (
                           <div style={{ fontSize: '0.75rem', color: 'var(--text-sub)' }}>
-                            Result: <strong>{match.winner === 'draw' ? 'Draw' : (match.winner === 'teamA' ? match.teamA : match.teamB)}</strong>
+                            Result: <strong>{match.winner === 'draw' ? 'Draw' : (match.winner === 'teamA' ? `${getTeamFlag(match.teamA)} ${match.teamA}` : `${match.teamB} ${getTeamFlag(match.teamB)}`)}</strong>
                           </div>
                         )}
                       </div>

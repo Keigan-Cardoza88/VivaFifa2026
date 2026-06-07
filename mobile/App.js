@@ -824,12 +824,14 @@ export default function App() {
                   <Text style={styles.bracketStageTitle}>{stage.toUpperCase()}</Text>
                   {stageMatches.map(m => (
                     <View style={styles.bracketMatchRow} key={m.id}>
-                      <Text style={styles.bracketTeam}>{getTeamFlag(m.teamA)} {m.teamA}</Text>
+                      <Text style={styles.bracketTeamLeft}>{getTeamFlag(m.teamA)} {m.teamA}</Text>
                       <Text style={styles.bracketVs}>vs</Text>
-                      <Text style={styles.bracketTeam}>{m.teamB} {getTeamFlag(m.teamB)}</Text>
-                      {m.status === 'completed' && (
-                        <Text style={styles.bracketWinner}>({m.winner === 'teamA' ? `${getTeamFlag(m.teamA)} ${m.teamA}` : `${m.teamB} ${getTeamFlag(m.teamB)}`})</Text>
-                      )}
+                      <View style={styles.bracketRightContainer}>
+                        <Text style={styles.bracketTeamRight}>{m.teamB} {getTeamFlag(m.teamB)}</Text>
+                        {m.status === 'completed' && (
+                          <Text style={styles.bracketWinner}>({m.winner === 'teamA' ? `${getTeamFlag(m.teamA)} ${m.teamA}` : `${m.teamB} ${getTeamFlag(m.teamB)}`})</Text>
+                        )}
+                      </View>
                     </View>
                   ))}
                 </View>
@@ -881,7 +883,12 @@ export default function App() {
         </TouchableOpacity>
         <TouchableOpacity style={[styles.tabItem, activeTab === 'history' && styles.tabActive]} onPress={() => setActiveTab('history')}>
           <Text style={styles.tabText}>History</Text>
-                      <Text style={styles.tabText}>Profile</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={[styles.tabItem, activeTab === 'bracket' && styles.tabActive]} onPress={() => setActiveTab('bracket')}>
+          <Text style={styles.tabText}>Bracket</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={[styles.tabItem, activeTab === 'profile' && styles.tabActive]} onPress={() => setActiveTab('profile')}>
+          <Text style={styles.tabText}>Profile</Text>
         </TouchableOpacity>
       </View>
 
@@ -957,7 +964,7 @@ export default function App() {
               
               <View style={styles.confirmDetails}>
                 <Text style={styles.confirmText}>Outcome: <Text style={{ fontWeight: '800', color: '#ffd700' }}>
-                  {teamPrediction === 'teamA' ? selectedMatch.teamA : (teamPrediction === 'teamB' ? selectedMatch.teamB : 'Draw')}
+                  {teamPrediction === 'teamA' ? `${getTeamFlag(selectedMatch.teamA)} ${selectedMatch.teamA}` : (teamPrediction === 'teamB' ? `${selectedMatch.teamB} ${getTeamFlag(selectedMatch.teamB)}` : 'Draw')}
                 </Text></Text>
                 <Text style={styles.confirmText}>Exact Score: <Text style={{ fontWeight: '800', color: '#ffd700' }}>{goalsA} - {goalsB}</Text></Text>
               </View>
@@ -1558,15 +1565,31 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8
   },
-  bracketTeam: {
+  bracketTeamLeft: {
     color: 'white',
     fontWeight: '700',
     fontSize: 13,
-    flex: 1
+    flex: 1,
+    textAlign: 'left'
+  },
+  bracketTeamRight: {
+    color: 'white',
+    fontWeight: '700',
+    fontSize: 13,
+    textAlign: 'right'
+  },
+  bracketRightContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    gap: 8
   },
   bracketVs: {
     color: '#94a3b8',
-    fontSize: 11
+    fontSize: 11,
+    width: 24,
+    textAlign: 'center'
   },
   bracketWinner: {
     color: '#00e676',

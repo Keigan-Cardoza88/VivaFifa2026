@@ -48,7 +48,7 @@ const manifest = {
 };
 fs.writeFileSync(path.join(publicWeb, 'manifest.json'), JSON.stringify(manifest, null, 2));
 
-console.log('=== 7. Copying Launcher Icons ===');
+console.log('=== 7. Copying Launcher Icons & Favicon ===');
 fs.copyFileSync(
   path.join(__dirname, '../mobile/assets/splash-icon.png'),
   path.join(publicWeb, 'icon-192.png')
@@ -57,13 +57,22 @@ fs.copyFileSync(
   path.join(__dirname, '../mobile/assets/icon.png'),
   path.join(publicWeb, 'icon-512.png')
 );
+fs.copyFileSync(
+  path.join(__dirname, '../VivaFifaLogo.jpeg'),
+  path.join(publicWeb, 'VivaFifaLogo.jpeg')
+);
 
-console.log('=== 8. Injecting manifest link & fixing full-width CSS in index.html ===');
+console.log('=== 8. Injecting manifest, favicon, title & fixing full-width CSS in index.html ===');
 const indexPath = path.join(publicWeb, 'index.html');
 let html = fs.readFileSync(indexPath, 'utf8');
 if (!html.includes('manifest.json')) {
   html = html.replace('</head>', '  <link rel="manifest" href="/manifest.json" />\n</head>');
 }
+// Replace standard favicon with VivaFifaLogo
+html = html.replace('href="/favicon.ico"', 'type="image/jpeg" href="/VivaFifaLogo.jpeg"');
+// Replace default title
+html = html.replace('<title>mobile</title>', '<title>VivaFifa2026</title>');
+
 const customStyles = `
     <style>
       @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
