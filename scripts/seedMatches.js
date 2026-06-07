@@ -15,8 +15,15 @@ if (emulatorHost) {
       credential: admin.credential.cert(serviceAccount)
     });
   } catch (err) {
-    console.error("Error: Please put 'serviceAccountKey.json' in 'scripts/' or set FIRESTORE_EMULATOR_HOST.");
-    process.exit(1);
+    console.log("serviceAccountKey.json not found. Attempting Application Default Credentials...");
+    try {
+      admin.initializeApp({
+        projectId: 'vivafifa2026'
+      });
+    } catch (e) {
+      console.error("Error: Please put 'serviceAccountKey.json' in 'scripts/' or run 'firebase login' to authenticate.", e);
+      process.exit(1);
+    }
   }
 }
 
@@ -63,18 +70,18 @@ function generateMatches() {
   // 1. Group Stage (72 matches) - e.g., June 11 to June 27, 2026. 4 matches/day
   // Group names/teams as place-holders or actual teams
   const groupTeams = [
-    ['USA', 'Mexico', 'Canada', 'Panama'],
-    ['Brazil', 'Argentina', 'Uruguay', 'Colombia'],
-    ['France', 'England', 'Spain', 'Germany'],
-    ['Portugal', 'Italy', 'Netherlands', 'Belgium'],
-    ['Croatia', 'Denmark', 'Switzerland', 'Austria'],
-    ['Japan', 'South Korea', 'Iran', 'Saudi Arabia'],
-    ['Morocco', 'Senegal', 'Nigeria', 'Egypt'],
-    ['Australia', 'Ecuador', 'Peru', 'Chile'],
-    ['Ukraine', 'Poland', 'Sweden', 'Norway'],
-    ['Ghana', 'Cameroon', 'Algeria', 'Tunisia'],
-    ['Costa Rica', 'Jamaica', 'Honduras', 'Canada'],
-    ['Scotland', 'Wales', 'Turkey', 'Czech Republic']
+    ['Mexico', 'South Africa', 'South Korea', 'Czechia'],         // Group A
+    ['Canada', 'Bosnia and Herzegovina', 'Qatar', 'Switzerland'],  // Group B
+    ['Brazil', 'Haiti', 'Morocco', 'Scotland'],                     // Group C
+    ['USA', 'Australia', 'Paraguay', 'Turkiye'],                   // Group D
+    ['Germany', 'Ecuador', 'Curacao', 'Ivory Coast'],               // Group E
+    ['Netherlands', 'Japan', 'Sweden', 'Tunisia'],                  // Group F
+    ['Belgium', 'Egypt', 'Iran', 'New Zealand'],                    // Group G
+    ['Spain', 'Saudi Arabia', 'Cape Verde', 'Uruguay'],            // Group H
+    ['France', 'Iraq', 'Norway', 'Senegal'],                        // Group I
+    ['Argentina', 'Algeria', 'Austria', 'Jordan'],                  // Group J
+    ['Portugal', 'Colombia', 'DR Congo', 'Uzbekistan'],             // Group K
+    ['England', 'Croatia', 'Ghana', 'Panama']                       // Group L
   ];
 
   let currentDate = new Date('2026-06-11');

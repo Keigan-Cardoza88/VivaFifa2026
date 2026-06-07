@@ -15,7 +15,8 @@ import {
   query, 
   where, 
   orderBy, 
-  onSnapshot 
+  onSnapshot,
+  Timestamp 
 } from 'firebase/firestore';
 import { auth, db, googleProvider } from './firebase';
 
@@ -48,6 +49,7 @@ function App() {
   const [selectedMatch, setSelectedMatch] = useState(null);
   const [statusMessage, setStatusMessage] = useState({ type: '', text: '' });
   const [actionLoading, setActionLoading] = useState(false);
+  const [customMatch, setCustomMatch] = useState({ matchId: '', teamA: '', teamB: '', stage: 'group', kickoffTime: '' });
 
   // 1. Monitor Auth State
   useEffect(() => {
@@ -327,7 +329,7 @@ function App() {
     try {
       const settingsRef = doc(db, 'settings', 'global');
       // Decrement referee kitty, add to prizes or logs
-      const logRef = db.collection('kitty').doc();
+      const logRef = doc(collection(db, 'kitty'));
       await setDoc(logRef, {
         kittyId: logRef.id,
         type: 'manual_allocation',
@@ -339,6 +341,253 @@ function App() {
       setStatusMessage({ type: 'success', text: `Allocated ₹${numAmt} from Referee Kitty to Finals Pool.` });
     } catch (err) {
        setStatusMessage({ type: 'error', text: err.message });
+    }
+  };
+
+  // J. Trigger Cron Scheduler Manually
+  const handleTriggerCron = async () => {
+    if (isAuditor) return;
+    setActionLoading(true);
+    setStatusMessage({ type: 'info', text: 'Triggering lock scheduler...' });
+    try {
+      const response = await fetch(`${API_BASE}/api/cron?secret=development`);
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to trigger scheduler');
+      setStatusMessage({ type: 'success', text: `Scheduler run complete: ${data.message || 'Updated matching bet locks/notifications'}` });
+    } catch (err) {
+      setStatusMessage({ type: 'error', text: `Failed to trigger scheduler: ${err.message}` });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // K. Create Custom Match Fixture
+  const handleCreateCustomMatch = async (e) => {
+    e.preventDefault();
+    if (isAuditor) return;
+    if (!customMatch.matchId || !customMatch.teamA || !customMatch.teamB || !customMatch.kickoffTime) {
+      return alert('Please fill in all fields.');
+    }
+    setActionLoading(true);
+    try {
+      const kickoffDate = new Date(customMatch.kickoffTime);
+      const newFixture = {
+        matchId: String(customMatch.matchId),
+        teamA: customMatch.teamA,
+        teamB: customMatch.teamB,
+        stage: customMatch.stage,
+        kickoffTimeIST: Timestamp.fromDate(kickoffDate),
+        status: 'upcoming'
+      };
+      await setDoc(doc(db, 'matches', String(customMatch.matchId)), newFixture);
+      setCustomMatch({ matchId: '', teamA: '', teamB: '', stage: 'group', kickoffTime: '' });
+      setStatusMessage({ type: 'success', text: `Custom Match #${newFixture.matchId} created successfully!` });
+    } catch (err) {
+      setStatusMessage({ type: 'error', text: `Failed to create match: ${err.message}` });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // L. Delete User from Database
+  const handleDeleteUser = async (userId) => {
+    if (isAuditor) return;
+    if (!window.confirm("Are you sure you want to delete this user? All their leaderboard data and bets will be removed.")) return;
+    try {
+      await deleteDoc(doc(db, 'users', userId));
+      await deleteDoc(doc(db, 'leaderboard', userId));
+      setStatusMessage({ type: 'success', text: 'User deleted successfully.' });
+    } catch (err) {
+      setStatusMessage({ type: 'error', text: `Error deleting user: ${err.message}` });
+    }
+  };
+
+  // M. Hard Database Reset and Official Seeding
+  const handleReseedDatabase = async () => {
+    if (isAuditor) return;
+    if (!window.confirm("🚨 WARNING: Are you sure you want to RESET the entire database? All current matches, wagers, leaderboard data, and transaction logs will be permanently deleted and re-seeded with the official 104 FIFA World Cup 2026 draw matches. This action is irreversible!")) return;
+    
+    setActionLoading(true);
+    setStatusMessage({ type: 'info', text: 'Resetting database... (this may take a few seconds)' });
+    
+    try {
+      // 1. Delete all matches
+      const matchesSnap = await getDocs(collection(db, 'matches'));
+      for (const d of matchesSnap.docs) {
+        await deleteDoc(d.ref);
+      }
+      
+      // 2. Delete all bets
+      const betsSnap = await getDocs(collection(db, 'bets'));
+      for (const d of betsSnap.docs) {
+        await deleteDoc(d.ref);
+      }
+      
+      // 3. Delete all kitty logs
+      const kittySnap = await getDocs(collection(db, 'kitty'));
+      for (const d of kittySnap.docs) {
+        await deleteDoc(d.ref);
+      }
+      
+      // 4. Delete all leaderboard records
+      const leaderboardSnap = await getDocs(collection(db, 'leaderboard'));
+      for (const d of leaderboardSnap.docs) {
+        await deleteDoc(d.ref);
+      }
+      
+      // 5. Seed default settings
+      const DEFAULT_SETTINGS = {
+        stakes: {
+          group: { team: 50, goal: 50 },
+          r32: { team: 75, goal: 75 },
+          r16: { team: 100, goal: 100 },
+          qf: { team: 125, goal: 125 },
+          sf: { team: 150, goal: 150 },
+          third_place: { team: 150, goal: 150 },
+          final: { team: 200, goal: 200 }
+        },
+        prizes: {
+          firstPlacePercent: 60,
+          secondPlacePercent: 25,
+          thirdPlacePercent: 15
+        },
+        lateEntryFeeDefault: 1500,
+        tournamentStatus: 'upcoming'
+      };
+      await setDoc(doc(db, 'settings', 'global'), DEFAULT_SETTINGS);
+      
+      // 6. Generate official World Cup 2026 fixtures
+      const officialGroupTeams = [
+        ['Mexico', 'South Africa', 'South Korea', 'Czechia'],         // Group A
+        ['Canada', 'Bosnia and Herzegovina', 'Qatar', 'Switzerland'],  // Group B
+        ['Brazil', 'Haiti', 'Morocco', 'Scotland'],                     // Group C
+        ['USA', 'Australia', 'Paraguay', 'Turkiye'],                   // Group D
+        ['Germany', 'Ecuador', 'Curacao', 'Ivory Coast'],               // Group E
+        ['Netherlands', 'Japan', 'Sweden', 'Tunisia'],                  // Group F
+        ['Belgium', 'Egypt', 'Iran', 'New Zealand'],                    // Group G
+        ['Spain', 'Saudi Arabia', 'Cape Verde', 'Uruguay'],            // Group H
+        ['France', 'Iraq', 'Norway', 'Senegal'],                        // Group I
+        ['Argentina', 'Algeria', 'Austria', 'Jordan'],                  // Group J
+        ['Portugal', 'Colombia', 'DR Congo', 'Uzbekistan'],             // Group K
+        ['England', 'Croatia', 'Ghana', 'Panama']                       // Group L
+      ];
+      
+      const seededMatches = [];
+      let matchIdCounter = 1;
+      
+      const addFixture = (tA, tB, stg, dateStr, timeStr) => {
+        const dateTimeIST = new Date(`${dateStr}T${timeStr}:00+05:30`);
+        seededMatches.push({
+          matchId: String(matchIdCounter++),
+          teamA: tA,
+          teamB: tB,
+          stage: stg,
+          kickoffTimeIST: Timestamp.fromDate(dateTimeIST),
+          status: 'upcoming'
+        });
+      };
+      
+      // Generate Group Stage (72 matches)
+      let currentDate = new Date('2026-06-11');
+      for (let g = 0; g < 12; g++) {
+        const teams = officialGroupTeams[g];
+        const matchups = [
+          [teams[0], teams[1]],
+          [teams[2], teams[3]],
+          [teams[0], teams[2]],
+          [teams[1], teams[3]],
+          [teams[3], teams[0]],
+          [teams[1], teams[2]]
+        ];
+        
+        matchups.forEach((pair, index) => {
+          const dateStr = currentDate.toISOString().split('T')[0];
+          const hour = 20 + (index % 2) * 2.5;
+          const timeStr = `${Math.floor(hour)}:${(hour % 1 === 0 ? '00' : '30')}`;
+          addFixture(pair[0], pair[1], 'group', dateStr, timeStr);
+          if (matchIdCounter % 4 === 0) {
+            currentDate.setDate(currentDate.getDate() + 1);
+          }
+        });
+      }
+      
+      // Round of 32 (16 matches)
+      currentDate = new Date('2026-06-29');
+      for (let i = 1; i <= 16; i++) {
+        const dateStr = currentDate.toISOString().split('T')[0];
+        const timeStr = i % 2 === 0 ? '23:00' : '20:00';
+        addFixture(`Winner G${i}`, `Runner-up G${i+1}`, 'r32', dateStr, timeStr);
+        if (i % 2 === 0) {
+          currentDate.setDate(currentDate.getDate() + 1);
+        }
+      }
+      
+      // Round of 16 (8 matches)
+      currentDate = new Date('2026-07-07');
+      for (let i = 1; i <= 8; i++) {
+        const dateStr = currentDate.toISOString().split('T')[0];
+        const timeStr = i % 2 === 0 ? '23:00' : '20:00';
+        addFixture(`Winner R32-${i}`, `Winner R32-${i+8}`, 'r16', dateStr, timeStr);
+        if (i % 2 === 0) {
+          currentDate.setDate(currentDate.getDate() + 1);
+        }
+      }
+      
+      // Quarter-finals (4 matches)
+      currentDate = new Date('2026-07-12');
+      for (let i = 1; i <= 4; i++) {
+        const dateStr = currentDate.toISOString().split('T')[0];
+        const timeStr = i % 2 === 0 ? '23:00' : '20:00';
+        addFixture(`Winner R16-${i}`, `Winner R16-${i+4}`, 'qf', dateStr, timeStr);
+        if (i % 2 === 0) {
+          currentDate.setDate(currentDate.getDate() + 1);
+        }
+      }
+      
+      // Semi-finals (2 matches)
+      currentDate = new Date('2026-07-15');
+      addFixture('Winner QF-1', 'Winner QF-2', 'sf', currentDate.toISOString().split('T')[0], '20:00');
+      currentDate.setDate(currentDate.getDate() + 1);
+      addFixture('Winner QF-3', 'Winner QF-4', 'sf', currentDate.toISOString().split('T')[0], '20:00');
+      
+      // Third-place Play-off (1 match)
+      currentDate = new Date('2026-07-18');
+      addFixture('Loser SF-1', 'Loser SF-2', 'third_place', currentDate.toISOString().split('T')[0], '20:00');
+      
+      // Final (1 match)
+      currentDate = new Date('2026-07-19');
+      addFixture('Winner SF-1', 'Winner SF-2', 'final', currentDate.toISOString().split('T')[0], '20:00');
+      
+      // Write to Firestore in batches of 20
+      const batchSize = 20;
+      for (let i = 0; i < seededMatches.length; i += batchSize) {
+        const chunk = seededMatches.slice(i, i + batchSize);
+        await Promise.all(chunk.map(m => setDoc(doc(db, 'matches', m.matchId), m)));
+      }
+      
+      // Re-initialize leaderboard for existing users
+      const usersSnap = await getDocs(collection(db, 'users'));
+      for (const uDoc of usersSnap.docs) {
+        const u = uDoc.data();
+        if (u.role === 'participant' || u.role === 'admin') {
+          await setDoc(doc(db, 'leaderboard', uDoc.id), {
+            userId: uDoc.id,
+            userName: u.name || 'Participant',
+            netProfit: 0,
+            totalWon: 0,
+            totalLost: 0,
+            correctPredictions: 0,
+            totalPredictions: 0,
+            accuracyPercent: 0
+          });
+        }
+      }
+      
+      setStatusMessage({ type: 'success', text: 'Database reset and seeded with 104 official FIFA World Cup 2026 draw fixtures!' });
+    } catch (err) {
+      setStatusMessage({ type: 'error', text: `Reset failed: ${err.message}` });
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -431,6 +680,13 @@ function App() {
               Kitty & Audits
             </a>
           </li>
+          {!isAuditor && (
+            <li className="menu-item">
+              <a className={`menu-link ${activeTab === 'tools' ? 'active' : ''}`} onClick={() => setActiveTab('tools')}>
+                System Tools
+              </a>
+            </li>
+          )}
         </ul>
 
         <div className="sidebar-footer">
@@ -702,6 +958,10 @@ function App() {
                                       onClick={() => handleToggleAuditor(u)}>
                                 {u.role === 'auditor' ? 'Demote to Player' : 'Set Auditor'}
                               </button>
+                              <button className="btn" style={{ padding: '4px 8px', fontSize: '0.75rem', backgroundColor: 'var(--loss-red)', border: 'none', color: '#fff', borderRadius: '4px', cursor: 'pointer' }}
+                                      onClick={() => handleDeleteUser(u.id)}>
+                                Delete
+                              </button>
                             </div>
                           </td>
                         )}
@@ -859,6 +1119,96 @@ function App() {
                 </table>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* TAB 6: SYSTEM & DATABASE TOOLS */}
+        {activeTab === 'tools' && (
+          <div>
+            <div className="page-header">
+              <h2 className="page-title">System & Database Tools</h2>
+              <p className="page-subtitle">Perform manual scheduler triggers, fixture adjustments, and database resets.</p>
+            </div>
+
+            {!isAuditor && (
+              <>
+                {/* Section 1: Cron Scheduler */}
+                <div className="content-card">
+                  <h3 className="card-title">Lock & Reminder Scheduler (Cron)</h3>
+                  <p style={{ fontSize: '0.9rem', color: 'var(--text-sub)', marginBottom: '16px' }}>
+                    Trigger the serverless task scheduler immediately. This will run the match lock check, auto-forfeiting empty wagers for fixtures kickoff within 8 hours, and distributing reminders.
+                  </p>
+                  <button className="btn btn-primary" onClick={handleTriggerCron} disabled={actionLoading}>
+                    {actionLoading ? 'Triggering...' : 'Trigger Lock Scheduler (Run Cron)'}
+                  </button>
+                </div>
+
+                {/* Section 2: Create Custom Match */}
+                <div className="content-card">
+                  <h3 className="card-title">Register Custom Match / Fixture</h3>
+                  <form onSubmit={handleCreateCustomMatch}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+                      <div>
+                        <label className="form-label">Match ID (Number, e.g. 105)</label>
+                        <input className="form-control" type="number" required placeholder="105"
+                               value={customMatch.matchId} onChange={e => setCustomMatch({ ...customMatch, matchId: e.target.value })}/>
+                      </div>
+                      <div>
+                        <label className="form-label">Stage</label>
+                        <select className="form-control" required value={customMatch.stage}
+                                onChange={e => setCustomMatch({ ...customMatch, stage: e.target.value })}>
+                          <option value="group">Group Stage</option>
+                          <option value="r32">Round of 32</option>
+                          <option value="r16">Round of 16</option>
+                          <option value="qf">Quarter-final</option>
+                          <option value="sf">Semi-final</option>
+                          <option value="third_place">Third Place Play-off</option>
+                          <option value="final">Final</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+                      <div>
+                        <label className="form-label">Team A Name</label>
+                        <input className="form-control" type="text" required placeholder="e.g. France"
+                               value={customMatch.teamA} onChange={e => setCustomMatch({ ...customMatch, teamA: e.target.value })}/>
+                      </div>
+                      <div>
+                        <label className="form-label">Team B Name</label>
+                        <input className="form-control" type="text" required placeholder="e.g. Brazil"
+                               value={customMatch.teamB} onChange={e => setCustomMatch({ ...customMatch, teamB: e.target.value })}/>
+                      </div>
+                    </div>
+                    <div className="form-group" style={{ marginBottom: '20px' }}>
+                      <label className="form-label">Kickoff Time (Local Time)</label>
+                      <input className="form-control" type="datetime-local" required
+                             value={customMatch.kickoffTime} onChange={e => setCustomMatch({ ...customMatch, kickoffTime: e.target.value })}/>
+                    </div>
+                    <button className="btn btn-success" type="submit" disabled={actionLoading}>
+                      Add Custom Fixture
+                    </button>
+                  </form>
+                </div>
+
+                {/* Section 3: Reset Database */}
+                <div className="content-card" style={{ border: '2px solid var(--loss-red)' }}>
+                  <h3 className="card-title" style={{ color: 'var(--loss-red)' }}>Danger Zone: Hard Database Reset</h3>
+                  <p style={{ fontSize: '0.9rem', color: 'var(--text-sub)', marginBottom: '16px' }}>
+                    Wipe all wagers, matches, leaderboards, and kitty records. Re-seeds the system with the 104 official FIFA World Cup 2026 draw matchups. Existing user registrations remain active but their wagers are wiped.
+                  </p>
+                  <button className="btn btn-danger" style={{ backgroundColor: 'var(--loss-red)', border: 'none', color: '#fff' }}
+                          onClick={handleReseedDatabase} disabled={actionLoading}>
+                    {actionLoading ? 'Resetting & Seeding...' : 'Reset & Re-seed 104 Matches'}
+                  </button>
+                </div>
+              </>
+            )}
+
+            {isAuditor && (
+              <p style={{ color: 'var(--text-sub)' }}>
+                Auditors do not have permission to execute system controls or modify database states.
+              </p>
+            )}
           </div>
         )}
       </main>
