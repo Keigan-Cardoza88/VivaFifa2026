@@ -2669,6 +2669,7 @@ const styles = StyleSheet.create({
     width: 230,
     marginRight: 24,
     height: '100%',
+    flexDirection: 'column',
   },
   bracketColumnTitle: {
     fontSize: 12,
@@ -2686,6 +2687,7 @@ const styles = StyleSheet.create({
   },
   bracketColumnMatches: {
     flex: 1,
+    flexDirection: 'column',
     justifyContent: 'space-around',
     paddingVertical: 10,
   },
