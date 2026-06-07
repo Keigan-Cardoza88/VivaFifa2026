@@ -33,6 +33,7 @@ import {
 import * as WebBrowser from 'expo-web-browser';
 import * as Google from 'expo-auth-session/providers/google';
 import { auth, db } from './src/config/firebase';
+import { teamsData } from './src/data/teamsData';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -146,6 +147,28 @@ const formatISTDate = (timestamp) => {
   });
 };
 
+const getStartingXI = (players) => {
+  if (!players || players.length === 0) return [];
+  const gks = players.filter(p => p.pos === 'GK').sort((a, b) => b.current - a.current);
+  const dfs = players.filter(p => p.pos === 'DF').sort((a, b) => b.current - a.current);
+  const mfs = players.filter(p => p.pos === 'MF').sort((a, b) => b.current - a.current);
+  const fws = players.filter(p => p.pos === 'FW').sort((a, b) => b.current - a.current);
+  
+  const starting = [];
+  if (gks[0]) starting.push({ ...gks[0], role: 'GK', x: '50%', y: '82%' });
+  if (dfs[0]) starting.push({ ...dfs[0], role: 'LB', x: '15%', y: '64%' });
+  if (dfs[1]) starting.push({ ...dfs[1], role: 'LCB', x: '38%', y: '66%' });
+  if (dfs[2]) starting.push({ ...dfs[2], role: 'RCB', x: '62%', y: '66%' });
+  if (dfs[3]) starting.push({ ...dfs[3], role: 'RB', x: '85%', y: '64%' });
+  if (mfs[0]) starting.push({ ...mfs[0], role: 'LM', x: '15%', y: '40%' });
+  if (mfs[1]) starting.push({ ...mfs[1], role: 'LCM', x: '38%', y: '42%' });
+  if (mfs[2]) starting.push({ ...mfs[2], role: 'RCM', x: '62%', y: '42%' });
+  if (mfs[3]) starting.push({ ...mfs[3], role: 'RM', x: '85%', y: '40%' });
+  if (fws[0]) starting.push({ ...fws[0], role: 'LF', x: '32%', y: '16%' });
+  if (fws[1]) starting.push({ ...fws[1], role: 'RF', x: '68%', y: '16%' });
+  return starting;
+};
+
 export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
@@ -182,6 +205,10 @@ export default function App() {
   const [allUsers, setAllUsers] = useState({});
   const [firstMatchBets, setFirstMatchBets] = useState([]);
   const [expandedMatchId, setExpandedMatchId] = useState(null);
+  const [bracketZoom, setBracketZoom] = useState(1.0);
+  const [selectedTeamGroup, setSelectedTeamGroup] = useState('A');
+  const [selectedTeamName, setSelectedTeamName] = useState('Mexico');
+  const [teamsViewMode, setTeamsViewMode] = useState('roster');
   const [expandedMatchBets, setExpandedMatchBets] = useState([]);
 
   // Google Auth Request Config for Mobile Native fallback
@@ -1107,27 +1134,268 @@ export default function App() {
         {/* TAB 4: BRACKET */}
         {activeTab === 'bracket' && (
           <View style={{ paddingBottom: 20 }}>
-            <Text style={styles.sectionHeader}>Tournament Bracket</Text>
-            {['r32', 'r16', 'qf', 'sf', 'third_place', 'final'].map((stage) => {
-              const stageMatches = matches.filter(m => m.stage === stage);
-              return (
-                <View style={styles.bracketStageCard} key={stage}>
-                  <Text style={styles.bracketStageTitle}>{stage.toUpperCase()}</Text>
-                  {stageMatches.map(m => (
-                    <View style={styles.bracketMatchRow} key={m.id}>
-                      <Text style={styles.bracketTeamLeft}>{getTeamFlag(m.teamA)} {m.teamA}</Text>
-                      <Text style={styles.bracketVs}>vs</Text>
-                      <View style={styles.bracketRightContainer}>
-                        <Text style={styles.bracketTeamRight}>{m.teamB} {getTeamFlag(m.teamB)}</Text>
-                        {m.status === 'completed' && (
-                          <Text style={styles.bracketWinner}>({m.winner === 'teamA' ? <>{getTeamFlag(m.teamA)} {m.teamA}</> : <>{m.teamB} {getTeamFlag(m.teamB)}</>})</Text>
-                        )}
+            <View style={styles.bracketHeaderRow}>
+              <Text style={styles.sectionHeader}>Tournament Bracket</Text>
+              
+              {/* Zoom Controls */}
+              <View style={styles.zoomControls}>
+                <TouchableOpacity style={styles.zoomBtn} onPress={() => setBracketZoom(Math.max(0.5, bracketZoom - 0.1))}>
+                  <Text style={styles.zoomBtnText}>-</Text>
+                </TouchableOpacity>
+                <Text style={styles.zoomText}>{Math.round(bracketZoom * 100)}%</Text>
+                <TouchableOpacity style={styles.zoomBtn} onPress={() => setBracketZoom(Math.min(1.5, bracketZoom + 0.1))}>
+                  <Text style={styles.zoomBtnText}>+</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.zoomResetBtn} onPress={() => setBracketZoom(1.0)}>
+                  <Text style={styles.zoomResetText}>Reset</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <ScrollView horizontal={true} style={styles.bracketHorizontalScroll} contentContainerStyle={styles.bracketHorizontalScrollContent}>
+              <View style={[styles.bracketScaleContainer, { transform: [{ scale: bracketZoom }] }]}>
+                {['r32', 'r16', 'qf', 'sf', 'final'].map((stage) => {
+                  let stageMatches = matches.filter(m => m.stage === stage);
+                  if (stage === 'final') {
+                    const thirdPlaceMatches = matches.filter(m => m.stage === 'third_place');
+                    stageMatches = [...stageMatches, ...thirdPlaceMatches];
+                  }
+                  
+                  const expectedMatchCount = { 'r32': 16, 'r16': 8, 'qf': 4, 'sf': 2, 'final': 2 }[stage];
+                  const placeholdersNeeded = expectedMatchCount - stageMatches.length;
+                  const displayMatches = [...stageMatches];
+                  for (let idx = 0; idx < placeholdersNeeded; idx++) {
+                    displayMatches.push({
+                      id: `placeholder_${stage}_${idx}`,
+                      teamA: 'TBD',
+                      teamB: 'TBD',
+                      status: 'upcoming',
+                      stage: stage === 'final' && idx === 1 ? 'third_place' : stage
+                    });
+                  }
+
+                  return (
+                    <View style={styles.bracketColumn} key={stage}>
+                      <Text style={styles.bracketColumnTitle}>
+                        {stage === 'r32' ? 'Round of 32' : stage === 'r16' ? 'Round of 16' : stage === 'qf' ? 'Quarter-Finals' : stage === 'sf' ? 'Semi-Finals' : 'Finals'}
+                      </Text>
+                      <View style={styles.bracketColumnMatches}>
+                        {displayMatches.map(m => {
+                          const isPlaceholder = String(m.id).startsWith('placeholder');
+                          const teamAFlag = isPlaceholder ? null : getTeamFlag(m.teamA);
+                          const teamBFlag = isPlaceholder ? null : getTeamFlag(m.teamB);
+                          return (
+                            <View style={[styles.bracketMatchCard, styles.glassCard]} key={m.id}>
+                              <View style={[styles.bracketTeamRow, m.status === 'completed' && m.winner === 'teamB' && styles.bracketTeamLost]}>
+                                <Text style={styles.bracketTeamText} numberOfLines={1}>
+                                  {teamAFlag} {m.teamA}
+                                </Text>
+                                {m.status === 'completed' && <Text style={styles.bracketScore}>{m.resultTeamAGoals}</Text>}
+                              </View>
+                              
+                              <View style={styles.bracketDivider} />
+                              
+                              <View style={[styles.bracketTeamRow, m.status === 'completed' && m.winner === 'teamA' && styles.bracketTeamLost]}>
+                                <Text style={styles.bracketTeamText} numberOfLines={1}>
+                                  {teamBFlag} {m.teamB}
+                                </Text>
+                                {m.status === 'completed' && <Text style={styles.bracketScore}>{m.resultTeamBGoals}</Text>}
+                              </View>
+                              
+                              {m.stage === 'third_place' && (
+                                <View style={styles.thirdPlaceBadge}>
+                                  <Text style={styles.thirdPlaceBadgeText}>3rd Place Playoff</Text>
+                                </View>
+                              )}
+                            </View>
+                          );
+                        })}
                       </View>
                     </View>
-                  ))}
+                  );
+                })}
+              </View>
+            </ScrollView>
+          </View>
+        )}
+
+        {/* TAB 4.5: TEAMS */}
+        {activeTab === 'teams' && (
+          <View style={{ paddingBottom: 30 }}>
+            <Text style={styles.sectionHeader}>Tournament Teams</Text>
+            
+            {/* Group Selector */}
+            <ScrollView horizontal={true} showsHorizontalScrollIndicator={false} style={styles.groupScroll} contentContainerStyle={{ gap: 8 }}>
+              {['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'].map(g => (
+                <TouchableOpacity
+                  key={g}
+                  style={[styles.groupBtn, selectedTeamGroup === g && styles.groupBtnActive]}
+                  onPress={() => {
+                    setSelectedTeamGroup(g);
+                    const firstTeam = Object.keys(teamsData).find(name => teamsData[name].group === g);
+                    if (firstTeam) setSelectedTeamName(firstTeam);
+                  }}
+                >
+                  <Text style={[styles.groupBtnText, selectedTeamGroup === g && styles.groupBtnTextActive]}>
+                    Group {g}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            {/* Team Picker Grid */}
+            <View style={styles.teamSelectorGrid}>
+              {Object.keys(teamsData)
+                .filter(name => teamsData[name].group === selectedTeamGroup)
+                .map(teamName => (
+                  <TouchableOpacity
+                    key={teamName}
+                    style={[styles.teamGridBtn, selectedTeamName === teamName && styles.teamGridBtnActive]}
+                    onPress={() => setSelectedTeamName(teamName)}
+                  >
+                    <Text style={styles.teamGridFlag}>{getTeamFlag(teamName)}</Text>
+                    <Text style={[styles.teamGridName, selectedTeamName === teamName && styles.teamGridNameActive]} numberOfLines={1}>
+                      {teamName}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+            </View>
+
+            {/* Selected Team Detail */}
+            {teamsData[selectedTeamName] && (() => {
+              const team = teamsData[selectedTeamName];
+              const squadAvg = Math.round(team.players.reduce((sum, p) => sum + p.current, 0) / team.players.length);
+              const peakAvg = Math.round(team.players.reduce((sum, p) => sum + p.peak, 0) / team.players.length);
+              const startingXI = getStartingXI(team.players);
+              const startingNames = new Set(startingXI.map(p => p.name));
+              const substitutes = team.players.filter(p => !startingNames.has(p.name));
+
+              return (
+                <View style={[styles.teamDetailsCard, styles.glassCard]}>
+                  {/* Header */}
+                  <View style={styles.teamDetailsHeader}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                      <Text style={{ fontSize: 28 }}>{getTeamFlag(selectedTeamName)}</Text>
+                      <View>
+                        <Text style={styles.teamDetailsTitle}>{selectedTeamName}</Text>
+                        <Text style={styles.teamDetailsSub}>Group {team.group} • 26-Man Squad</Text>
+                      </View>
+                    </View>
+                    <View style={styles.avgRatingWidget}>
+                      <Text style={styles.avgRatingLabel}>AVG RATING</Text>
+                      <Text style={styles.avgRatingVal}>{squadAvg}</Text>
+                    </View>
+                  </View>
+
+                  {/* View Mode Switcher */}
+                  <View style={styles.viewModeToggleRow}>
+                    <TouchableOpacity
+                      style={[styles.viewModeBtn, teamsViewMode === 'roster' && styles.viewModeBtnActive]}
+                      onPress={() => setTeamsViewMode('roster')}
+                    >
+                      <Text style={[styles.viewModeText, teamsViewMode === 'roster' && styles.viewModeTextActive]}>Full Squad (26)</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.viewModeBtn, teamsViewMode === 'pitch' && styles.viewModeBtnActive]}
+                      onPress={() => setTeamsViewMode('pitch')}
+                    >
+                      <Text style={[styles.viewModeText, teamsViewMode === 'pitch' && styles.viewModeTextActive]}>Tactical pitch (11)</Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* View 1: Roster View */}
+                  {teamsViewMode === 'roster' && (
+                    <View style={{ marginTop: 12 }}>
+                      <View style={styles.statsSummaryBar}>
+                        <Text style={styles.statsSummaryText}>Avg 2026 Rating: <Text style={{fontWeight:'800',color:'#b45309'}}>{squadAvg}</Text></Text>
+                        <Text style={styles.statsSummaryText}>Avg Peak Rating: <Text style={{fontWeight:'800',color:'#27773f'}}>{peakAvg}</Text></Text>
+                      </View>
+                      
+                      {['GK', 'DF', 'MF', 'FW'].map(pos => {
+                        const posPlayers = team.players.filter(p => p.pos === pos);
+                        if (posPlayers.length === 0) return null;
+                        return (
+                          <View key={pos} style={styles.posSection}>
+                            <Text style={styles.posSectionTitle}>
+                              {pos === 'GK' ? '🛡️ Goalkeepers' : pos === 'DF' ? '🛡️ Defenders' : pos === 'MF' ? '⚙️ Midfielders' : '🚀 Forwards'}
+                            </Text>
+                            {posPlayers.map(p => (
+                              <View key={p.name} style={styles.playerRow}>
+                                <View style={styles.playerInfoCol}>
+                                  <Text style={styles.playerName}>{p.name}</Text>
+                                  <Text style={styles.playerPositionBadge}>{p.pos}</Text>
+                                </View>
+                                <View style={styles.playerRatingsCol}>
+                                  <View style={styles.ratingBarContainer}>
+                                    <Text style={styles.ratingSubLabel}>Peak {p.peak}</Text>
+                                    <View style={styles.ratingTrack}>
+                                      <View style={[styles.ratingBar, { width: `${(p.peak / 100) * 100}%`, backgroundColor: '#4caf50' }]} />
+                                    </View>
+                                  </View>
+                                  <View style={styles.ratingBarContainer}>
+                                    <Text style={styles.ratingSubLabel}>Current {p.current}</Text>
+                                    <View style={styles.ratingTrack}>
+                                      <View style={[styles.ratingBar, { width: `${(p.current / 100) * 100}%`, backgroundColor: '#b45309' }]} />
+                                    </View>
+                                  </View>
+                                </View>
+                              </View>
+                            ))}
+                          </View>
+                        );
+                      })}
+                    </View>
+                  )}
+
+                  {/* View 2: Tactical Starting 11 */}
+                  {teamsViewMode === 'pitch' && (
+                    <View style={{ marginTop: 12 }}>
+                      <Text style={styles.pitchIntroText}>Predicted Starting XI (4-4-2 based on current ratings):</Text>
+                      
+                      {/* Football Pitch */}
+                      <View style={styles.footballPitch}>
+                        <View style={styles.pitchCenterCircle} />
+                        <View style={styles.pitchCenterLine} />
+                        <View style={styles.pitchPenaltyBoxTop} />
+                        <View style={styles.pitchPenaltyBoxBottom} />
+                        
+                        {/* Render nodes */}
+                        {startingXI.map(p => (
+                          <View
+                            key={p.name}
+                            style={[
+                              styles.pitchPlayerNode,
+                              { left: p.x, top: p.y }
+                            ]}
+                          >
+                            <View style={styles.pitchPlayerCircle}>
+                              <Text style={styles.pitchPlayerCircleVal}>{p.current}</Text>
+                            </View>
+                            <Text style={styles.pitchPlayerName} numberOfLines={1}>
+                              {p.name.split(' ').pop()}
+                            </Text>
+                            <Text style={styles.pitchPlayerRole}>
+                              {p.role}
+                            </Text>
+                          </View>
+                        ))}
+                      </View>
+
+                      {/* Substitutes */}
+                      <Text style={styles.substitutesHeader}>Reserves & Bench</Text>
+                      <View style={styles.substitutesGrid}>
+                        {substitutes.map(p => (
+                          <View key={p.name} style={styles.subCard}>
+                            <Text style={styles.subName} numberOfLines={1}>{p.name}</Text>
+                            <Text style={styles.subMeta}>{p.pos} • Rating {p.current}</Text>
+                          </View>
+                        ))}
+                      </View>
+                    </View>
+                  )}
                 </View>
               );
-            })}
+            })()}
           </View>
         )}
 
@@ -1177,6 +1445,9 @@ export default function App() {
         </TouchableOpacity>
         <TouchableOpacity style={[styles.tabItem, activeTab === 'bracket' && styles.tabActive]} onPress={() => setActiveTab('bracket')}>
           <Text style={styles.tabText}>Bracket</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={[styles.tabItem, activeTab === 'teams' && styles.tabActive]} onPress={() => setActiveTab('teams')}>
+          <Text style={styles.tabText}>Teams</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[styles.tabItem, activeTab === 'profile' && styles.tabActive]} onPress={() => setActiveTab('profile')}>
           <Text style={styles.tabText}>Profile</Text>
@@ -2317,6 +2588,525 @@ const styles = StyleSheet.create({
   expandedBetsCell: {
     fontSize: 12,
     color: '#302b25',
+  },
+  // Bracket Zoom & Flowchart Styles
+  bracketHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  zoomControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(230, 220, 191, 0.8)',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(62, 56, 48, 0.15)',
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+    gap: 8,
+  },
+  zoomBtn: {
+    backgroundColor: '#b45309',
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  zoomBtnText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  zoomText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#302b25',
+    minWidth: 32,
+    textAlign: 'center',
+  },
+  zoomResetBtn: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    backgroundColor: '#faf7ee',
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(62, 56, 48, 0.15)',
+  },
+  zoomResetText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#82776a',
+  },
+  bracketHorizontalScroll: {
+    flexDirection: 'row',
+    width: '100%',
+    marginTop: 10,
+    backgroundColor: 'rgba(232, 223, 199, 0.3)',
+    borderRadius: 14,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(62, 56, 48, 0.08)',
+  },
+  bracketHorizontalScrollContent: {
+    paddingRight: 50,
+  },
+  bracketScaleContainer: {
+    flexDirection: 'row',
+    height: 1450,
+    transformOrigin: 'top left',
+    paddingHorizontal: 15,
+  },
+  bracketColumn: {
+    width: 230,
+    marginRight: 24,
+    height: '100%',
+  },
+  bracketColumnTitle: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#b45309',
+    textTransform: 'uppercase',
+    textAlign: 'center',
+    letterSpacing: 0.8,
+    marginBottom: 16,
+    backgroundColor: '#e6dcbf',
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(62, 56, 48, 0.12)',
+  },
+  bracketColumnMatches: {
+    flex: 1,
+    justifyContent: 'space-around',
+    paddingVertical: 10,
+  },
+  bracketMatchCard: {
+    width: '100%',
+    padding: 10,
+    borderRadius: 10,
+    shadowColor: '#3e3830',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    position: 'relative',
+  },
+  bracketTeamRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 4,
+  },
+  bracketTeamLost: {
+    opacity: 0.5,
+  },
+  bracketTeamText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#302b25',
+    flex: 1,
+  },
+  bracketScore: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#b45309',
+    marginLeft: 6,
+  },
+  bracketDivider: {
+    height: 1,
+    backgroundColor: 'rgba(62, 56, 48, 0.1)',
+    marginVertical: 4,
+  },
+  thirdPlaceBadge: {
+    position: 'absolute',
+    bottom: -8,
+    right: 8,
+    backgroundColor: '#74acdf',
+    borderRadius: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  thirdPlaceBadgeText: {
+    color: '#ffffff',
+    fontSize: 8,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+  },
+
+  // Teams Selector Tab Styles
+  groupScroll: {
+    marginBottom: 12,
+  },
+  groupBtn: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    backgroundColor: '#e6dcbf',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(62, 56, 48, 0.15)',
+  },
+  groupBtnActive: {
+    backgroundColor: '#b45309',
+    borderColor: '#d97706',
+  },
+  groupBtnText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#302b25',
+  },
+  groupBtnTextActive: {
+    color: '#ffffff',
+  },
+  teamSelectorGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 16,
+    justifyContent: 'space-between',
+  },
+  teamGridBtn: {
+    width: '48%',
+    backgroundColor: 'rgba(230, 220, 191, 0.6)',
+    borderWidth: 1,
+    borderColor: 'rgba(62, 56, 48, 0.12)',
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  teamGridBtnActive: {
+    backgroundColor: '#faf7ee',
+    borderColor: '#b45309',
+    borderWidth: 1.5,
+  },
+  teamGridFlag: {
+    fontSize: 16,
+  },
+  teamGridName: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#82776a',
+    flex: 1,
+  },
+  teamGridNameActive: {
+    color: '#b45309',
+    fontWeight: '800',
+  },
+  teamDetailsCard: {
+    padding: 16,
+    borderRadius: 14,
+    shadowColor: '#3e3830',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+  },
+  teamDetailsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderBottomWidth: 1.5,
+    borderBottomColor: 'rgba(62, 56, 48, 0.12)',
+    paddingBottom: 12,
+    marginBottom: 12,
+  },
+  teamDetailsTitle: {
+    fontSize: 20,
+    fontWeight: '900',
+    color: '#302b25',
+  },
+  teamDetailsSub: {
+    fontSize: 11,
+    color: '#82776a',
+    fontWeight: '600',
+  },
+  avgRatingWidget: {
+    backgroundColor: '#b4530914',
+    borderWidth: 1,
+    borderColor: '#b4530930',
+    borderRadius: 8,
+    padding: 6,
+    alignItems: 'center',
+  },
+  avgRatingLabel: {
+    fontSize: 8,
+    color: '#82776a',
+    fontWeight: '800',
+  },
+  avgRatingVal: {
+    fontSize: 18,
+    fontWeight: '900',
+    color: '#b45309',
+  },
+  viewModeToggleRow: {
+    flexDirection: 'row',
+    backgroundColor: '#e6dcbf',
+    borderRadius: 8,
+    padding: 3,
+    marginBottom: 14,
+  },
+  viewModeBtn: {
+    flex: 1,
+    paddingVertical: 8,
+    alignItems: 'center',
+    borderRadius: 6,
+  },
+  viewModeBtnActive: {
+    backgroundColor: '#faf7ee',
+    shadowColor: '#3e3830',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+  },
+  viewModeText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#82776a',
+  },
+  viewModeTextActive: {
+    color: '#b45309',
+    fontWeight: '800',
+  },
+  statsSummaryBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    backgroundColor: '#faf7ee',
+    borderRadius: 8,
+    paddingVertical: 8,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(62, 56, 48, 0.1)',
+  },
+  statsSummaryText: {
+    fontSize: 11,
+    color: '#82776a',
+    fontWeight: '600',
+  },
+  posSection: {
+    marginBottom: 16,
+  },
+  posSectionTitle: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#302b25',
+    textTransform: 'uppercase',
+    marginBottom: 10,
+    backgroundColor: '#e6dcbf60',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 6,
+    overflow: 'hidden',
+  },
+  playerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderBottomWidth: 0.8,
+    borderBottomColor: 'rgba(62, 56, 48, 0.06)',
+  },
+  playerInfoCol: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  playerName: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#302b25',
+  },
+  playerPositionBadge: {
+    fontSize: 9,
+    fontWeight: '800',
+    backgroundColor: 'rgba(62, 56, 48, 0.1)',
+    color: '#82776a',
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  playerRatingsCol: {
+    flexDirection: 'row',
+    gap: 12,
+    minWidth: 140,
+  },
+  ratingBarContainer: {
+    flex: 1,
+  },
+  ratingSubLabel: {
+    fontSize: 8,
+    color: '#82776a',
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  ratingTrack: {
+    height: 4,
+    backgroundColor: 'rgba(62, 56, 48, 0.1)',
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  ratingBar: {
+    height: '100%',
+    borderRadius: 2,
+  },
+
+  // Football Pitch Styles
+  pitchIntroText: {
+    fontSize: 12,
+    color: '#82776a',
+    fontWeight: '600',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  footballPitch: {
+    height: 340,
+    width: '100%',
+    backgroundColor: '#1b4d22',
+    backgroundImage: 'linear-gradient(180deg, #1b4d22 0%, #2e7d32 100%)',
+    borderRadius: 14,
+    borderWidth: 3,
+    borderColor: '#ffffff50',
+    position: 'relative',
+    overflow: 'hidden',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+  },
+  pitchCenterCircle: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 2,
+    borderColor: '#ffffff30',
+    marginTop: -40,
+    marginLeft: -40,
+  },
+  pitchCenterLine: {
+    position: 'absolute',
+    top: '50%',
+    left: 0,
+    right: 0,
+    height: 2,
+    backgroundColor: '#ffffff30',
+  },
+  pitchPenaltyBoxTop: {
+    position: 'absolute',
+    top: 0,
+    left: '50%',
+    width: 140,
+    height: 60,
+    borderWidth: 2,
+    borderColor: '#ffffff30',
+    borderTopWidth: 0,
+    marginLeft: -70,
+  },
+  pitchPenaltyBoxBottom: {
+    position: 'absolute',
+    bottom: 0,
+    left: '50%',
+    width: 140,
+    height: 60,
+    borderWidth: 2,
+    borderColor: '#ffffff30',
+    borderBottomWidth: 0,
+    marginLeft: -70,
+  },
+  pitchPlayerNode: {
+    position: 'absolute',
+    width: 62,
+    marginLeft: -31,
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  pitchPlayerCircle: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: '#ffffff',
+    borderWidth: 2.5,
+    borderColor: '#b45309',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+  },
+  pitchPlayerCircleVal: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: '#302b25',
+  },
+  pitchPlayerName: {
+    color: '#ffffff',
+    fontSize: 9,
+    fontWeight: '800',
+    marginTop: 2,
+    textAlign: 'center',
+    textShadowColor: 'rgba(0, 0, 0, 0.8)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
+  pitchPlayerNodeText: {
+    color: '#ffffff',
+    fontSize: 9,
+    fontWeight: '800',
+    marginTop: 2,
+    textAlign: 'center',
+  },
+  pitchPlayerRole: {
+    color: '#ffd700',
+    fontSize: 7,
+    fontWeight: '900',
+    textTransform: 'uppercase',
+    textShadowColor: 'rgba(0, 0, 0, 0.8)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
+  substitutesHeader: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#302b25',
+    textTransform: 'uppercase',
+    marginTop: 20,
+    marginBottom: 10,
+    borderBottomWidth: 1.5,
+    borderBottomColor: 'rgba(62, 56, 48, 0.12)',
+    paddingBottom: 4,
+  },
+  substitutesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  subCard: {
+    width: '48%',
+    backgroundColor: 'rgba(62, 56, 48, 0.05)',
+    borderRadius: 8,
+    padding: 8,
+    borderWidth: 0.8,
+    borderColor: 'rgba(62, 56, 48, 0.08)',
+  },
+  subName: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#302b25',
+  },
+  subMeta: {
+    fontSize: 9,
+    color: '#82776a',
+    marginTop: 2,
+    fontWeight: '600',
   }
 });
 
