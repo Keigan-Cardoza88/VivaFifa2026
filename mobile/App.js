@@ -135,6 +135,12 @@ export default function App() {
   // Leaderboard toggle
   const [leaderboardType, setLeaderboardType] = useState('money');
 
+  // New state for user names mapping, group consensus, and history bet expander
+  const [allUsers, setAllUsers] = useState({});
+  const [firstMatchBets, setFirstMatchBets] = useState([]);
+  const [expandedMatchId, setExpandedMatchId] = useState(null);
+  const [expandedMatchBets, setExpandedMatchBets] = useState([]);
+
   // Google Auth Request Config for Mobile Native fallback
   const [request, response, promptAsync] = Google.useAuthRequest({
     webClientId: '56297030289-cdc4aathp3lsfskrsj1q3r9u5irqecbv.apps.googleusercontent.com',
@@ -261,14 +267,53 @@ export default function App() {
       setLeaderboardAccuracy(list);
     });
 
+    const unsubUsers = onSnapshot(collection(db, 'users'), (snap) => {
+      const map = {};
+      snap.forEach(doc => {
+        map[doc.id] = doc.data();
+      });
+      setAllUsers(map);
+    });
+
     return () => {
       unsubMatches();
       unsubBets();
       unsubSettings();
       unsubMoney();
       unsubAccuracy();
+      unsubUsers();
     };
   }, [currentUser, userProfile]);
+
+  const firstUpcomingMatch = matches.find(m => m.status === 'upcoming');
+
+  useEffect(() => {
+    if (!currentUser || !userProfile || !firstUpcomingMatch?.id) {
+      setFirstMatchBets([]);
+      return;
+    }
+    const q = query(collection(db, 'bets'), where('matchId', '==', firstUpcomingMatch.id));
+    const unsub = onSnapshot(q, (snap) => {
+      const list = [];
+      snap.forEach(doc => list.push(doc.data()));
+      setFirstMatchBets(list);
+    });
+    return () => unsub();
+  }, [currentUser, userProfile, firstUpcomingMatch?.id]);
+
+  useEffect(() => {
+    if (!currentUser || !userProfile || !expandedMatchId) {
+      setExpandedMatchBets([]);
+      return;
+    }
+    const q = query(collection(db, 'bets'), where('matchId', '==', expandedMatchId));
+    const unsub = onSnapshot(q, (snap) => {
+      const list = [];
+      snap.forEach(doc => list.push(doc.data()));
+      setExpandedMatchBets(list);
+    });
+    return () => unsub();
+  }, [currentUser, userProfile, expandedMatchId]);
 
   const handleRegister = async () => {
     if (!nameInput.trim()) {
@@ -620,6 +665,8 @@ export default function App() {
 
   return (
     <View style={styles.appContainer}>
+      <View style={styles.ambientGlow1} />
+      <View style={styles.ambientGlow2} />
       <StatusBar barStyle="light-content" />
       <View style={styles.header}>
         <Text style={styles.headerTitle}>VIVAFIFA2026</Text>
@@ -644,17 +691,17 @@ export default function App() {
         {activeTab === 'home' && (
           <View>
             <View style={styles.statsCardGrid}>
-              <View style={[styles.statWidget, { borderLeftColor: '#ffd700' }]}>
+              <View style={[styles.statWidget, styles.glassCard, { borderLeftColor: '#ffd700' }]}>
                 <Text style={styles.statWidgetLabel}>Net Profit</Text>
                 <Text style={[styles.statWidgetValue, { color: netProfit >= 0 ? '#00e676' : '#ff3d71' }]}>
                   ₹{netProfit}
                 </Text>
               </View>
-              <View style={[styles.statWidget, { borderLeftColor: '#74acdf' }]}>
+              <View style={[styles.statWidget, styles.glassCard, { borderLeftColor: '#74acdf' }]}>
                 <Text style={styles.statWidgetLabel}>Accuracy</Text>
                 <Text style={styles.statWidgetValue}>{accuracy}%</Text>
               </View>
-              <View style={[styles.statWidget, { borderLeftColor: '#ff2d37' }]}>
+              <View style={[styles.statWidget, styles.glassCard, { borderLeftColor: '#ff2d37' }]}>
                 <Text style={styles.statWidgetLabel}>Leaderboard</Text>
                 <Text style={styles.statWidgetValue}>#{rankMoney || '-'}</Text>
               </View>
@@ -662,7 +709,7 @@ export default function App() {
 
             {/* ANALYTICS CHARTS SECTION */}
             <View style={styles.analyticsSection}>
-              <View style={styles.chartCard}>
+              <View style={[styles.chartCard, styles.glassCard]}>
                 <Text style={styles.chartTitle}>Profit Trend</Text>
                 {renderProfitChart()}
                 <View style={styles.chartFooter}>
@@ -671,7 +718,7 @@ export default function App() {
                 </View>
               </View>
               
-              <View style={styles.ringCard}>
+              <View style={[styles.ringCard, styles.glassCard]}>
                 <Text style={styles.chartTitle}>Accuracy</Text>
                 <View style={styles.ringContainer}>
                   {renderAccuracyRing()}
@@ -682,6 +729,92 @@ export default function App() {
                 </View>
               </View>
             </View>
+
+            {/* GROUP CONSENSUS CARD (Earliest sequence match) */}
+            {firstUpcomingMatch && (
+              <View style={[styles.mainConsensusCard, styles.glassCard]}>
+                <View style={styles.consensusHeader}>
+                  <Text style={styles.consensusHeaderLabel}>🔥 NEXT MATCH CONSENSUS</Text>
+                  <View style={styles.liveBadge}><Text style={styles.liveBadgeText}>OPEN</Text></View>
+                </View>
+
+                <View style={styles.consensusTeamsRow}>
+                  <View style={styles.consensusTeamContainer}>
+                    <Text style={styles.consensusTeamFlag}>{getTeamFlag(firstUpcomingMatch.teamA)}</Text>
+                    <Text style={styles.consensusTeamName}>{firstUpcomingMatch.teamA}</Text>
+                  </View>
+                  <Text style={styles.consensusVs}>VS</Text>
+                  <View style={styles.consensusTeamContainer}>
+                    <Text style={styles.consensusTeamName}>{firstUpcomingMatch.teamB}</Text>
+                    <Text style={styles.consensusTeamFlag}>{getTeamFlag(firstUpcomingMatch.teamB)}</Text>
+                  </View>
+                </View>
+
+                <View style={styles.consensusStatsRow}>
+                  <Text style={styles.consensusStatLabel}>Group Predictions Distribution (Anonymous):</Text>
+                </View>
+
+                {(() => {
+                  const total = firstMatchBets.length;
+                  const countA = firstMatchBets.filter(b => b.teamPrediction === 'teamA').length;
+                  const countB = firstMatchBets.filter(b => b.teamPrediction === 'teamB').length;
+                  const countD = firstMatchBets.filter(b => b.teamPrediction === 'draw').length;
+
+                  const pctA = total > 0 ? Math.round((countA / total) * 100) : 0;
+                  const pctB = total > 0 ? Math.round((countB / total) * 100) : 0;
+                  const pctD = total > 0 ? Math.round((countD / total) * 100) : 0;
+
+                  return (
+                    <View style={{ width: '100%', marginTop: 8 }}>
+                      <View style={styles.consensusBar}>
+                        {pctA > 0 && (
+                          <View style={[styles.consensusBarSegment, { width: `${pctA}%`, backgroundColor: '#3b82f6' }]} />
+                        )}
+                        {pctD > 0 && (
+                          <View style={[styles.consensusBarSegment, { width: `${pctD}%`, backgroundColor: '#64748b' }]} />
+                        )}
+                        {pctB > 0 && (
+                          <View style={[styles.consensusBarSegment, { width: `${pctB}%`, backgroundColor: '#ffd700' }]} />
+                        )}
+                        {total === 0 && (
+                          <View style={[styles.consensusBarSegment, { width: '100%', backgroundColor: '#1e294b' }]} />
+                        )}
+                      </View>
+
+                      <View style={styles.consensusLabelsRow}>
+                        <Text style={[styles.consensusLabelText, { color: '#60a5fa' }]}>
+                          {firstUpcomingMatch.teamA}: {countA} ({pctA}%)
+                        </Text>
+                        <Text style={[styles.consensusLabelText, { color: '#94a3b8' }]}>
+                          Draw: {countD} ({pctD}%)
+                        </Text>
+                        <Text style={[styles.consensusLabelText, { color: '#ffd700' }]}>
+                          {firstUpcomingMatch.teamB}: {countB} ({pctB}%)
+                        </Text>
+                      </View>
+
+                      <Text style={styles.consensusTotalLabel}>Total Bets Placed: {total}</Text>
+
+                      <View style={{ marginTop: 16, alignItems: 'center' }}>
+                        {(() => {
+                          const bet = myBets[firstUpcomingMatch.matchId];
+                          return (
+                            <TouchableOpacity 
+                              style={styles.consensusActionButton} 
+                              onPress={() => handleOpenBet(firstUpcomingMatch)}
+                            >
+                              <Text style={styles.consensusActionText}>
+                                {bet ? '✏️ EDIT YOUR Prediction' : '🎯 PLACE Prediction NOW'}
+                              </Text>
+                            </TouchableOpacity>
+                          );
+                        })()}
+                      </View>
+                    </View>
+                  );
+                })()}
+              </View>
+            )}
 
             <Text style={styles.sectionHeader}>Today's Fixtures</Text>
             {matches.filter(m => m.status === 'upcoming' || m.status === 'betting_closed' || m.status === 'live').map((match) => {
@@ -786,49 +919,99 @@ export default function App() {
             {matches.filter(m => m.status === 'completed' || m.status === 'postponed').map((match) => {
               const bet = myBets[match.matchId];
               const isPostponed = match.status === 'postponed';
+              const isExpanded = expandedMatchId === match.matchId;
+
+              const toggleExpand = () => {
+                if (isExpanded) {
+                  setExpandedMatchId(null);
+                } else {
+                  setExpandedMatchId(match.matchId);
+                }
+              };
 
               return (
-                <View style={styles.historyCard} key={match.id}>
-                  <View style={styles.matchHeaderRow}>
-                    <Text style={styles.matchStage}>{match.stage.toUpperCase()}</Text>
-                    <Text style={styles.matchTime}>Completed</Text>
-                  </View>
-                  <View style={styles.matchTeamsContainer}>
-                    <Text style={styles.matchTeamText}>{getTeamFlag(match.teamA)} {match.teamA}</Text>
-                    <Text style={styles.scoreText}>
-                      {isPostponed ? 'P-P' : `${match.resultTeamAGoals} - ${match.resultTeamBGoals}`}
-                    </Text>
-                    <Text style={styles.matchTeamText}>{match.teamB} {getTeamFlag(match.teamB)}</Text>
-                  </View>
-                  <View style={styles.historyBetRow}>
-                    {bet ? (
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.historyBetTitle}>Your Prediction:</Text>
-                        <Text style={styles.historyBetValue}>
-                          {bet.teamPrediction === 'teamA' ? `${getTeamFlag(match.teamA)} ${match.teamA}` : (bet.teamPrediction === 'teamB' ? `${match.teamB} ${getTeamFlag(match.teamB)}` : 'Draw')} ({bet.goalsTeamA}-{bet.goalsTeamB})
-                        </Text>
-                        <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
-                          <View style={[styles.badge, bet.teamBetResult === 'won' || bet.teamBetResult === 'draw_win' ? styles.badgeWin : styles.badgeLoss]}>
-                            <Text style={styles.badgeText}>Team: {bet.teamBetResult ? bet.teamBetResult.toUpperCase() : 'LOST'}</Text>
-                          </View>
-                          <View style={[styles.badge, bet.goalBetResult === 'won' ? styles.badgeWin : styles.badgeLoss]}>
-                            <Text style={styles.badgeText}>Goal: {bet.goalBetResult ? bet.goalBetResult.toUpperCase() : 'LOST'}</Text>
+                <View key={match.id}>
+                  <TouchableOpacity style={[styles.historyCard, styles.glassCard]} onPress={toggleExpand}>
+                    <View style={styles.matchHeaderRow}>
+                      <Text style={styles.matchStage}>{match.stage.toUpperCase()}</Text>
+                      <Text style={styles.matchTime}>{isExpanded ? '▼ Hide Details' : '▶ Show Details'}</Text>
+                    </View>
+                    <View style={styles.matchTeamsContainer}>
+                      <Text style={styles.matchTeamText}>{getTeamFlag(match.teamA)} {match.teamA}</Text>
+                      <Text style={styles.scoreText}>
+                        {isPostponed ? 'P-P' : `${match.resultTeamAGoals} - ${match.resultTeamBGoals}`}
+                      </Text>
+                      <Text style={styles.matchTeamText}>{match.teamB} {getTeamFlag(match.teamB)}</Text>
+                    </View>
+                    <View style={styles.historyBetRow}>
+                      {bet ? (
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.historyBetTitle}>Your Prediction:</Text>
+                          <Text style={styles.historyBetValue}>
+                            {bet.teamPrediction === 'teamA' ? `${getTeamFlag(match.teamA)} ${match.teamA}` : (bet.teamPrediction === 'teamB' ? `${match.teamB} ${getTeamFlag(match.teamB)}` : 'Draw')} ({bet.goalsTeamA}-{bet.goalsTeamB})
+                          </Text>
+                          <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
+                            <View style={[styles.badge, bet.teamBetResult === 'won' || bet.teamBetResult === 'draw_win' ? styles.badgeWin : styles.badgeLoss]}>
+                              <Text style={styles.badgeText}>Team: {bet.teamBetResult ? bet.teamBetResult.toUpperCase() : 'LOST'}</Text>
+                            </View>
+                            <View style={[styles.badge, bet.goalBetResult === 'won' ? styles.badgeWin : styles.badgeLoss]}>
+                              <Text style={styles.badgeText}>Goal: {bet.goalBetResult ? bet.goalBetResult.toUpperCase() : 'LOST'}</Text>
+                            </View>
                           </View>
                         </View>
+                      ) : (
+                        <Text style={styles.historyNoBet}>Forfeited (Did not place bet)</Text>
+                      )}
+                      
+                      {bet && (
+                        <View style={{ alignItems: 'flex-end' }}>
+                          <Text style={{ fontSize: 11, color: '#94a3b8' }}>Payout</Text>
+                          <Text style={[styles.payoutText, (bet.amountWon - bet.amountLost) >= 0 ? { color: '#00e676' } : { color: '#ff3d71' }]}>
+                            {(bet.amountWon - bet.amountLost) >= 0 ? '+' : ''}₹{bet.amountWon - bet.amountLost}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+
+                    {isExpanded && (
+                      <View style={styles.expandedBetsContainer}>
+                        <View style={styles.expandedBetsDivider} />
+                        <Text style={styles.expandedBetsTitle}>All Player Predictions</Text>
+                        {expandedMatchBets.length === 0 ? (
+                          <Text style={styles.expandedBetsEmpty}>Loading or no bets placed...</Text>
+                        ) : (
+                          <View style={styles.expandedBetsTable}>
+                            <View style={styles.expandedBetsHeader}>
+                              <Text style={[styles.expandedBetsHeadCell, { flex: 2.2 }]}>Player</Text>
+                              <Text style={[styles.expandedBetsHeadCell, { flex: 2 }]}>Prediction</Text>
+                              <Text style={[styles.expandedBetsHeadCell, { flex: 1.5, textAlign: 'center' }]}>Goals</Text>
+                              <Text style={[styles.expandedBetsHeadCell, { flex: 1.3, textAlign: 'right' }]}>Net</Text>
+                            </View>
+                            {expandedMatchBets.map((b) => {
+                              const u = allUsers[b.userId] || { name: 'Player' };
+                              const net = (b.amountWon || 0) - (b.amountLost || 0);
+                              return (
+                                <View style={styles.expandedBetsRow} key={b.betId}>
+                                  <Text style={[styles.expandedBetsCell, { flex: 2.2, fontWeight: '700' }]} numberOfLines={1}>
+                                    {u.name}
+                                  </Text>
+                                  <Text style={[styles.expandedBetsCell, { flex: 2 }]}>
+                                    {b.teamPrediction === 'teamA' ? getTeamFlag(match.teamA) : (b.teamPrediction === 'teamB' ? getTeamFlag(match.teamB) : 'Draw')} {b.teamPrediction === 'teamA' ? match.teamA : (b.teamPrediction === 'teamB' ? match.teamB : 'Draw')}
+                                  </Text>
+                                  <Text style={[styles.expandedBetsCell, { flex: 1.5, textAlign: 'center', fontWeight: '800', color: '#ffd700' }]}>
+                                    {b.goalsTeamA < 0 ? 'N/A' : `${b.goalsTeamA} - ${b.goalsTeamB}`}
+                                  </Text>
+                                  <Text style={[styles.expandedBetsCell, { flex: 1.3, textAlign: 'right', fontWeight: '800', color: net >= 0 ? '#00e676' : '#ff3d71' }]}>
+                                    {net >= 0 ? '+' : ''}₹{net}
+                                  </Text>
+                                </View>
+                              );
+                            })}
+                          </View>
+                        )}
                       </View>
-                    ) : (
-                      <Text style={styles.historyNoBet}>Forfeited (Did not place bet)</Text>
                     )}
-                    
-                    {bet && (
-                      <View style={{ alignItems: 'flex-end' }}>
-                        <Text style={{ fontSize: 11, color: '#94a3b8' }}>Payout</Text>
-                        <Text style={[styles.payoutText, (bet.amountWon - bet.amountLost) >= 0 ? { color: '#00e676' } : { color: '#ff3d71' }]}>
-                          {(bet.amountWon - bet.amountLost) >= 0 ? '+' : ''}₹{bet.amountWon - bet.amountLost}
-                        </Text>
-                      </View>
-                    )}
-                  </View>
+                  </TouchableOpacity>
                 </View>
               );
             })}
@@ -1843,5 +2026,208 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
     gap: 10,
     marginTop: 20
+  },
+  // Ambient Glows
+  ambientGlow1: {
+    position: 'absolute',
+    top: -120,
+    left: -120,
+    width: 350,
+    height: 350,
+    borderRadius: 175,
+    backgroundColor: 'rgba(37, 99, 235, 0.16)',
+    filter: 'blur(80px)',
+    pointerEvents: 'none',
+  },
+  ambientGlow2: {
+    position: 'absolute',
+    bottom: 80,
+    right: -150,
+    width: 450,
+    height: 450,
+    borderRadius: 225,
+    backgroundColor: 'rgba(251, 191, 36, 0.08)',
+    filter: 'blur(100px)',
+    pointerEvents: 'none',
+  },
+  // Highlight Consensus Card
+  mainConsensusCard: {
+    padding: 20,
+    borderRadius: 16,
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+  },
+  consensusHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  consensusHeaderLabel: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#ffd700',
+    letterSpacing: 1.2,
+  },
+  liveBadge: {
+    backgroundColor: '#3b82f62b',
+    borderColor: '#3b82f6',
+    borderWidth: 1.2,
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  liveBadgeText: {
+    color: '#60a5fa',
+    fontSize: 9,
+    fontWeight: '900',
+  },
+  consensusTeamsRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+    gap: 14,
+  },
+  consensusTeamContainer: {
+    flex: 1,
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  consensusTeamFlag: {
+    fontSize: 24,
+  },
+  consensusTeamName: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#ffffff',
+  },
+  consensusVs: {
+    fontSize: 11,
+    fontWeight: '900',
+    color: '#ffd700',
+    backgroundColor: '#1b2234',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#2e3a5a',
+    overflow: 'hidden',
+  },
+  consensusStatsRow: {
+    marginBottom: 8,
+  },
+  consensusStatLabel: {
+    fontSize: 12,
+    color: '#94a3b8',
+    fontWeight: '700',
+  },
+  consensusBar: {
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#111726',
+    flexDirection: 'row',
+    overflow: 'hidden',
+    width: '100%',
+    borderWidth: 1,
+    borderColor: '#1e294b',
+  },
+  consensusBarSegment: {
+    height: '100%',
+  },
+  consensusLabelsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 8,
+  },
+  consensusLabelText: {
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  consensusTotalLabel: {
+    fontSize: 10,
+    color: '#64748b',
+    textAlign: 'center',
+    marginTop: 10,
+    fontWeight: '600',
+  },
+  consensusActionButton: {
+    backgroundColor: '#2563eb',
+    paddingVertical: 10,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#3b82f6',
+    shadowColor: '#2563eb',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 6,
+  },
+  consensusActionText: {
+    color: '#ffffff',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  // Expanded Bets Table Styles
+  expandedBetsContainer: {
+    marginTop: 16,
+    width: '100%',
+  },
+  expandedBetsDivider: {
+    height: 1.5,
+    backgroundColor: '#1e294b',
+    marginBottom: 12,
+  },
+  expandedBetsTitle: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#ffd700',
+    marginBottom: 10,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+  },
+  expandedBetsEmpty: {
+    fontSize: 12,
+    color: '#64748b',
+    textAlign: 'center',
+    paddingVertical: 10,
+  },
+  expandedBetsTable: {
+    borderWidth: 1,
+    borderColor: '#1e294b',
+    borderRadius: 8,
+    overflow: 'hidden',
+    backgroundColor: '#0a0d18',
+  },
+  expandedBetsHeader: {
+    flexDirection: 'row',
+    backgroundColor: '#111726',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#1e294b',
+  },
+  expandedBetsHeadCell: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#94a3b8',
+    textTransform: 'uppercase',
+  },
+  expandedBetsRow: {
+    flexDirection: 'row',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderBottomWidth: 0.8,
+    borderBottomColor: '#141b2c',
+    alignItems: 'center',
+  },
+  expandedBetsCell: {
+    fontSize: 12,
+    color: '#f8fafc',
   }
 });
