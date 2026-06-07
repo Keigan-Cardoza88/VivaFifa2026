@@ -92,6 +92,27 @@ html = html.replace('<title>mobile</title>', '<title>VivaFifa2026</title>');
 const customStyles = `
     <style>
       @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+      /* Custom Premium Scrollbars */
+      * {
+        scrollbar-width: thin;
+        scrollbar-color: #e6dcbf #f1ebd9;
+      }
+      ::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #f1ebd9; 
+        border-radius: 10px;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #e6dcbf; 
+        border-radius: 10px;
+        border: 2px solid #f1ebd9;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #b45309; 
+      }
       html, body {
         width: 100% !important;
         height: 100% !important;

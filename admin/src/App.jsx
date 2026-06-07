@@ -707,7 +707,7 @@ function App() {
   let entryPot = 0;
   users.forEach(u => {
     if (u.role === 'participant') {
-      entryPot += u.entryFee ?? 0;
+      entryPot += u.entryFee !== undefined ? u.entryFee : 10400;
     }
   });
 

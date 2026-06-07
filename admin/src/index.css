@@ -27,6 +27,32 @@
   --active-blue: #b45309;
 }
 
+/* Custom Premium Scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #dcd0b0 #f1ebd9;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-color); 
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--btn-bg); 
+  border-radius: 10px;
+  border: 2px solid var(--bg-color);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--active-blue); 
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
