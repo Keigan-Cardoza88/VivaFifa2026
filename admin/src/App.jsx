@@ -115,6 +115,7 @@ function App() {
   const [matchBetsData, setMatchBetsData] = useState([]);
   const [betsLoading, setBetsLoading] = useState(false);
   const [overrideBetForm, setOverrideBetForm] = useState({ userId: '', teamPrediction: '', goalsTeamA: '', goalsTeamB: '' });
+  const [matchesSortOrder, setMatchesSortOrder] = useState('time-asc');
 
   // 1. Monitor Auth State
   useEffect(() => {
@@ -597,8 +598,62 @@ function App() {
       setStatusMessage({ type: 'error', text: `Failed to override bet: ${err.message}` });
     } finally {
       setActionLoading(false);
+  // Close betting for all non-completed matches
+  const handleCloseAllBets = async () => {
+    if (isAuditor) return;
+    if (!window.confirm("Are you sure you want to CLOSE betting for all upcoming/live matches immediately?")) return;
+    setActionLoading(true);
+    setStatusMessage({ type: 'info', text: 'Closing wagers for all upcoming matches...' });
+    try {
+      const promises = matches
+        .filter(m => m.status === 'upcoming' || m.status === 'live')
+        .map(m => updateDoc(doc(db, 'matches', m.id), { status: 'betting_closed' }));
+      await Promise.all(promises);
+      setStatusMessage({ type: 'success', text: 'Successfully closed wagers for all matches.' });
+    } catch (err) {
+      setStatusMessage({ type: 'error', text: `Failed to close wagers: ${err.message}` });
+    } finally {
+      setActionLoading(false);
     }
   };
+
+  // Open betting for all non-completed matches
+  const handleStartAllBets = async () => {
+    if (isAuditor) return;
+    if (!window.confirm("Are you sure you want to OPEN betting for all non-completed/non-postponed matches immediately?")) return;
+    setActionLoading(true);
+    setStatusMessage({ type: 'info', text: 'Opening wagers for all matches...' });
+    try {
+      const promises = matches
+        .filter(m => m.status === 'betting_closed' || m.status === 'live')
+        .map(m => updateDoc(doc(db, 'matches', m.id), { status: 'upcoming' }));
+      await Promise.all(promises);
+      setStatusMessage({ type: 'success', text: 'Successfully opened wagers for all matches.' });
+    } catch (err) {
+      setStatusMessage({ type: 'error', text: `Failed to open wagers: ${err.message}` });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const getSortedMatches = () => {
+    const list = [...matches];
+    if (matchesSortOrder === 'time-asc') {
+      list.sort((a, b) => (a.kickoffTimeIST?.seconds || 0) - (b.kickoffTimeIST?.seconds || 0));
+    } else if (matchesSortOrder === 'time-desc') {
+      list.sort((a, b) => (b.kickoffTimeIST?.seconds || 0) - (a.kickoffTimeIST?.seconds || 0));
+    } else if (matchesSortOrder === 'id-asc') {
+      list.sort((a, b) => Number(a.matchId) - Number(b.matchId));
+    } else if (matchesSortOrder === 'id-desc') {
+      list.sort((a, b) => Number(b.matchId) - Number(a.matchId));
+    } else if (matchesSortOrder === 'stage') {
+      const stageOrder = { group: 1, r32: 2, r16: 3, qf: 4, sf: 5, third_place: 6, final: 7 };
+      list.sort((a, b) => (stageOrder[a.stage] || 0) - (stageOrder[b.stage] || 0));
+    }
+    return list;
+  };
+  const sortedMatches = getSortedMatches();
+
   // Loading Screen
   if (loading) {
     return (
@@ -818,6 +873,33 @@ function App() {
               <p className="page-subtitle">Configure kickoff states and enter final game scorelines.</p>
             </div>
 
+            {!isAuditor && (
+              <div className="content-card" style={{ marginBottom: '24px', display: 'flex', flexWrap: 'wrap', gap: '16px', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <button className="btn" style={{ backgroundColor: 'var(--loss-red)', border: 'none', color: 'white', padding: '8px 16px', fontWeight: '800', borderRadius: '4px', cursor: 'pointer' }}
+                          disabled={actionLoading} onClick={handleCloseAllBets}>
+                    🔒 Close All Bets
+                  </button>
+                  <button className="btn" style={{ backgroundColor: 'var(--win-green)', border: 'none', color: 'white', padding: '8px 16px', fontWeight: '800', borderRadius: '4px', cursor: 'pointer' }}
+                          disabled={actionLoading} onClick={handleStartAllBets}>
+                    🔓 Start All Bets
+                  </button>
+                </div>
+                
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span className="form-label" style={{ marginBottom: 0, whiteSpace: 'nowrap', color: 'var(--text-sub)' }}>Rearrange Matches:</span>
+                  <select className="form-control" style={{ width: '220px', padding: '6px' }} value={matchesSortOrder}
+                          onChange={e => setMatchesSortOrder(e.target.value)}>
+                    <option value="time-asc">Kickoff Time (Earliest First)</option>
+                    <option value="time-desc">Kickoff Time (Latest First)</option>
+                    <option value="id-asc">Match Number (Ascending)</option>
+                    <option value="id-desc">Match Number (Descending)</option>
+                    <option value="stage">Tournament Stage</option>
+                  </select>
+                </div>
+              </div>
+            )}
+
             {selectedMatch ? (
               <div className="content-card" style={{ border: '2px solid var(--brazil-gold)' }}>
                 <h3 className="card-title">Settle Match #{selectedMatch.matchId}</h3>
@@ -903,7 +985,7 @@ function App() {
             ) : null}
 
             <div className="matches-grid">
-              {matches.map((match) => (
+              {sortedMatches.map((match) => (
                 <div className="match-item-card" key={match.id}>
                   <div className="match-item-header">
                     <span className="match-stage-label">{match.stage} (Match #{match.matchId})</span>
@@ -1208,7 +1290,10 @@ function App() {
                         </tr>
                       </thead>
                       <tbody>
-                        {Object.keys(globalSettings.stakes).map((stage) => (
+                        {Object.keys(globalSettings.stakes).sort((a, b) => {
+                          const order = ['final', 'sf', 'third_place', 'qf', 'r16', 'r32', 'group'];
+                          return order.indexOf(a) - order.indexOf(b);
+                        }).map((stage) => (
                           <tr key={stage}>
                             <td><strong style={{ textTransform: 'uppercase' }}>{stage}</strong></td>
                             <td>
