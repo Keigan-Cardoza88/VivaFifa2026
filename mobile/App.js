@@ -632,7 +632,7 @@ export default function App() {
         {areaPath ? <path d={areaPath} fill={`url(#${gradId})`} /> : null}
         {linePath ? <path d={linePath} fill="none" stroke={strokeColor} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" /> : null}
         {points.map((p, idx) => (
-          <circle key={idx} cx={p.x} cy={p.y} r="3" fill="#fcfaf6" stroke={strokeColor} strokeWidth="1.5" />
+          <circle key={idx} cx={p.x} cy={p.y} r="3" fill="#f1ebd9" stroke={strokeColor} strokeWidth="1.5" />
         ))}
       </svg>
     );
@@ -1195,7 +1195,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#fcfaf6',
+    backgroundColor: '#f1ebd9',
   },
   loadingText: {
     color: '#82776a',
@@ -1205,7 +1205,7 @@ const styles = StyleSheet.create({
   },
   appContainer: {
     flex: 1,
-    backgroundColor: '#fcfaf6',
+    backgroundColor: '#f1ebd9',
     paddingTop: Platform.OS === 'ios' ? 44 : 20,
     width: '100%',
   },
@@ -1217,7 +1217,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    backgroundColor: '#f5ede0'
+    backgroundColor: '#e8dfc7'
   },
   headerTitle: {
     fontSize: 18,
@@ -1238,7 +1238,7 @@ const styles = StyleSheet.create({
     padding: 24,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#fcfaf6',
+    backgroundColor: '#f1ebd9',
     minHeight: '100%',
     width: '100%',
     flex: 1,
@@ -1258,7 +1258,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1.5
   },
   card: {
-    backgroundColor: 'rgba(247, 243, 235, 0.75)',
+    backgroundColor: 'rgba(250, 247, 238, 0.85)',
     borderColor: 'rgba(62, 56, 48, 0.12)',
     borderWidth: 1,
     borderRadius: 16,
@@ -1271,7 +1271,7 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
   },
   glassCard: {
-    backgroundColor: 'rgba(247, 243, 235, 0.75)',
+    backgroundColor: 'rgba(250, 247, 238, 0.85)',
     borderColor: 'rgba(62, 56, 48, 0.15)',
     borderWidth: 1,
     backdropFilter: 'blur(10px)', // For web compatibility
@@ -1288,7 +1288,7 @@ const styles = StyleSheet.create({
     textAlign: 'center'
   },
   input: {
-    backgroundColor: '#fdfcf9',
+    backgroundColor: '#faf7ee',
     borderWidth: 1.5,
     borderColor: 'rgba(62, 56, 48, 0.15)',
     color: '#302b25',
@@ -1311,7 +1311,7 @@ const styles = StyleSheet.create({
   paymentBtn: {
     paddingVertical: 6,
     paddingHorizontal: 12,
-    backgroundColor: '#eae2d3',
+    backgroundColor: '#e6dcbf',
     borderRadius: 6,
   },
   paymentActive: {
@@ -1343,7 +1343,7 @@ const styles = StyleSheet.create({
     width: '100%'
   },
   btnSecondary: {
-    backgroundColor: '#eae2d3',
+    backgroundColor: '#e6dcbf',
     paddingVertical: 10,
     borderRadius: 8,
     alignItems: 'center',
@@ -1399,7 +1399,7 @@ const styles = StyleSheet.create({
   },
   statWidget: {
     flex: 1,
-    backgroundColor: 'rgba(247, 243, 235, 0.75)',
+    backgroundColor: 'rgba(250, 247, 238, 0.85)',
     borderColor: 'rgba(62, 56, 48, 0.12)',
     borderWidth: 1.5,
     borderLeftWidth: 4,
@@ -1431,7 +1431,7 @@ const styles = StyleSheet.create({
   },
   chartCard: {
     flex: 2,
-    backgroundColor: 'rgba(247, 243, 235, 0.75)',
+    backgroundColor: 'rgba(250, 247, 238, 0.85)',
     borderColor: 'rgba(62, 56, 48, 0.12)',
     borderWidth: 1.5,
     borderRadius: 12,
@@ -1443,7 +1443,7 @@ const styles = StyleSheet.create({
   },
   ringCard: {
     flex: 1.2,
-    backgroundColor: 'rgba(247, 243, 235, 0.75)',
+    backgroundColor: 'rgba(250, 247, 238, 0.85)',
     borderColor: 'rgba(62, 56, 48, 0.12)',
     borderWidth: 1.5,
     borderRadius: 12,
@@ -1503,7 +1503,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1.2
   },
   matchCard: {
-    backgroundColor: 'rgba(247, 243, 235, 0.75)',
+    backgroundColor: 'rgba(250, 247, 238, 0.85)',
     borderColor: 'rgba(62, 56, 48, 0.12)',
     borderWidth: 1.5,
     borderRadius: 14,
@@ -1546,7 +1546,7 @@ const styles = StyleSheet.create({
   },
   matchVS: {
     color: '#b45309',
-    backgroundColor: '#eae2d3',
+    backgroundColor: '#e6dcbf',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
@@ -1590,7 +1590,7 @@ const styles = StyleSheet.create({
     fontWeight: '700'
   },
   lockedBadge: {
-    backgroundColor: '#eae2d3',
+    backgroundColor: '#e6dcbf',
     paddingVertical: 5,
     paddingHorizontal: 10,
     borderRadius: 6,
@@ -1625,7 +1625,7 @@ const styles = StyleSheet.create({
   toggleBtn: {
     flex: 1,
     paddingVertical: 12,
-    backgroundColor: '#eae2d3',
+    backgroundColor: '#e6dcbf',
     borderColor: 'rgba(62, 56, 48, 0.12)',
     borderWidth: 1.5,
     borderRadius: 10,
@@ -1645,7 +1645,7 @@ const styles = StyleSheet.create({
     fontSize: 13
   },
   tableCard: {
-    backgroundColor: 'rgba(247, 243, 235, 0.75)',
+    backgroundColor: 'rgba(250, 247, 238, 0.85)',
     borderColor: 'rgba(62, 56, 48, 0.12)',
     borderWidth: 1,
     borderRadius: 14,
@@ -1688,7 +1688,7 @@ const styles = StyleSheet.create({
     fontSize: 14
   },
   historyCard: {
-    backgroundColor: 'rgba(247, 243, 235, 0.75)',
+    backgroundColor: 'rgba(250, 247, 238, 0.85)',
     borderColor: 'rgba(62, 56, 48, 0.12)',
     borderWidth: 1,
     borderRadius: 14,
@@ -1754,7 +1754,7 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase'
   },
   bracketStageCard: {
-    backgroundColor: 'rgba(247, 243, 235, 0.75)',
+    backgroundColor: 'rgba(250, 247, 238, 0.85)',
     borderColor: 'rgba(62, 56, 48, 0.12)',
     borderWidth: 1,
     borderRadius: 14,
@@ -1815,7 +1815,7 @@ const styles = StyleSheet.create({
     fontSize: 12
   },
   profileCard: {
-    backgroundColor: 'rgba(247, 243, 235, 0.75)',
+    backgroundColor: 'rgba(250, 247, 238, 0.85)',
     borderColor: 'rgba(62, 56, 48, 0.12)',
     borderWidth: 1.5,
     borderRadius: 14,
@@ -1863,7 +1863,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1.5,
     borderTopColor: 'rgba(62, 56, 48, 0.12)',
     flexDirection: 'row',
-    backgroundColor: '#f5ede0',
+    backgroundColor: '#e8dfc7',
     paddingBottom: Platform.OS === 'ios' ? 15 : 0,
   },
   tabItem: {
@@ -1875,7 +1875,7 @@ const styles = StyleSheet.create({
   tabActive: {
     borderTopWidth: 3,
     borderTopColor: '#b45309',
-    backgroundColor: '#fdfcf9'
+    backgroundColor: '#faf7ee'
   },
   tabText: {
     color: '#82776a',
@@ -1890,7 +1890,7 @@ const styles = StyleSheet.create({
     padding: 20
   },
   modalContent: {
-    backgroundColor: '#fcfaf6',
+    backgroundColor: '#f1ebd9',
     borderColor: '#b45309',
     borderWidth: 2,
     borderRadius: 16,
@@ -1903,7 +1903,7 @@ const styles = StyleSheet.create({
     shadowRadius: 15,
   },
   confirmContent: {
-    backgroundColor: '#fcfaf6',
+    backgroundColor: '#f1ebd9',
     borderColor: '#b92028',
     borderWidth: 2,
     borderRadius: 16,
@@ -1946,7 +1946,7 @@ const styles = StyleSheet.create({
     lineHeight: 18
   },
   confirmDetails: {
-    backgroundColor: '#fdfcf9',
+    backgroundColor: '#faf7ee',
     padding: 16,
     borderRadius: 10,
     marginVertical: 14,
@@ -1974,7 +1974,7 @@ const styles = StyleSheet.create({
   teamSelectBtn: {
     flex: 1,
     paddingVertical: 10,
-    backgroundColor: '#eae2d3',
+    backgroundColor: '#e6dcbf',
     borderRadius: 8,
     alignItems: 'center',
     borderWidth: 1.5,
@@ -1998,7 +1998,7 @@ const styles = StyleSheet.create({
     marginVertical: 12
   },
   scoreInput: {
-    backgroundColor: '#fdfcf9',
+    backgroundColor: '#faf7ee',
     borderWidth: 2,
     borderColor: 'rgba(62, 56, 48, 0.15)',
     color: '#302b25',
@@ -2111,7 +2111,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '900',
     color: '#b45309',
-    backgroundColor: '#eae2d3',
+    backgroundColor: '#e6dcbf',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
@@ -2130,7 +2130,7 @@ const styles = StyleSheet.create({
   consensusBar: {
     height: 12,
     borderRadius: 6,
-    backgroundColor: '#eae2d3',
+    backgroundColor: '#e6dcbf',
     flexDirection: 'row',
     overflow: 'hidden',
     width: '100%',
@@ -2202,11 +2202,11 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(62, 56, 48, 0.12)',
     borderRadius: 8,
     overflow: 'hidden',
-    backgroundColor: '#fdfcf9',
+    backgroundColor: '#faf7ee',
   },
   expandedBetsHeader: {
     flexDirection: 'row',
-    backgroundColor: '#eae2d3',
+    backgroundColor: '#e6dcbf',
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderBottomWidth: 1,

@@ -2,6 +2,17 @@ const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
+console.log('=== 0. Preparing assets (overwriting default Expo icons with real app logo) ===');
+const logoSrc = path.join(__dirname, '../VivaFifaLogo.jpeg');
+const assetsDir = path.join(__dirname, '../mobile/assets');
+if (fs.existsSync(logoSrc) && fs.existsSync(assetsDir)) {
+  fs.copyFileSync(logoSrc, path.join(assetsDir, 'icon.png'));
+  fs.copyFileSync(logoSrc, path.join(assetsDir, 'splash-icon.png'));
+  fs.copyFileSync(logoSrc, path.join(assetsDir, 'favicon.png'));
+  fs.copyFileSync(logoSrc, path.join(assetsDir, 'android-icon-foreground.png'));
+  console.log('Official logo copied to Expo assets directory successfully!');
+}
+
 console.log('=== 1. Exporting Expo Mobile for Web ===');
 execSync('npx expo export --platform web', { cwd: path.join(__dirname, '../mobile'), stdio: 'inherit' });
 
@@ -30,19 +41,19 @@ const manifest = {
   description: "World Cup 2026 Private Betting Arena",
   start_url: "/",
   display: "standalone",
-  background_color: "#fcfaf6",
-  theme_color: "#fcfaf6",
+  background_color: "#f1ebd9",
+  theme_color: "#f1ebd9",
   orientation: "portrait",
   icons: [
     {
-      src: "/icon-192.png",
+      src: "/icon-192.jpeg",
       sizes: "192x192",
-      type: "image/png"
+      type: "image/jpeg"
     },
     {
-      src: "/icon-512.png",
+      src: "/icon-512.jpeg",
       sizes: "512x512",
-      type: "image/png"
+      type: "image/jpeg"
     }
   ]
 };
@@ -50,12 +61,12 @@ fs.writeFileSync(path.join(publicWeb, 'manifest.json'), JSON.stringify(manifest,
 
 console.log('=== 7. Copying Launcher Icons & Favicon ===');
 fs.copyFileSync(
-  path.join(__dirname, '../mobile/assets/splash-icon.png'),
-  path.join(publicWeb, 'icon-192.png')
+  path.join(__dirname, '../VivaFifaLogo.jpeg'),
+  path.join(publicWeb, 'icon-192.jpeg')
 );
 fs.copyFileSync(
-  path.join(__dirname, '../mobile/assets/icon.png'),
-  path.join(publicWeb, 'icon-512.png')
+  path.join(__dirname, '../VivaFifaLogo.jpeg'),
+  path.join(publicWeb, 'icon-512.jpeg')
 );
 fs.copyFileSync(
   path.join(__dirname, '../VivaFifaLogo.jpeg'),
@@ -81,7 +92,7 @@ const customStyles = `
         height: 100% !important;
         margin: 0 !important;
         padding: 0 !important;
-        background-color: #fcfaf6 !important;
+        background-color: #f1ebd9 !important;
         font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif !important;
       }
       #root {
