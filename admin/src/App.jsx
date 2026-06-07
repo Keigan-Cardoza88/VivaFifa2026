@@ -51,6 +51,8 @@ function App() {
   const [actionLoading, setActionLoading] = useState(false);
   const [customMatch, setCustomMatch] = useState({ matchId: '', teamA: '', teamB: '', stage: 'group', kickoffTime: '' });
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [editingMatch, setEditingMatch] = useState(null);
+  const [editMatchForm, setEditMatchForm] = useState({ teamA: '', teamB: '', stage: 'group', kickoffTime: '' });
 
   // 1. Monitor Auth State
   useEffect(() => {
@@ -403,6 +405,53 @@ function App() {
     }
   };
 
+  // Helper: Format Firestore Timestamp to datetime-local format
+  const formatTimestampForInput = (ts) => {
+    if (!ts) return '';
+    const date = new Date(ts.seconds * 1000);
+    const offset = date.getTimezoneOffset();
+    const localDate = new Date(date.getTime() - offset * 60 * 1000);
+    return localDate.toISOString().slice(0, 16);
+  };
+
+  // N. Delete Match Fixture
+  const handleDeleteMatch = async (matchId) => {
+    if (isAuditor) return;
+    if (!window.confirm(`Are you sure you want to delete Match #${matchId}? This cannot be undone.`)) return;
+    try {
+      await deleteDoc(doc(db, 'matches', String(matchId)));
+      setStatusMessage({ type: 'success', text: `Match #${matchId} deleted successfully.` });
+    } catch (err) {
+      setStatusMessage({ type: 'error', text: `Failed to delete match: ${err.message}` });
+    }
+  };
+
+  // O. Save Edited Match Fixture
+  const handleSaveEditMatch = async (e) => {
+    e.preventDefault();
+    if (isAuditor) return;
+    if (!editMatchForm.teamA || !editMatchForm.teamB || !editMatchForm.kickoffTime) {
+      return alert('All fields are required.');
+    }
+    setActionLoading(true);
+    try {
+      const matchRef = doc(db, 'matches', String(editingMatch.matchId));
+      const kickoffDate = new Date(editMatchForm.kickoffTime);
+      await updateDoc(matchRef, {
+        teamA: editMatchForm.teamA,
+        teamB: editMatchForm.teamB,
+        stage: editMatchForm.stage,
+        kickoffTimeIST: Timestamp.fromDate(kickoffDate)
+      });
+      setEditingMatch(null);
+      setStatusMessage({ type: 'success', text: `Match #${editingMatch.matchId} updated successfully.` });
+    } catch (err) {
+      setStatusMessage({ type: 'error', text: `Failed to update match: ${err.message}` });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
 
 
   // Loading Screen
@@ -654,6 +703,52 @@ function App() {
               </div>
             ) : null}
 
+            {editingMatch ? (
+              <div className="content-card" style={{ border: '2px solid var(--active-blue)' }}>
+                <h3 className="card-title">Edit Match #{editingMatch.matchId}</h3>
+                <form onSubmit={handleSaveEditMatch}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+                    <div>
+                      <label className="form-label">Team A</label>
+                      <input className="form-control" type="text" required 
+                             value={editMatchForm.teamA} onChange={e => setEditMatchForm({ ...editMatchForm, teamA: e.target.value })}/>
+                    </div>
+                    <div>
+                      <label className="form-label">Team B</label>
+                      <input className="form-control" type="text" required 
+                             value={editMatchForm.teamB} onChange={e => setEditMatchForm({ ...editMatchForm, teamB: e.target.value })}/>
+                    </div>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+                    <div>
+                      <label className="form-label">Stage</label>
+                      <select className="form-control" required value={editMatchForm.stage}
+                              onChange={e => setEditMatchForm({ ...editMatchForm, stage: e.target.value })}>
+                        <option value="group">Group Stage</option>
+                        <option value="r32">Round of 32</option>
+                        <option value="r16">Round of 16</option>
+                        <option value="qf">Quarter-final</option>
+                        <option value="sf">Semi-final</option>
+                        <option value="third_place">Third Place Play-off</option>
+                        <option value="final">Final</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="form-label">Kickoff Time (Local Time)</label>
+                      <input className="form-control" type="datetime-local" required
+                             value={editMatchForm.kickoffTime} onChange={e => setEditMatchForm({ ...editMatchForm, kickoffTime: e.target.value })}/>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: '12px' }}>
+                    <button className="btn btn-primary" type="submit" disabled={actionLoading}>
+                      {actionLoading ? 'Saving...' : 'Save Changes'}
+                    </button>
+                    <button className="btn btn-secondary" type="button" onClick={() => setEditingMatch(null)}>Cancel</button>
+                  </div>
+                </form>
+              </div>
+            ) : null}
+
             <div className="matches-grid">
               {matches.map((match) => (
                 <div className="match-item-card" key={match.id}>
@@ -678,26 +773,46 @@ function App() {
                   </div>
 
                   {!isAuditor && (
-                    <div className="match-item-footer">
-                      {match.status !== 'completed' && match.status !== 'postponed' ? (
-                        <>
-                          <button className="btn btn-primary" style={{ padding: '6px 12px', fontSize: '0.8rem' }}
-                                  onClick={() => {
-                                    setSelectedMatch(match);
-                                    setScoreInput({ matchId: match.matchId, teamAGoals: 0, teamBGoals: 0, winner: '' });
-                                  }}>
-                            Settle Scores
-                          </button>
-                          <button className="btn btn-secondary" style={{ padding: '6px 12px', fontSize: '0.8rem' }}
-                                  onClick={() => handlePostponeMatch(match.matchId)}>
-                            Postpone
-                          </button>
-                        </>
-                      ) : (
-                        <div style={{ fontSize: '0.8rem', color: 'var(--text-sub)' }}>
-                          Settle-Result: <strong>{match.winner === 'draw' ? 'Draw' : (match.winner === 'teamA' ? match.teamA : match.teamB)}</strong>
-                        </div>
-                      )}
+                    <div className="match-item-footer" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
+                        {match.status !== 'completed' && match.status !== 'postponed' ? (
+                          <>
+                            <button className="btn btn-primary" style={{ flex: 1, padding: '6px 8px', fontSize: '0.75rem' }}
+                                    onClick={() => {
+                                      setSelectedMatch(match);
+                                      setScoreInput({ matchId: match.matchId, teamAGoals: 0, teamBGoals: 0, winner: '' });
+                                    }}>
+                              Settle
+                            </button>
+                            <button className="btn btn-secondary" style={{ flex: 1, padding: '6px 8px', fontSize: '0.75rem' }}
+                                    onClick={() => handlePostponeMatch(match.matchId)}>
+                              Postpone
+                            </button>
+                          </>
+                        ) : (
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-sub)' }}>
+                            Result: <strong>{match.winner === 'draw' ? 'Draw' : (match.winner === 'teamA' ? match.teamA : match.teamB)}</strong>
+                          </div>
+                        )}
+                      </div>
+                      <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
+                        <button className="btn btn-secondary" style={{ flex: 1, padding: '4px 8px', fontSize: '0.7rem' }}
+                                onClick={() => {
+                                  setEditingMatch(match);
+                                  setEditMatchForm({
+                                    teamA: match.teamA,
+                                    teamB: match.teamB,
+                                    stage: match.stage,
+                                    kickoffTime: formatTimestampForInput(match.kickoffTimeIST)
+                                  });
+                                }}>
+                          Edit
+                        </button>
+                        <button className="btn" style={{ flex: 1, padding: '4px 8px', fontSize: '0.7rem', backgroundColor: 'var(--loss-red)', border: 'none', color: '#fff', borderRadius: '4px', cursor: 'pointer' }}
+                                onClick={() => handleDeleteMatch(match.matchId)}>
+                          Delete
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>

@@ -4,13 +4,17 @@
     "indexes": "firebase/firestore.indexes.json"
   },
   "hosting": {
-    "public": "admin/dist",
+    "public": "public_web",
     "ignore": [
       "firebase.json",
       "**/.*",
       "**/node_modules/**"
     ],
     "rewrites": [
+      {
+        "source": "/admin/**",
+        "destination": "/admin/index.html"
+      },
       {
         "source": "**",
         "destination": "/index.html"
