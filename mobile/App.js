@@ -10,7 +10,8 @@ import {
   ActivityIndicator,
   Platform,
   Linking,
-  StatusBar
+  StatusBar,
+  Image
 } from 'react-native';
 import {
   signOut,
@@ -46,61 +47,78 @@ const API_BASE = Platform.OS === 'web'
   : 'https://vivafifa2026.vercel.app';
 
 const getTeamFlag = (teamName) => {
-  if (!teamName) return '';
-  const flags = {
-    'Mexico': '🇲🇽',
-    'South Africa': '🇿🇦',
-    'South Korea': '🇰🇷',
-    'Czechia': '🇨🇿',
-    'Canada': '🇨🇦',
-    'Bosnia and Herzegovina': '🇧🇦',
-    'Qatar': '🇶🇦',
-    'Switzerland': '🇨🇭',
-    'Brazil': '🇧🇷',
-    'Haiti': '🇭🇹',
-    'Morocco': '🇲🇦',
-    'Scotland': '🏴󠁧󠁢󠁳󠁣󠁴󠁿',
-    'USA': '🇺🇸',
-    'Australia': '🇦🇺',
-    'Paraguay': '🇵🇾',
-    'Turkiye': '🇹🇷',
-    'Turkey': '🇹🇷',
-    'Germany': '🇩🇪',
-    'Ecuador': '🇪🇨',
-    'Curacao': '🇨🇼',
-    'Curaçao': '🇨🇼',
-    'Ivory Coast': '🇨🇮',
-    'Netherlands': '🇳🇱',
-    'Japan': '🇯🇵',
-    'Sweden': '🇸🇪',
-    'Tunisia': '🇹🇳',
-    'Belgium': '🇧🇪',
-    'Egypt': '🇪🇬',
-    'Iran': '🇮🇷',
-    'New Zealand': '🇳🇿',
-    'Spain': '🇪🇸',
-    'Saudi Arabia': '🇸🇦',
-    'Cape Verde': '🇨🇻',
-    'Cabo Verde': '🇨🇻',
-    'Uruguay': '🇺🇾',
-    'France': '🇫🇷',
-    'Iraq': '🇮🇶',
-    'Norway': '🇳🇴',
-    'Senegal': '🇸🇳',
-    'Argentina': '🇦🇷',
-    'Algeria': '🇩🇿',
-    'Austria': '🇦🇹',
-    'Jordan': '🇯🇴',
-    'Portugal': '🇵🇹',
-    'Colombia': '🇨🇴',
-    'DR Congo': '🇨🇩',
-    'Uzbekistan': '🇺🇿',
-    'England': '🏴󠁧󠁢󠁥󠁮󠁧󠁿',
-    'Croatia': '🇭🇷',
-    'Ghana': '🇬🇭',
-    'Panama': '🇵🇦'
+  if (!teamName) return null;
+  const codes = {
+    'Mexico': 'mx',
+    'South Africa': 'za',
+    'South Korea': 'kr',
+    'Czechia': 'cz',
+    'Canada': 'ca',
+    'Bosnia and Herzegovina': 'ba',
+    'Qatar': 'qa',
+    'Switzerland': 'ch',
+    'Brazil': 'br',
+    'Haiti': 'ht',
+    'Morocco': 'ma',
+    'Scotland': 'gb-sct',
+    'USA': 'us',
+    'Australia': 'au',
+    'Paraguay': 'py',
+    'Turkiye': 'tr',
+    'Turkey': 'tr',
+    'Germany': 'de',
+    'Ecuador': 'ec',
+    'Curacao': 'cw',
+    'Curaçao': 'cw',
+    'Ivory Coast': 'ci',
+    'Netherlands': 'nl',
+    'Japan': 'jp',
+    'Sweden': 'se',
+    'Tunisia': 'tn',
+    'Belgium': 'be',
+    'Egypt': 'eg',
+    'Iran': 'ir',
+    'New Zealand': 'nz',
+    'Spain': 'es',
+    'Saudi Arabia': 'sa',
+    'Cape Verde': 'cv',
+    'Cabo Verde': 'cv',
+    'Uruguay': 'uy',
+    'France': 'fr',
+    'Iraq': 'iq',
+    'Norway': 'no',
+    'Senegal': 'sn',
+    'Argentina': 'ar',
+    'Algeria': 'dz',
+    'Austria': 'at',
+    'Jordan': 'jo',
+    'Portugal': 'pt',
+    'Colombia': 'co',
+    'DR Congo': 'cd',
+    'Uzbekistan': 'uz',
+    'England': 'gb-eng',
+    'Croatia': 'hr',
+    'Ghana': 'gh',
+    'Panama': 'pa'
   };
-  return flags[teamName] || '';
+  const code = codes[teamName];
+  if (!code) return null;
+  return (
+    <Image 
+      source={{ uri: `https://flagcdn.com/w40/${code}.png` }} 
+      style={{ 
+        width: 20, 
+        height: 14, 
+        marginRight: 6,
+        borderRadius: 2,
+        borderWidth: 0.5,
+        borderColor: 'rgba(0, 0, 0, 0.15)',
+        resizeMode: 'cover',
+        display: Platform.OS === 'web' ? 'inline-block' : 'flex',
+        verticalAlign: 'middle'
+      }} 
+    />
+  );
 };
 
 const isToday = (timestamp) => {
@@ -484,7 +502,7 @@ export default function App() {
           {bet ? (
             <View style={styles.betPlacedBadge}>
               <Text style={styles.betPlacedText}>
-                Bet Placed: {bet.teamPrediction === 'teamA' ? `${getTeamFlag(match.teamA)} ${match.teamA}` : (bet.teamPrediction === 'teamB' ? `${match.teamB} ${getTeamFlag(match.teamB)}` : 'Draw')} ({bet.goalsTeamA}-{bet.goalsTeamB})
+                Bet Placed: {bet.teamPrediction === 'teamA' ? <>{getTeamFlag(match.teamA)} {match.teamA}</> : (bet.teamPrediction === 'teamB' ? <>{match.teamB} {getTeamFlag(match.teamB)}</> : 'Draw')} ({bet.goalsTeamA}-{bet.goalsTeamB})
               </Text>
             </View>
           ) : (
@@ -1016,7 +1034,7 @@ export default function App() {
                         <View style={{ flex: 1 }}>
                           <Text style={styles.historyBetTitle}>Your Prediction:</Text>
                           <Text style={styles.historyBetValue}>
-                            {bet.teamPrediction === 'teamA' ? `${getTeamFlag(match.teamA)} ${match.teamA}` : (bet.teamPrediction === 'teamB' ? `${match.teamB} ${getTeamFlag(match.teamB)}` : 'Draw')} ({bet.goalsTeamA}-{bet.goalsTeamB})
+                            {bet.teamPrediction === 'teamA' ? <>{getTeamFlag(match.teamA)} {match.teamA}</> : (bet.teamPrediction === 'teamB' ? <>{match.teamB} {getTeamFlag(match.teamB)}</> : 'Draw')} ({bet.goalsTeamA}-{bet.goalsTeamB})
                           </Text>
                           <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
                             <View style={[styles.badge, bet.teamBetResult === 'won' || bet.teamBetResult === 'draw_win' ? styles.badgeWin : styles.badgeLoss]}>
@@ -1102,7 +1120,7 @@ export default function App() {
                       <View style={styles.bracketRightContainer}>
                         <Text style={styles.bracketTeamRight}>{m.teamB} {getTeamFlag(m.teamB)}</Text>
                         {m.status === 'completed' && (
-                          <Text style={styles.bracketWinner}>({m.winner === 'teamA' ? `${getTeamFlag(m.teamA)} ${m.teamA}` : `${m.teamB} ${getTeamFlag(m.teamB)}`})</Text>
+                          <Text style={styles.bracketWinner}>({m.winner === 'teamA' ? <>{getTeamFlag(m.teamA)} {m.teamA}</> : <>{m.teamB} {getTeamFlag(m.teamB)}</>})</Text>
                         )}
                       </View>
                     </View>
@@ -1237,7 +1255,7 @@ export default function App() {
 
               <View style={styles.confirmDetails}>
                 <Text style={styles.confirmText}>Outcome: <Text style={{ fontWeight: '800', color: '#b45309' }}>
-                  {teamPrediction === 'teamA' ? `${getTeamFlag(selectedMatch.teamA)} ${selectedMatch.teamA}` : (teamPrediction === 'teamB' ? `${selectedMatch.teamB} ${getTeamFlag(selectedMatch.teamB)}` : 'Draw')}
+                  {teamPrediction === 'teamA' ? <>{getTeamFlag(selectedMatch.teamA)} {selectedMatch.teamA}</> : (teamPrediction === 'teamB' ? <>{selectedMatch.teamB} {getTeamFlag(selectedMatch.teamB)}</> : 'Draw')}
                 </Text></Text>
                 <Text style={styles.confirmText}>Exact Score: <Text style={{ fontWeight: '800', color: '#b45309' }}>{goalsA} - {goalsB}</Text></Text>
               </View>

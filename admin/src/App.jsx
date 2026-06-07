@@ -30,60 +30,77 @@ const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:30
 
 const getTeamFlag = (teamName) => {
   if (!teamName) return '';
-  const flags = {
-    'Mexico': '🇲🇽',
-    'South Africa': '🇿🇦',
-    'South Korea': '🇰🇷',
-    'Czechia': '🇨🇿',
-    'Canada': '🇨🇦',
-    'Bosnia and Herzegovina': '🇧🇦',
-    'Qatar': '🇶🇦',
-    'Switzerland': '🇨🇭',
-    'Brazil': '🇧🇷',
-    'Haiti': '🇭🇹',
-    'Morocco': '🇲🇦',
-    'Scotland': '🏴󠁧󠁢󠁳󠁣󠁴󠁿',
-    'USA': '🇺🇸',
-    'Australia': '🇦🇺',
-    'Paraguay': '🇵🇾',
-    'Turkiye': '🇹🇷',
-    'Turkey': '🇹🇷',
-    'Germany': '🇩🇪',
-    'Ecuador': '🇪🇨',
-    'Curacao': '🇨🇼',
-    'Curaçao': '🇨🇼',
-    'Ivory Coast': '🇨🇮',
-    'Netherlands': '🇳🇱',
-    'Japan': '🇯🇵',
-    'Sweden': '🇸🇪',
-    'Tunisia': '🇹🇳',
-    'Belgium': '🇧🇪',
-    'Egypt': '🇪🇬',
-    'Iran': '🇮🇷',
-    'New Zealand': '🇳🇿',
-    'Spain': '🇪🇸',
-    'Saudi Arabia': '🇸🇦',
-    'Cape Verde': '🇨🇻',
-    'Cabo Verde': '🇨🇻',
-    'Uruguay': '🇺🇾',
-    'France': '🇫🇷',
-    'Iraq': '🇮🇶',
-    'Norway': '🇳🇴',
-    'Senegal': '🇸🇳',
-    'Argentina': '🇦🇷',
-    'Algeria': '🇩🇿',
-    'Austria': '🇦🇹',
-    'Jordan': '🇯🇴',
-    'Portugal': '🇵🇹',
-    'Colombia': '🇨🇴',
-    'DR Congo': '🇨🇩',
-    'Uzbekistan': '🇺🇿',
-    'England': '🏴󠁧󠁢󠁥󠁮󠁧󠁿',
-    'Croatia': '🇭🇷',
-    'Ghana': '🇬🇭',
-    'Panama': '🇵🇦'
+  const codes = {
+    'Mexico': 'mx',
+    'South Africa': 'za',
+    'South Korea': 'kr',
+    'Czechia': 'cz',
+    'Canada': 'ca',
+    'Bosnia and Herzegovina': 'ba',
+    'Qatar': 'qa',
+    'Switzerland': 'ch',
+    'Brazil': 'br',
+    'Haiti': 'ht',
+    'Morocco': 'ma',
+    'Scotland': 'gb-sct',
+    'USA': 'us',
+    'Australia': 'au',
+    'Paraguay': 'py',
+    'Turkiye': 'tr',
+    'Turkey': 'tr',
+    'Germany': 'de',
+    'Ecuador': 'ec',
+    'Curacao': 'cw',
+    'Curaçao': 'cw',
+    'Ivory Coast': 'ci',
+    'Netherlands': 'nl',
+    'Japan': 'jp',
+    'Sweden': 'se',
+    'Tunisia': 'tn',
+    'Belgium': 'be',
+    'Egypt': 'eg',
+    'Iran': 'ir',
+    'New Zealand': 'nz',
+    'Spain': 'es',
+    'Saudi Arabia': 'sa',
+    'Cape Verde': 'cv',
+    'Cabo Verde': 'cv',
+    'Uruguay': 'uy',
+    'France': 'fr',
+    'Iraq': 'iq',
+    'Norway': 'no',
+    'Senegal': 'sn',
+    'Argentina': 'ar',
+    'Algeria': 'dz',
+    'Austria': 'at',
+    'Jordan': 'jo',
+    'Portugal': 'pt',
+    'Colombia': 'co',
+    'DR Congo': 'cd',
+    'Uzbekistan': 'uz',
+    'England': 'gb-eng',
+    'Croatia': 'hr',
+    'Ghana': 'gh',
+    'Panama': 'pa'
   };
-  return flags[teamName] || '';
+  const code = codes[teamName];
+  if (!code) return '';
+  return (
+    <img 
+      src={`https://flagcdn.com/w40/${code}.png`} 
+      alt="" 
+      style={{ 
+        width: '20px', 
+        height: '14px', 
+        marginRight: '6px', 
+        display: 'inline-block', 
+        verticalAlign: 'middle', 
+        objectFit: 'cover', 
+        borderRadius: '2px',
+        border: '1px solid rgba(0, 0, 0, 0.15)'
+      }} 
+    />
+  );
 };
 
 function App() {
@@ -312,7 +329,24 @@ function App() {
         throw new Error(result.error || 'Failed to settle match');
       }
 
-      setStatusMessage({ type: 'success', text: `Match ${selectedMatch.matchId} settled successfully!` });
+      // Automatically download a physical local file backup
+      if (result.backup) {
+        try {
+          const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(
+            JSON.stringify(result.backup, null, 2)
+          )}`;
+          const downloadAnchor = document.createElement('a');
+          downloadAnchor.setAttribute('href', jsonString);
+          downloadAnchor.setAttribute('download', `settlement_backup_match_${selectedMatch.matchId}.json`);
+          document.body.appendChild(downloadAnchor);
+          downloadAnchor.click();
+          downloadAnchor.remove();
+        } catch (e) {
+          console.error("Local file backup download failed", e);
+        }
+      }
+
+      setStatusMessage({ type: 'success', text: `Match ${selectedMatch.matchId} settled successfully! Backup downloaded.` });
       setSelectedMatch(null);
     } catch (err) {
       setStatusMessage({ type: 'error', text: err.message });
@@ -925,8 +959,8 @@ function App() {
                     <select className="form-control" required value={scoreInput.winner}
                             onChange={e => setScoreInput({ ...scoreInput, winner: e.target.value })}>
                       <option value="">-- Choose Winner --</option>
-                      <option value="teamA">{getTeamFlag(selectedMatch.teamA)} {selectedMatch.teamA}</option>
-                      <option value="teamB">{selectedMatch.teamB} {getTeamFlag(selectedMatch.teamB)}</option>
+                      <option value="teamA">{selectedMatch.teamA}</option>
+                      <option value="teamB">{selectedMatch.teamB}</option>
                       {selectedMatch.stage === 'group' && <option value="draw">Draw</option>}
                     </select>
                   </div>
@@ -1029,7 +1063,7 @@ function App() {
                           </>
                         ) : (
                           <div style={{ fontSize: '0.75rem', color: 'var(--text-sub)' }}>
-                            Result: <strong>{match.winner === 'draw' ? 'Draw' : (match.winner === 'teamA' ? `${getTeamFlag(match.teamA)} ${match.teamA}` : `${match.teamB} ${getTeamFlag(match.teamB)}`)}</strong>
+                            Result: <strong>{match.winner === 'draw' ? 'Draw' : (match.winner === 'teamA' ? <>{getTeamFlag(match.teamA)} {match.teamA}</> : <>{match.teamB} {getTeamFlag(match.teamB)}</>)}</strong>
                           </div>
                         )}
                       </div>

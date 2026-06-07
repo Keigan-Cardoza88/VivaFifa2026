@@ -97,6 +97,7 @@ module.exports = async (req, res) => {
     }
 
     // 4. Run Settlement Transaction
+    let settlementBackup = null;
     await db.runTransaction(async (transaction) => {
       // Fetch users
       const usersSnapshot = await transaction.get(db.collection('users'));
@@ -174,33 +175,38 @@ module.exports = async (req, res) => {
           teamLosers.push(bet);
         }
       });
-
       if (teamWinners.length > 0 && teamLosers.length > 0) {
         // Losers lose their stake, winners share the losers' pool
         const loserPool = teamLosers.length * teamStake;
         const sharePerWinner = loserPool / teamWinners.length;
 
         teamWinners.forEach((bet) => {
-          transaction.update(bet.ref, {
+          const updatePayload = {
             teamBetResult: winner === 'draw' ? 'draw_win' : 'won',
             amountWon: teamStake + sharePerWinner
-          });
+          };
+          transaction.update(bet.ref, updatePayload);
+          Object.assign(bet, updatePayload);
         });
 
         teamLosers.forEach((bet) => {
-          transaction.update(bet.ref, {
+          const updatePayload = {
             teamBetResult: 'lost',
             amountLost: teamStake
-          });
+          };
+          transaction.update(bet.ref, updatePayload);
+          Object.assign(bet, updatePayload);
         });
       } else if (teamWinners.length > 0 && teamLosers.length === 0) {
         // Everyone picked the winner -> refund stakes
         teamWinners.forEach((bet) => {
-          transaction.update(bet.ref, {
+          const updatePayload = {
             teamBetResult: winner === 'draw' ? 'draw_win' : 'won',
             amountWon: teamStake,
             amountLost: 0
-          });
+          };
+          transaction.update(bet.ref, updatePayload);
+          Object.assign(bet, updatePayload);
         });
       } else if (teamWinners.length === 0 && teamLosers.length > 0) {
         // Everyone lost (e.g. no one predicted draw, or everyone picked wrong team)
@@ -210,13 +216,14 @@ module.exports = async (req, res) => {
         finalsKittyInflow += totalTeamPool * 0.5;
 
         teamLosers.forEach((bet) => {
-          transaction.update(bet.ref, {
+          const updatePayload = {
             teamBetResult: 'lost',
             amountLost: teamStake
-          });
+          };
+          transaction.update(bet.ref, updatePayload);
+          Object.assign(bet, updatePayload);
         });
       }
-
       // GOAL BETS EVALUATION
       const goalWinners = [];
       const goalLosers = [];
@@ -230,7 +237,6 @@ module.exports = async (req, res) => {
       });
 
       const totalGoalPool = placedBets.length * goalStake;
-
       if (goalWinners.length > 0) {
         // Split goal pool among winners
         const sharePerWinner = totalGoalPool / goalWinners.length;
@@ -239,19 +245,23 @@ module.exports = async (req, res) => {
           // If they also won team bet, add to amountWon, else set it
           const existingWon = winner === bet.teamPrediction ? (teamStake + (teamLosers.length * teamStake / (teamWinners.length || 1))) : 0;
           
-          transaction.update(bet.ref, {
+          const updatePayload = {
             goalBetResult: 'won',
             amountWon: existingWon + sharePerWinner
-          });
+          };
+          transaction.update(bet.ref, updatePayload);
+          Object.assign(bet, updatePayload);
         });
 
         goalLosers.forEach((bet) => {
           // Add goalStake to amountLost
           const existingLost = winner !== bet.teamPrediction ? teamStake : 0;
-          transaction.update(bet.ref, {
+          const updatePayload = {
             goalBetResult: 'lost',
             amountLost: existingLost + goalStake
-          });
+          };
+          transaction.update(bet.ref, updatePayload);
+          Object.assign(bet, updatePayload);
         });
       } else {
         // No goal winners -> Goal pool goes 50% Referee, 50% Finals
@@ -260,13 +270,14 @@ module.exports = async (req, res) => {
 
         goalLosers.forEach((bet) => {
           const existingLost = winner !== bet.teamPrediction ? teamStake : 0;
-          transaction.update(bet.ref, {
+          const updatePayload = {
             goalBetResult: 'lost',
             amountLost: existingLost + goalStake
-          });
+          };
+          transaction.update(bet.ref, updatePayload);
+          Object.assign(bet, updatePayload);
         });
       }
-
       // Write Kitty Logs if there was inflow
       if (refereeKittyInflow > 0 || finalsKittyInflow > 0) {
         const kittyLogRef = db.collection('kitty').doc();
@@ -288,12 +299,60 @@ module.exports = async (req, res) => {
         resultTeamBGoals: Number(resultTeamBGoals),
         winner
       });
+
+      // Write full settlement backup snapshot
+      const backupRef = db.collection('settlement_backups').doc(String(matchId));
+      const backupData = {
+        matchId: String(matchId),
+        settledAt: admin.firestore.Timestamp.now(),
+        resultTeamAGoals: Number(resultTeamAGoals),
+        resultTeamBGoals: Number(resultTeamBGoals),
+        winner,
+        refereeKittyInflow,
+        finalsKittyInflow,
+        bets: participants.map(user => {
+          const defaultBetId = `${user.uid}_${matchId}`;
+          const bet = existingBets[user.uid] || {
+            betId: defaultBetId,
+            userId: user.uid,
+            matchId: String(matchId),
+            teamPrediction: winner === 'teamA' ? 'teamB' : 'teamA',
+            goalsTeamA: -1,
+            goalsTeamB: -1,
+            isDefault: true,
+            teamBetResult: 'forfeited',
+            goalBetResult: 'forfeited',
+            amountWon: 0,
+            amountLost: totalStake
+          };
+          return {
+            userName: user.name || 'Anonymous',
+            userEmail: user.email,
+            teamPrediction: bet.teamPrediction,
+            goalsTeamA: bet.goalsTeamA,
+            goalsTeamB: bet.goalsTeamB,
+            teamBetResult: bet.teamBetResult || 'lost',
+            goalBetResult: bet.goalBetResult || 'lost',
+            amountWon: bet.amountWon || 0,
+            amountLost: bet.amountLost || 0,
+            isDefault: bet.isDefault || false
+          };
+        })
+      };
+      transaction.set(backupRef, backupData);
+      settlementBackup = {
+        ...backupData,
+        settledAt: new Date().toISOString()
+      };
     });
 
     // 5. Rebuild Leaderboard
     await rebuildLeaderboard();
 
-    return res.status(200).json({ message: 'Match settled successfully. Leaderboard updated.' });
+    return res.status(200).json({ 
+      message: 'Match settled successfully. Leaderboard updated.',
+      backup: settlementBackup
+    });
   } catch (error) {
     console.error('Match settlement error:', error);
     return res.status(500).json({ error: 'Internal Server Error', details: error.message });
@@ -362,7 +421,7 @@ async function rebuildLeaderboard() {
         // We assume default stakes if not loaded dynamically
         const stage = match.stage;
         const stakesMap = {
-          group: 100, r32: 150, r16: 200, qf: 250, sf: 300, third_place: 300, final: 200
+          group: 100, r32: 150, r16: 200, qf: 250, sf: 300, third_place: 300, final: 400
         };
         totalLost += stakesMap[stage] || 100;
       }
