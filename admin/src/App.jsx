@@ -50,6 +50,7 @@ function App() {
   const [statusMessage, setStatusMessage] = useState({ type: '', text: '' });
   const [actionLoading, setActionLoading] = useState(false);
   const [customMatch, setCustomMatch] = useState({ matchId: '', teamA: '', teamB: '', stage: 'group', kickoffTime: '' });
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // 1. Monitor Auth State
   useEffect(() => {
@@ -460,8 +461,24 @@ function App() {
 
   return (
     <div className="app-container">
+      {/* Mobile Top Header */}
+      <header className="mobile-header">
+        <button className="menu-toggle-btn" onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
+          <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" strokeWidth="2" fill="none">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+        <span className="mobile-header-title">VivaFifa2026</span>
+        <div style={{ width: '40px' }}></div>
+      </header>
+
+      {/* Backdrop for closing drawer */}
+      {isSidebarOpen && <div className="sidebar-backdrop" onClick={() => setIsSidebarOpen(false)}></div>}
+
       {/* Sidebar Navigation */}
-      <aside className="sidebar">
+      <aside className={`sidebar ${isSidebarOpen ? 'open' : ''}`}>
         <div className="sidebar-brand">
           <span className="sidebar-title">VivaFifa2026</span>
           <span className="sidebar-subtitle">Referee Control</span>
@@ -469,33 +486,33 @@ function App() {
 
         <ul className="sidebar-menu">
           <li className="menu-item">
-            <a className={`menu-link ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}>
+            <a className={`menu-link ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => { setActiveTab('dashboard'); setIsSidebarOpen(false); }}>
               Dashboard
             </a>
           </li>
           <li className="menu-item">
-            <a className={`menu-link ${activeTab === 'matches' ? 'active' : ''}`} onClick={() => setActiveTab('matches')}>
+            <a className={`menu-link ${activeTab === 'matches' ? 'active' : ''}`} onClick={() => { setActiveTab('matches'); setIsSidebarOpen(false); }}>
               Matches ({matches.length})
             </a>
           </li>
           <li className="menu-item">
-            <a className={`menu-link ${activeTab === 'participants' ? 'active' : ''}`} onClick={() => setActiveTab('participants')}>
+            <a className={`menu-link ${activeTab === 'participants' ? 'active' : ''}`} onClick={() => { setActiveTab('participants'); setIsSidebarOpen(false); }}>
               Participants ({totalParticipants})
             </a>
           </li>
           <li className="menu-item">
-            <a className={`menu-link ${activeTab === 'stakes' ? 'active' : ''}`} onClick={() => setActiveTab('stakes')}>
+            <a className={`menu-link ${activeTab === 'stakes' ? 'active' : ''}`} onClick={() => { setActiveTab('stakes'); setIsSidebarOpen(false); }}>
               Stakes & Prizes
             </a>
           </li>
           <li className="menu-item">
-            <a className={`menu-link ${activeTab === 'kitty' ? 'active' : ''}`} onClick={() => setActiveTab('kitty')}>
+            <a className={`menu-link ${activeTab === 'kitty' ? 'active' : ''}`} onClick={() => { setActiveTab('kitty'); setIsSidebarOpen(false); }}>
               Kitty & Audits
             </a>
           </li>
           {!isAuditor && (
             <li className="menu-item">
-              <a className={`menu-link ${activeTab === 'tools' ? 'active' : ''}`} onClick={() => setActiveTab('tools')}>
+              <a className={`menu-link ${activeTab === 'tools' ? 'active' : ''}`} onClick={() => { setActiveTab('tools'); setIsSidebarOpen(false); }}>
                 System Tools
               </a>
             </li>
