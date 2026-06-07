@@ -1,0 +1,33 @@
+# Node dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Firebase credentials
+serviceAccountKey.json
+*.local.json
+
+# Local Environment Variables
+.env
+.env.local
+.env.*.local
+
+# Expo and mobile build artifacts
+.expo/
+dist/
+web-build/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Vercel deployment cache and config
+.vercel/
+.next/
+out/
+
+# System files
+.DS_Store
+Thumbs.db

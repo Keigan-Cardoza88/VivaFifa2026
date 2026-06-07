@@ -1,0 +1,121 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return signedIn() && 
+        request.auth.token.email in [
+          'cardoza.kian@gmail.com',
+          'cardoza.keigs@gmail.com',
+          'cardoza.joseph@gmail.com'
+        ];
+    }
+
+    function isUserDoc(userId) {
+      return request.auth.uid == userId;
+    }
+
+    function isRegistered() {
+      return signedIn() && (
+        isAdmin() || 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid))
+      );
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isAuditor() {
+      return signedIn() && (
+        getUserData().role == 'auditor'
+      );
+    }
+
+    // User profiles rules
+    match /users/{userId} {
+      allow read: if signedIn() && (isAdmin() || isUserDoc(userId) || isAuditor());
+      // Only admins can create/update profiles (to override payment status or roles)
+      // Users can update their own profile during invite registration if not already existing
+      allow create: if signedIn() && (isAdmin() || (isUserDoc(userId) && !exists(/databases/$(database)/documents/users/$(userId))));
+      allow update: if signedIn() && isAdmin();
+      allow delete: if signedIn() && isAdmin();
+    }
+
+    // Matches rules
+    match /matches/{matchId} {
+      allow read: if isRegistered() || isAuditor();
+      allow write: if isAdmin();
+    }
+
+    // Bets rules
+    match /bets/{betId} {
+      // Users can read their own bets.
+      // Users can only read other users' bets after the match has kicked off or status is closed/completed/postponed
+      allow read: if signedIn() && (
+        isAdmin() || 
+        isAuditor() ||
+        resource.data.userId == request.auth.uid ||
+        get(/databases/$(database)/documents/matches/$(resource.data.matchId)).data.status in ['betting_closed', 'completed', 'live', 'postponed'] ||
+        request.time >= get(/databases/$(database)/documents/matches/$(resource.data.matchId)).data.kickoffTimeIST
+      );
+      
+      // Creating a bet is allowed only:
+      // 1. By the user themselves (or admin)
+      // 2. Before the match cutoff time (8:00 PM IST on kick-off day)
+      // 3. Match status must be 'upcoming' or 'betting_open'
+      // 4. Input validation (goals must match team prediction outcome)
+      allow create: if signedIn() && (
+        isAdmin() || 
+        (
+          request.resource.data.userId == request.auth.uid &&
+          !request.resource.data.isDefault &&
+          request.time < get(/databases/$(database)/documents/matches/$(request.resource.data.matchId)).data.kickoffTimeIST &&
+          get(/databases/$(database)/documents/matches/$(request.resource.data.matchId)).data.status in ['upcoming', 'betting_open'] &&
+          (
+            // If team A wins, goal A > goal B
+            (request.resource.data.teamPrediction == 'teamA' && request.resource.data.goalsTeamA > request.resource.data.goalsTeamB) ||
+            // If team B wins, goal B > goal A
+            (request.resource.data.teamPrediction == 'teamB' && request.resource.data.goalsTeamB > request.resource.data.goalsTeamA) ||
+            // If draw, goal A == goal B
+            (request.resource.data.teamPrediction == 'draw' && request.resource.data.goalsTeamA == request.resource.data.goalsTeamB)
+          )
+        )
+      );
+
+      // Once placed, bets cannot be updated or deleted by normal users
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // Leaderboard rules
+    match /leaderboard/{userId} {
+      allow read: if isRegistered() || isAuditor();
+      allow write: if isAdmin();
+    }
+
+    // Kitty logs rules
+    match /kitty/{kittyId} {
+      allow read: if isAdmin() || isAuditor();
+      allow write: if isAdmin();
+    }
+
+    // Invite links rules
+    match /invites/{inviteId} {
+      // Anyone signed in with Google can read an invite to validate it before claiming
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
+    // Global Settings rules
+    match /settings/global {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+  }
+}

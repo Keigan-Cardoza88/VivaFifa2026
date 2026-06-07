@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "56297030289",
+    "project_id": "vivafifa2026",
+    "storage_bucket": "vivafifa2026.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:56297030289:android:838a607c15ec2ae7a9b530",
+        "android_client_info": {
+          "package_name": "com.vivafifa.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCKnBur6e9DvSJ_wcmDf4q_OY9OPG7etqQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,0 +1,569 @@
+/* Modern World Cup Flag-Themed Premium Styling */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
+
+:root {
+  font-family: 'Outfit', sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: dark;
+  --bg-color: #0b0f19;
+  --card-bg: #131b2e;
+  --card-border: #1e294b;
+  --text-main: #f8fafc;
+  --text-sub: #94a3b8;
+
+  /* Vibrant Flag-Inspired Accents */
+  --brazil-gold: #ffd700;
+  --brazil-green: #009c3b;
+  --arg-sky-blue: #74acdf;
+  --spain-red: #ff2d37;
+  --spain-gold: #ffc400;
+  
+  --win-green: #00e676;
+  --loss-red: #ff3d71;
+  --btn-bg: #1e294b;
+  --btn-hover: #2e3c6b;
+  --active-blue: #3b82f6;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg-color);
+  color: var(--text-main);
+  min-height: 100vh;
+  display: flex;
+  overflow-x: hidden;
+}
+
+#root {
+  width: 100%;
+}
+
+/* App Container Layout */
+.app-container {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+}
+
+/* Sidebar Styling */
+.sidebar {
+  width: 260px;
+  background-color: #0d1324;
+  border-right: 2px solid var(--card-border);
+  display: flex;
+  flex-direction: column;
+  padding: 24px 16px;
+  flex-shrink: 0;
+}
+
+.sidebar-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 40px;
+  padding-bottom: 20px;
+  border-bottom: 2px dashed var(--card-border);
+}
+
+.sidebar-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  background: linear-gradient(135deg, var(--brazil-gold) 0%, var(--spain-red) 50%, var(--arg-sky-blue) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-align: center;
+}
+
+.sidebar-subtitle {
+  font-size: 0.75rem;
+  color: var(--text-sub);
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  margin-top: 4px;
+}
+
+.sidebar-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  list-style: none;
+}
+
+.menu-item {
+  width: 100%;
+}
+
+.menu-link {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  color: var(--text-sub);
+  text-decoration: none;
+  font-weight: 600;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+
+.menu-link:hover {
+  color: var(--text-main);
+  background-color: #172036;
+}
+
+.menu-link.active {
+  color: var(--text-main);
+  background: linear-gradient(90deg, #17254a 0%, #1e294b 100%);
+  border: 1px solid var(--active-blue);
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.25);
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  padding-top: 20px;
+}
+
+.user-badge {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background-color: #11182c;
+  border-radius: 8px;
+  border: 1px solid var(--card-border);
+  font-size: 0.85rem;
+}
+
+.user-email {
+  font-weight: 600;
+  color: var(--brazil-gold);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.btn-logout {
+  width: 100%;
+  padding: 8px;
+  background-color: #ff3d711a;
+  border: 1px solid var(--loss-red);
+  color: var(--loss-red);
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.btn-logout:hover {
+  background-color: var(--loss-red);
+  color: white;
+}
+
+/* Main Dashboard Panel */
+.main-content {
+  flex-grow: 1;
+  padding: 40px;
+  overflow-y: auto;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.page-header {
+  margin-bottom: 30px;
+}
+
+.page-title {
+  font-size: 2.2rem;
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+
+.page-subtitle {
+  color: var(--text-sub);
+}
+
+/* Stat Cards / Scoreboard Widgets */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 24px;
+  margin-bottom: 40px;
+}
+
+.stat-card {
+  background-color: var(--card-bg);
+  border: 2px solid var(--card-border);
+  border-radius: 12px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s;
+}
+
+.stat-card:hover {
+  transform: translateY(-4px);
+}
+
+.stat-card.brazil { border-color: var(--brazil-gold); }
+.stat-card.argentina { border-color: var(--arg-sky-blue); }
+.stat-card.spain { border-color: var(--spain-red); }
+
+.stat-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+}
+
+.stat-card.brazil::after { background-color: var(--brazil-gold); }
+.stat-card.argentina::after { background-color: var(--arg-sky-blue); }
+.stat-card.spain::after { background-color: var(--spain-red); }
+
+.stat-label {
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--text-sub);
+}
+
+.stat-value {
+  font-size: 2.25rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+/* Content Cards */
+.content-card {
+  background-color: var(--card-bg);
+  border: 2px solid var(--card-border);
+  border-radius: 12px;
+  padding: 28px;
+  margin-bottom: 30px;
+}
+
+.card-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--card-border);
+  padding-bottom: 12px;
+}
+
+/* Forms & Controls */
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--text-sub);
+}
+
+.form-control {
+  width: 100%;
+  padding: 12px 16px;
+  background-color: #0b0f19;
+  border: 2px solid var(--card-border);
+  color: var(--text-main);
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.form-control:focus {
+  border-color: var(--active-blue);
+}
+
+/* Custom Sports-style Tables */
+.table-responsive {
+  overflow-x: auto;
+  margin-top: 10px;
+}
+
+.scoreboard-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.scoreboard-table th {
+  padding: 14px 16px;
+  background-color: #0e1424;
+  border-bottom: 2px solid var(--card-border);
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-sub);
+}
+
+.scoreboard-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--card-border);
+  font-size: 0.95rem;
+}
+
+.scoreboard-table tbody tr:hover {
+  background-color: #172138;
+}
+
+/* Badges */
+.badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.badge.win {
+  background-color: #00e6761f;
+  color: var(--win-green);
+  border: 1px solid var(--win-green);
+}
+
+.badge.loss {
+  background-color: #ff3d711f;
+  color: var(--loss-red);
+  border: 1px solid var(--loss-red);
+}
+
+.badge.warning {
+  background-color: #ffa0001f;
+  color: #ffa000;
+  border: 1px solid #ffa000;
+}
+
+.badge.info {
+  background-color: #0284c71f;
+  color: var(--arg-sky-blue);
+  border: 1px solid var(--arg-sky-blue);
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  border: none;
+  font-family: inherit;
+  transition: all 0.2s;
+  gap: 8px;
+}
+
+.btn-primary {
+  background-color: var(--active-blue);
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: #2563eb;
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.4);
+}
+
+.btn-success {
+  background-color: var(--brazil-green);
+  color: white;
+}
+
+.btn-success:hover {
+  background-color: #008030;
+  box-shadow: 0 0 12px rgba(0, 156, 59, 0.4);
+}
+
+.btn-danger {
+  background-color: var(--spain-red);
+  color: white;
+}
+
+.btn-danger:hover {
+  background-color: #d6141d;
+  box-shadow: 0 0 12px rgba(255, 45, 55, 0.4);
+}
+
+.btn-secondary {
+  background-color: var(--btn-bg);
+  color: var(--text-main);
+  border: 1px solid var(--card-border);
+}
+
+.btn-secondary:hover {
+  background-color: var(--btn-hover);
+}
+
+/* Match Card Grid */
+.matches-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 20px;
+  margin-top: 15px;
+}
+
+.match-item-card {
+  background-color: var(--card-bg);
+  border: 2px solid var(--card-border);
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.match-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.match-stage-label {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--brazil-gold);
+  text-transform: uppercase;
+}
+
+.match-kickoff {
+  font-size: 0.75rem;
+  color: var(--text-sub);
+}
+
+.match-team-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.match-score-bubble {
+  width: 34px;
+  height: 34px;
+  background-color: #0b0f19;
+  border: 1px solid var(--card-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+
+.match-item-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--card-border);
+}
+
+/* Login Page Styling */
+.login-page {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  width: 100vw;
+  background: radial-gradient(circle at center, #1e294b 0%, var(--bg-color) 70%);
+}
+
+.login-card {
+  background-color: var(--card-bg);
+  border: 3px solid var(--card-border);
+  border-radius: 16px;
+  padding: 48px;
+  width: 100%;
+  max-width: 440px;
+  text-align: center;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+
+.login-title {
+  font-size: 2.25rem;
+  font-weight: 800;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  background: linear-gradient(135deg, var(--brazil-gold) 0%, var(--spain-red) 50%, var(--arg-sky-blue) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.login-description {
+  color: var(--text-sub);
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.btn-google {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background-color: white;
+  color: #1e293b;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-family: inherit;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  width: 100%;
+  justify-content: center;
+}
+
+.btn-google:hover {
+  background-color: #f1f5f9;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 15px rgba(255,255,255,0.1);
+}
+
+.google-logo {
+  width: 20px;
+  height: 20px;
+}
+
+.error-message {
+  padding: 12px;
+  background-color: #ff3d711a;
+  border: 1px solid var(--loss-red);
+  color: var(--loss-red);
+  border-radius: 6px;
+  font-size: 0.85rem;
+  width: 100%;
+}
