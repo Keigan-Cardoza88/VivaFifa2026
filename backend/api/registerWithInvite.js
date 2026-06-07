@@ -44,38 +44,7 @@ module.exports = async (req, res) => {
       return res.status(200).json({ message: 'User already registered', user: userDoc.data() });
     }
 
-    // Admin self-registration check
-    const isSystemAdmin = ADMIN_EMAILS.includes(email);
 
-    if (isSystemAdmin) {
-      const adminUser = {
-        uid,
-        name: name || decodedToken.name || 'System Admin',
-        email,
-        role: 'admin',
-        paymentStatus: 'paid',
-        paymentPlan: 'lumpsum',
-        entryFee: 0,
-        joinedAt: admin.firestore.Timestamp.now(),
-        isLateEntry: false
-      };
-
-      await userRef.set(adminUser);
-
-      // Create initial leaderboard entry
-      await db.collection('leaderboard').doc(uid).set({
-        userId: uid,
-        userName: adminUser.name,
-        netProfit: 0,
-        totalWon: 0,
-        totalLost: 0,
-        correctPredictions: 0,
-        totalPredictions: 0,
-        accuracyPercent: 0
-      });
-
-      return res.status(200).json({ message: 'Admin self-registered successfully', user: adminUser });
-    }
 
     // For regular participants, require a valid invite
     if (!inviteId) {
