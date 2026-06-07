@@ -8,8 +8,8 @@
 
   color-scheme: dark;
   --bg-color: #0b0f19;
-  --card-bg: #131b2e;
-  --card-border: #1e294b;
+  --card-bg: rgba(19, 27, 46, 0.65);
+  --card-border: rgba(255, 255, 255, 0.1);
   --text-main: #f8fafc;
   --text-sub: #94a3b8;
 
@@ -202,8 +202,8 @@ body {
 
 .stat-card {
   background-color: var(--card-bg);
-  border: 2px solid var(--card-border);
-  border-radius: 12px;
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
   padding: 24px;
   display: flex;
   flex-direction: column;
@@ -211,6 +211,9 @@ body {
   position: relative;
   overflow: hidden;
   transition: transform 0.2s;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
 }
 
 .stat-card:hover {
@@ -251,10 +254,13 @@ body {
 /* Content Cards */
 .content-card {
   background-color: var(--card-bg);
-  border: 2px solid var(--card-border);
-  border-radius: 12px;
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
   padding: 28px;
   margin-bottom: 30px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
 }
 
 .card-title {
@@ -432,12 +438,15 @@ body {
 
 .match-item-card {
   background-color: var(--card-bg);
-  border: 2px solid var(--card-border);
-  border-radius: 12px;
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
   padding: 20px;
   display: flex;
   flex-direction: column;
   gap: 12px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
 }
 
 .match-item-header {
@@ -500,13 +509,15 @@ body {
 
 .login-card {
   background-color: var(--card-bg);
-  border: 3px solid var(--card-border);
+  border: 1px solid var(--card-border);
   border-radius: 16px;
   padding: 48px;
   width: 100%;
   max-width: 440px;
   text-align: center;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   display: flex;
   flex-direction: column;
   align-items: center;

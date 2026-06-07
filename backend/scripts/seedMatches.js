@@ -10,12 +10,12 @@ if (emulatorHost) {
 } else {
   console.log("Running in Production. Loading service account...");
   try {
-    const serviceAccount = require('./serviceAccountKey.json');
+    const serviceAccount = require('../serviceAccountKey.json');
     admin.initializeApp({
       credential: admin.credential.cert(serviceAccount)
     });
   } catch (err) {
-    console.log("serviceAccountKey.json not found. Attempting Application Default Credentials...");
+    console.log("../serviceAccountKey.json not found. Attempting Application Default Credentials...");
     try {
       admin.initializeApp({
         projectId: 'vivafifa2026'

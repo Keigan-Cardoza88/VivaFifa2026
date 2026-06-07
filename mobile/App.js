@@ -686,8 +686,9 @@ export default function App() {
             <Text style={styles.sectionHeader}>Today's Fixtures</Text>
             {matches.filter(m => m.status === 'upcoming' || m.status === 'betting_closed' || m.status === 'live').map((match) => {
               const bet = myBets[match.matchId];
+              const isLocked = new Date().getTime() >= (match.bettingLockTimeIST ? match.bettingLockTimeIST.seconds * 1000 : 0);
               return (
-                <View style={styles.matchCard} key={match.id}>
+                <View style={[styles.matchCard, styles.glassCard]} key={match.id}>
                   <View style={styles.matchHeaderRow}>
                     <Text style={styles.matchStage}>{match.stage.toUpperCase()}</Text>
                     <Text style={styles.matchTime}>
@@ -709,7 +710,7 @@ export default function App() {
                     ) : (
                       <Text style={styles.noBetPlacedText}>No bet submitted</Text>
                     )}
-                    {match.status === 'upcoming' ? (
+                    {!isLocked && match.status === 'upcoming' ? (
                       <TouchableOpacity style={styles.btnAction} onPress={() => handleOpenBet(match)}>
                         <Text style={styles.btnActionText}>{bet ? 'Edit Bet' : 'Bet Now'}</Text>
                       </TouchableOpacity>
@@ -979,9 +980,9 @@ export default function App() {
       {selectedMatch && (
         <Modal animationType="fade" transparent={true} visible={confirmModalVisible}>
           <View style={styles.modalOverlay}>
-            <View style={styles.confirmContent}>
+            <View style={[styles.confirmContent, styles.glassCard]}>
               <Text style={styles.confirmHeader}>Confirm Submission</Text>
-              <Text style={styles.confirmWarning}>⚠️ Bets cannot be edited or withdrawn once confirmed.</Text>
+              <Text style={{ color: '#94a3b8', fontSize: 13, textAlign: 'center', marginVertical: 12 }}>You can edit this bet until the lock time.</Text>
               
               <View style={styles.confirmDetails}>
                 <Text style={styles.confirmText}>Outcome: <Text style={{ fontWeight: '800', color: '#ffd700' }}>
@@ -1074,13 +1075,23 @@ const styles = StyleSheet.create({
     letterSpacing: 1.5
   },
   card: {
-    backgroundColor: '#131b2e',
-    borderColor: '#1e294b',
-    borderWidth: 2,
-    borderRadius: 12,
+    backgroundColor: 'rgba(19, 27, 46, 0.65)',
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderWidth: 1,
+    borderRadius: 16,
     padding: 24,
     width: '100%',
-    marginBottom: 20
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+  },
+  glassCard: {
+    backgroundColor: 'rgba(19, 27, 46, 0.55)',
+    borderColor: 'rgba(255, 255, 255, 0.15)',
+    borderWidth: 1,
+    backdropFilter: 'blur(10px)', // For web compatibility
   },
   cardHeader: {
     fontSize: 16,
@@ -1451,15 +1462,16 @@ const styles = StyleSheet.create({
     fontSize: 13
   },
   tableCard: {
-    backgroundColor: '#131b2e',
-    borderColor: '#1e294b',
-    borderWidth: 1.5,
+    backgroundColor: 'rgba(19, 27, 46, 0.65)',
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderWidth: 1,
     borderRadius: 14,
     paddingVertical: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.3,
     shadowRadius: 10,
+    backdropFilter: 'blur(10px)',
   },
   tableHeaderRow: {
     flexDirection: 'row',
@@ -1493,9 +1505,9 @@ const styles = StyleSheet.create({
     fontSize: 14
   },
   historyCard: {
-    backgroundColor: '#131b2e',
-    borderColor: '#1e294b',
-    borderWidth: 1.5,
+    backgroundColor: 'rgba(19, 27, 46, 0.65)',
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderWidth: 1,
     borderRadius: 14,
     padding: 18,
     marginBottom: 16,
@@ -1503,6 +1515,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.25,
     shadowRadius: 6,
+    backdropFilter: 'blur(10px)',
   },
   historyBetRow: {
     flexDirection: 'row',
@@ -1558,9 +1571,9 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase'
   },
   bracketStageCard: {
-    backgroundColor: '#131b2e',
-    borderColor: '#1e294b',
-    borderWidth: 1.5,
+    backgroundColor: 'rgba(19, 27, 46, 0.65)',
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderWidth: 1,
     borderRadius: 14,
     padding: 18,
     marginBottom: 16,
@@ -1568,6 +1581,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.25,
     shadowRadius: 6,
+    backdropFilter: 'blur(10px)',
   },
   bracketStageTitle: {
     color: '#ffd700',

@@ -1,4 +1,4 @@
-const { db, auth } = require('../utils/firebase');
+const { db, auth, admin } = require('../utils/firebase');
 
 const ADMIN_EMAILS = [
   'cardoza.kian@gmail.com',

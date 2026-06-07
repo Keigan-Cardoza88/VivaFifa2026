@@ -110,6 +110,12 @@ function App() {
   const [editingMatch, setEditingMatch] = useState(null);
   const [editMatchForm, setEditMatchForm] = useState({ teamA: '', teamB: '', stage: 'group', kickoffTime: '' });
 
+  // Viewing and Overriding Bets
+  const [viewingMatchBets, setViewingMatchBets] = useState(null);
+  const [matchBetsData, setMatchBetsData] = useState([]);
+  const [betsLoading, setBetsLoading] = useState(false);
+  const [overrideBetForm, setOverrideBetForm] = useState({ userId: '', teamPrediction: '', goalsTeamA: '', goalsTeamB: '' });
+
   // 1. Monitor Auth State
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -537,8 +543,62 @@ function App() {
     }
   };
 
+  // P. View Match Bets
+  const handleViewBets = async (matchId) => {
+    if (viewingMatchBets === matchId) {
+      setViewingMatchBets(null);
+      return;
+    }
+    setViewingMatchBets(matchId);
+    setBetsLoading(true);
+    try {
+      const betsQuery = query(collection(db, 'bets'), where('matchId', '==', String(matchId)));
+      const snapshot = await getDocs(betsQuery);
+      const list = [];
+      snapshot.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
+      setMatchBetsData(list);
+    } catch (err) {
+      console.error(err);
+      setStatusMessage({ type: 'error', text: `Failed to load bets: ${err.message}` });
+    } finally {
+      setBetsLoading(false);
+    }
+  };
 
+  // Q. Override Bet for User
+  const handleOverrideBetSubmit = async (e, matchId) => {
+    e.preventDefault();
+    if (isAuditor) return;
+    if (!overrideBetForm.userId || !overrideBetForm.teamPrediction || overrideBetForm.goalsTeamA === '' || overrideBetForm.goalsTeamB === '') {
+      return alert('Please fill in all override bet fields.');
+    }
+    setActionLoading(true);
+    try {
+      const betId = `${overrideBetForm.userId}_${matchId}`;
+      const betRef = doc(db, 'bets', betId);
+      
+      const newBet = {
+        betId,
+        userId: overrideBetForm.userId,
+        matchId: String(matchId),
+        teamPrediction: overrideBetForm.teamPrediction,
+        goalsTeamA: Number(overrideBetForm.goalsTeamA),
+        goalsTeamB: Number(overrideBetForm.goalsTeamB),
+        placedAt: Timestamp.now(),
+        isDefault: false,
+        isOverride: true
+      };
 
+      await setDoc(betRef, newBet);
+      setStatusMessage({ type: 'success', text: `Bet overridden for user ${overrideBetForm.userId}.` });
+      setOverrideBetForm({ userId: '', teamPrediction: '', goalsTeamA: '', goalsTeamB: '' });
+      await handleViewBets(matchId); // reload bets
+    } catch (err) {
+      setStatusMessage({ type: 'error', text: `Failed to override bet: ${err.message}` });
+    } finally {
+      setActionLoading(false);
+    }
+  };
   // Loading Screen
   if (loading) {
     return (
@@ -890,6 +950,10 @@ function App() {
                       </div>
                       <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
                         <button className="btn btn-secondary" style={{ flex: 1, padding: '4px 8px', fontSize: '0.7rem' }}
+                                onClick={() => handleViewBets(match.matchId)}>
+                          {viewingMatchBets === match.matchId ? 'Hide Bets' : 'View Bets'}
+                        </button>
+                        <button className="btn btn-secondary" style={{ flex: 1, padding: '4px 8px', fontSize: '0.7rem' }}
                                 onClick={() => {
                                   setEditingMatch(match);
                                   setEditMatchForm({
@@ -906,6 +970,85 @@ function App() {
                           Delete
                         </button>
                       </div>
+                    </div>
+                  )}
+
+                  {/* Expandable View Bets Section */}
+                  {viewingMatchBets === match.matchId && (
+                    <div style={{ marginTop: '16px', borderTop: '1px solid var(--border)', paddingTop: '16px' }}>
+                      <h4 style={{ fontSize: '0.9rem', marginBottom: '12px', color: '#f8fafc' }}>Placed Bets for Match #{match.matchId}</h4>
+                      {betsLoading ? (
+                        <p style={{ color: 'var(--text-sub)', fontSize: '0.8rem' }}>Loading bets...</p>
+                      ) : (
+                        <>
+                          {matchBetsData.length === 0 ? (
+                            <p style={{ color: 'var(--text-sub)', fontSize: '0.8rem' }}>No bets placed yet.</p>
+                          ) : (
+                            <div className="table-responsive" style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                              <table className="scoreboard-table" style={{ fontSize: '0.8rem' }}>
+                                <thead>
+                                  <tr>
+                                    <th>User</th>
+                                    <th>Team Pick</th>
+                                    <th>Scoreline</th>
+                                    <th>Status</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {matchBetsData.map(b => {
+                                    const u = users.find(user => user.id === b.userId);
+                                    return (
+                                      <tr key={b.id}>
+                                        <td>{u ? u.name : b.userId}</td>
+                                        <td>{b.teamPrediction}</td>
+                                        <td>{b.goalsTeamA} - {b.goalsTeamB}</td>
+                                        <td>{b.isOverride ? 'Override' : (b.isDefault ? 'Default' : 'User')}</td>
+                                      </tr>
+                                    );
+                                  })}
+                                </tbody>
+                              </table>
+                            </div>
+                          )}
+
+                          {/* Override Form */}
+                          {!isAuditor && (
+                            <div style={{ marginTop: '16px', padding: '12px', backgroundColor: 'rgba(19, 27, 46, 0.4)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                              <h5 style={{ fontSize: '0.8rem', marginBottom: '8px', color: '#ffd700' }}>Override/Place Bet for User</h5>
+                              <form onSubmit={(e) => handleOverrideBetSubmit(e, match.matchId)}>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
+                                  <select className="form-control" style={{ fontSize: '0.75rem', padding: '6px' }} required
+                                          value={overrideBetForm.userId} onChange={e => setOverrideBetForm({ ...overrideBetForm, userId: e.target.value })}>
+                                    <option value="">Select User...</option>
+                                    {users.filter(u => u.role === 'participant').map(u => (
+                                      <option key={u.id} value={u.id}>{u.name} ({u.email})</option>
+                                    ))}
+                                  </select>
+                                  <select className="form-control" style={{ fontSize: '0.75rem', padding: '6px' }} required
+                                          value={overrideBetForm.teamPrediction} onChange={e => setOverrideBetForm({ ...overrideBetForm, teamPrediction: e.target.value })}>
+                                    <option value="">Winner Pick...</option>
+                                    <option value="teamA">{match.teamA}</option>
+                                    <option value="teamB">{match.teamB}</option>
+                                    {match.stage === 'group' && <option value="draw">Draw</option>}
+                                  </select>
+                                </div>
+                                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                  <input className="form-control" type="number" min="0" placeholder={`${match.teamA} goals`} required
+                                         style={{ flex: 1, fontSize: '0.75rem', padding: '6px' }}
+                                         value={overrideBetForm.goalsTeamA} onChange={e => setOverrideBetForm({ ...overrideBetForm, goalsTeamA: e.target.value })}/>
+                                  <span style={{ color: 'var(--text-sub)' }}>:</span>
+                                  <input className="form-control" type="number" min="0" placeholder={`${match.teamB} goals`} required
+                                         style={{ flex: 1, fontSize: '0.75rem', padding: '6px' }}
+                                         value={overrideBetForm.goalsTeamB} onChange={e => setOverrideBetForm({ ...overrideBetForm, goalsTeamB: e.target.value })}/>
+                                  <button className="btn btn-primary" type="submit" style={{ fontSize: '0.75rem', padding: '6px 12px' }} disabled={actionLoading}>
+                                    Save Override
+                                  </button>
+                                </div>
+                              </form>
+                            </div>
+                          )}
+                        </>
+                      )}
                     </div>
                   )}
                 </div>
