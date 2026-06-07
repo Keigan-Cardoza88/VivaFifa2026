@@ -881,12 +881,7 @@ export default function App() {
         </TouchableOpacity>
         <TouchableOpacity style={[styles.tabItem, activeTab === 'history' && styles.tabActive]} onPress={() => setActiveTab('history')}>
           <Text style={styles.tabText}>History</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={[styles.tabItem, activeTab === 'bracket' && styles.tabActive]} onPress={() => setActiveTab('bracket')}>
-          <Text style={styles.tabText}>Bracket</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={[styles.tabItem, activeTab === 'profile' && styles.tabActive]} onPress={() => setActiveTab('profile')}>
-          <Text style={styles.tabText}>Profile</Text>
+                      <Text style={styles.tabText}>Profile</Text>
         </TouchableOpacity>
       </View>
 
@@ -896,7 +891,7 @@ export default function App() {
           <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
               <Text style={styles.modalHeader}>Place Your Bet</Text>
-              <Text style={styles.modalSubHeader}>{selectedMatch.teamA} vs {selectedMatch.teamB}</Text>
+              <Text style={styles.modalSubHeader}>{getTeamFlag(selectedMatch.teamA)} {selectedMatch.teamA} vs {selectedMatch.teamB} {getTeamFlag(selectedMatch.teamB)}</Text>
 
               <Text style={styles.inputLabel}>Step 1: Pick Match Outcome</Text>
               <View style={styles.teamSelectRow}>
@@ -904,7 +899,7 @@ export default function App() {
                   style={[styles.teamSelectBtn, teamPrediction === 'teamA' && styles.teamSelectActive]}
                   onPress={() => setTeamPrediction('teamA')}
                 >
-                  <Text style={styles.teamSelectText}>{selectedMatch.teamA}</Text>
+                  <Text style={styles.teamSelectText}>{getTeamFlag(selectedMatch.teamA)} {selectedMatch.teamA}</Text>
                 </TouchableOpacity>
 
                 {selectedMatch.stage === 'group' && (
@@ -920,19 +915,19 @@ export default function App() {
                   style={[styles.teamSelectBtn, teamPrediction === 'teamB' && styles.teamSelectActive]}
                   onPress={() => setTeamPrediction('teamB')}
                 >
-                  <Text style={styles.teamSelectText}>{selectedMatch.teamB}</Text>
+                  <Text style={styles.teamSelectText}>{selectedMatch.teamB} {getTeamFlag(selectedMatch.teamB)}</Text>
                 </TouchableOpacity>
               </View>
 
               <Text style={styles.inputLabel}>Step 2: Predict Exact Scoreline</Text>
               <View style={styles.scoreInputRow}>
                 <View style={{ flex: 1, alignItems: 'center' }}>
-                  <Text style={{ color: '#94a3b8', fontSize: 12, marginBottom: 4 }}>{selectedMatch.teamA}</Text>
+                  <Text style={{ color: '#94a3b8', fontSize: 12, marginBottom: 4 }}>{getTeamFlag(selectedMatch.teamA)} {selectedMatch.teamA}</Text>
                   <TextInput style={styles.scoreInput} keyboardType="numeric" value={goalsA} onChangeText={setGoalsA} />
                 </View>
                 <Text style={styles.scoreDivider}>:</Text>
                 <View style={{ flex: 1, alignItems: 'center' }}>
-                  <Text style={{ color: '#94a3b8', fontSize: 12, marginBottom: 4 }}>{selectedMatch.teamB}</Text>
+                  <Text style={{ color: '#94a3b8', fontSize: 12, marginBottom: 4 }}>{selectedMatch.teamB} {getTeamFlag(selectedMatch.teamB)}</Text>
                   <TextInput style={styles.scoreInput} keyboardType="numeric" value={goalsB} onChangeText={setGoalsB} />
                 </View>
               </View>
