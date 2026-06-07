@@ -2,9 +2,9 @@ import { initializeApp } from 'firebase/app';
 import { 
   initializeAuth, 
   getReactNativePersistence, 
-  browserLocalPersistence 
+  getAuth 
 } from 'firebase/auth';
-import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
+import { getFirestore } from 'firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
@@ -19,27 +19,13 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 
-// Set up platform-appropriate persistence
-const auth = initializeAuth(app, {
-  persistence: Platform.OS === 'web' 
-    ? browserLocalPersistence 
-    : getReactNativePersistence(AsyncStorage)
-});
+// Set up platform-appropriate Auth
+const auth = Platform.OS === 'web' 
+  ? getAuth(app) 
+  : initializeAuth(app, {
+      persistence: getReactNativePersistence(AsyncStorage)
+    });
 
 const db = getFirestore(app);
-
-// Local Emulator connection (use correct computer IP for Android emulator/physical devices)
-// const isDev = __DEV__;
-// if (isDev) {
-//   // If running in Android emulator, localhost is 10.0.2.2. If iOS, it is localhost.
-//   const host = Platform.OS === 'android' ? '10.0.2.2' : 'localhost';
-//   console.log(`[Mobile Firebase] Connecting to emulators at ${host}...`);
-//   try {
-//     connectFirestoreEmulator(db, host, 8080);
-//     // Auth emulator is handled inside sign in methods or connectAuthEmulator
-//   } catch (e) {
-//     console.warn('[Mobile Firebase] Emulator connection warning:', e.message);
-//   }
-// }
 
 export { auth, db };
