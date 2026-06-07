@@ -30,8 +30,8 @@ const manifest = {
   description: "World Cup 2026 Private Betting Arena",
   start_url: "/",
   display: "standalone",
-  background_color: "#0b0f19",
-  theme_color: "#0b0f19",
+  background_color: "#fcfaf6",
+  theme_color: "#fcfaf6",
   orientation: "portrait",
   icons: [
     {
@@ -81,7 +81,7 @@ const customStyles = `
         height: 100% !important;
         margin: 0 !important;
         padding: 0 !important;
-        background-color: #0b0f19 !important;
+        background-color: #fcfaf6 !important;
         font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif !important;
       }
       #root {
