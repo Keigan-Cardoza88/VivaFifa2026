@@ -804,6 +804,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#0b0f19',
     paddingTop: Platform.OS === 'ios' ? 44 : 20,
+    width: '100%',
   },
   header: {
     height: 60,
@@ -835,7 +836,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#0b0f19',
-    minHeight: '100%'
+    minHeight: '100%',
+    width: '100%',
+    flex: 1,
   },
   loginLogo: {
     fontSize: 32,

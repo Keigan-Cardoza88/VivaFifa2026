@@ -58,13 +58,29 @@ fs.copyFileSync(
   path.join(publicWeb, 'icon-512.png')
 );
 
-console.log('=== 8. Injecting manifest link in index.html ===');
+console.log('=== 8. Injecting manifest link & fixing full-width CSS in index.html ===');
 const indexPath = path.join(publicWeb, 'index.html');
 let html = fs.readFileSync(indexPath, 'utf8');
 if (!html.includes('manifest.json')) {
   html = html.replace('</head>', '  <link rel="manifest" href="/manifest.json" />\n</head>');
-  fs.writeFileSync(indexPath, html, 'utf8');
 }
+const customStyles = `
+    <style>
+      html, body {
+        width: 100% !important;
+        height: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background-color: #0b0f19 !important;
+      }
+      #root {
+        width: 100% !important;
+        height: 100% !important;
+      }
+    </style>
+`;
+html = html.replace('</head>', `${customStyles}\n</head>`);
+fs.writeFileSync(indexPath, html, 'utf8');
 
 console.log('=== 9. Deploying to Firebase Hosting ===');
 execSync('npx firebase-tools deploy --only hosting --project vivafifa2026', { cwd: path.join(__dirname, '..'), stdio: 'inherit' });
