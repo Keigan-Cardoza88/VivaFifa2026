@@ -1103,14 +1103,30 @@ function App() {
                             </button>
                           </>
                         ) : (
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-                            <div style={{ fontSize: '0.75rem', color: 'var(--text-sub)' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', gap: '8px' }}>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text-sub)', flex: 1 }}>
                               Result: <strong>{match.winner === 'draw' ? 'Draw' : (match.winner === 'teamA' ? <>{getTeamFlag(match.teamA)} {match.teamA}</> : <>{match.teamB} {getTeamFlag(match.teamB)}</>)}</strong>
                             </div>
-                            <button className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '4px' }}
-                                    onClick={() => handleDownloadBackup(match.matchId)}>
-                              📥 Backup
-                            </button>
+                            <div style={{ display: 'flex', gap: '6px' }}>
+                              {match.status === 'completed' && (
+                                <button className="btn btn-primary" style={{ padding: '4px 8px', fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '4px', backgroundColor: 'var(--win-green)', border: 'none' }}
+                                        onClick={() => {
+                                          setSelectedMatch(match);
+                                          setScoreInput({
+                                            matchId: match.matchId,
+                                            teamAGoals: match.resultTeamAGoals !== undefined ? match.resultTeamAGoals : 0,
+                                            teamBGoals: match.resultTeamBGoals !== undefined ? match.resultTeamBGoals : 0,
+                                            winner: match.winner || ''
+                                          });
+                                        }}>
+                                  ⚙️ Resettle
+                                </button>
+                              )}
+                              <button className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                                      onClick={() => handleDownloadBackup(match.matchId)}>
+                                📥 Backup
+                              </button>
+                            </div>
                           </div>
                         )}
                       </div>

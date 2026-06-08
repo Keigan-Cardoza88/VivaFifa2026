@@ -386,11 +386,19 @@ export default function App() {
       setLeaderboardMoney(list);
     });
 
-    const qAccuracy = query(collection(db, 'leaderboard'), orderBy('accuracyPercent', 'desc'), orderBy('correctPredictions', 'desc'));
+    const qAccuracy = query(collection(db, 'leaderboard'), orderBy('accuracyPercent', 'desc'));
     const unsubAccuracy = onSnapshot(qAccuracy, (snap) => {
       const list = [];
       snap.forEach(doc => list.push(doc.data()));
+      list.sort((a, b) => {
+        if (b.accuracyPercent !== a.accuracyPercent) {
+          return b.accuracyPercent - a.accuracyPercent;
+        }
+        return (b.correctPredictions || 0) - (a.correctPredictions || 0);
+      });
       setLeaderboardAccuracy(list);
+    }, (err) => {
+      console.error("Accuracy listener error:", err);
     });
 
     const unsubUsers = onSnapshot(collection(db, 'users'), (snap) => {

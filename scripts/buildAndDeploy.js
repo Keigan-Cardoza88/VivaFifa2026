@@ -126,11 +126,13 @@ const customStyles = `
         padding: 0 !important;
         background-color: #f1ebd9 !important;
         font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif !important;
+        touch-action: pan-x pan-y !important;
       }
       #root {
         width: 100% !important;
         height: 100% !important;
         font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif !important;
+        touch-action: pan-x pan-y !important;
       }
       div, span, p, input, button, textarea, select {
         font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif !important;
