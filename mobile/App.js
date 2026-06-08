@@ -580,6 +580,7 @@ export default function App() {
   };
 
   const netProfit = userProfile ? (leaderboardMoney.find(l => l.userId === currentUser.uid)?.netProfit || 0) : 0;
+  const grossProfit = Object.values(myBets).reduce((sum, b) => sum + (b.amountWon || 0), 0);
   const accuracy = userProfile ? (leaderboardAccuracy.find(l => l.userId === currentUser.uid)?.accuracyPercent || 0) : 0;
   const rankMoney = leaderboardMoney.findIndex(l => l.userId === currentUser.uid) + 1;
 
@@ -894,6 +895,12 @@ export default function App() {
         {activeTab === 'home' && (
           <View>
             <View style={styles.statsCardGrid}>
+              <View style={[styles.statWidget, styles.glassCard, { borderLeftColor: '#10b981' }]}>
+                <Text style={styles.statWidgetLabel}>Gross Profit</Text>
+                <Text style={[styles.statWidgetValue, { color: '#00e676' }]}>
+                  ₹{grossProfit}
+                </Text>
+              </View>
               <View style={[styles.statWidget, styles.glassCard, { borderLeftColor: '#ffd700' }]}>
                 <Text style={styles.statWidgetLabel}>Net Profit</Text>
                 <Text style={[styles.statWidgetValue, { color: netProfit >= 0 ? '#00e676' : '#ff3d71' }]}>
@@ -1140,16 +1147,16 @@ export default function App() {
                   <Text style={[styles.sortChipText, historySort === 'earliest' && styles.sortChipTextActive]}>📅 Earliest</Text>
                 </TouchableOpacity>
                 <TouchableOpacity 
-                  style={[styles.sortChip, historySort === 'gross-desc' && styles.sortChipActive]}
-                  onPress={() => setHistorySort('gross-desc')}
+                  style={[styles.sortChip, (historySort === 'net-desc' || historySort === 'gross-desc') && styles.sortChipActive]}
+                  onPress={() => setHistorySort('net-desc')}
                 >
-                  <Text style={[styles.sortChipText, historySort === 'gross-desc' && styles.sortChipTextActive]}>📈 Best Gross</Text>
+                  <Text style={[styles.sortChipText, (historySort === 'net-desc' || historySort === 'gross-desc') && styles.sortChipTextActive]}>📈 Best Net</Text>
                 </TouchableOpacity>
                 <TouchableOpacity 
-                  style={[styles.sortChip, historySort === 'gross-asc' && styles.sortChipActive]}
-                  onPress={() => setHistorySort('gross-asc')}
+                  style={[styles.sortChip, (historySort === 'net-asc' || historySort === 'gross-asc') && styles.sortChipActive]}
+                  onPress={() => setHistorySort('net-asc')}
                 >
-                  <Text style={[styles.sortChipText, historySort === 'gross-asc' && styles.sortChipTextActive]}>📉 Worst Gross</Text>
+                  <Text style={[styles.sortChipText, (historySort === 'net-asc' || historySort === 'gross-asc') && styles.sortChipTextActive]}>📉 Worst Net</Text>
                 </TouchableOpacity>
               </ScrollView>
             </View>
@@ -1164,19 +1171,33 @@ export default function App() {
                   return (a.kickoffTimeIST?.seconds || 0) - (b.kickoffTimeIST?.seconds || 0);
                 }
 
-                const getGross = (matchItem) => {
+                const getNet = (matchItem) => {
                   const betItem = myBets[matchItem.matchId];
-                  return betItem ? (betItem.amountWon || 0) : 0;
+                  const isMatchPostponed = matchItem.status === 'postponed';
+                  if (isMatchPostponed) return 0;
+                  const itemStage = matchItem.stage;
+                  const itemStakes = settings?.stakes?.[itemStage] || {
+                    group: { team: 50, goal: 50 },
+                    r32: { team: 75, goal: 75 },
+                    r16: { team: 100, goal: 100 },
+                    qf: { team: 125, goal: 125 },
+                    sf: { team: 150, goal: 150 },
+                    third_place: { team: 150, goal: 150 },
+                    final: { team: 200, goal: 200 }
+                  }[itemStage] || { team: 50, goal: 50 };
+                  const itemTotalStake = (itemStakes.team || 50) + (itemStakes.goal || 50);
+                  const gross = betItem ? (betItem.amountWon || 0) : 0;
+                  return betItem ? (gross - itemTotalStake) : -itemTotalStake;
                 };
 
-                const grossA = getGross(a);
-                const grossB = getGross(b);
+                const netA = getNet(a);
+                const netB = getNet(b);
 
-                if (historySort === 'gross-desc') {
-                  return grossB - grossA;
+                if (historySort === 'net-desc' || historySort === 'gross-desc') {
+                  return netB - netA;
                 }
-                if (historySort === 'gross-asc') {
-                  return grossA - grossB;
+                if (historySort === 'net-asc' || historySort === 'gross-asc') {
+                  return netA - netB;
                 }
                 return 0;
               });
@@ -1207,6 +1228,7 @@ export default function App() {
                 };
 
                 const userGross = bet ? (bet.amountWon || 0) : 0;
+                const userNet = isPostponed ? 0 : (bet ? (userGross - totalStake) : -totalStake);
 
                 return (
                   <View key={match.id}>
@@ -1233,7 +1255,12 @@ export default function App() {
                               <View style={[styles.badge, bet.teamBetResult === 'won' || bet.teamBetResult === 'draw_win' ? styles.badgeWin : styles.badgeLoss]}>
                                 <Text style={styles.badgeText}>Team: {bet.teamBetResult ? bet.teamBetResult.toUpperCase() : 'LOST'}</Text>
                               </View>
-                              <View style={[styles.badge, bet.goalBetResult === 'won' ? styles.badgeWin : styles.badgeLoss]}>
+                              <View style={[
+                                styles.badge, 
+                                bet.goalBetResult === 'won' 
+                                  ? styles.badgeWin 
+                                  : (bet.goalBetResult === 'refunded' ? styles.badgeRefund : styles.badgeLoss)
+                              ]}>
                                 <Text style={styles.badgeText}>Goal: {bet.goalBetResult ? bet.goalBetResult.toUpperCase() : 'LOST'}</Text>
                               </View>
                             </View>
@@ -1243,9 +1270,9 @@ export default function App() {
                         )}
 
                         <View style={{ alignItems: 'flex-end' }}>
-                          <Text style={{ fontSize: 11, color: '#94a3b8' }}>Gross Profit</Text>
-                          <Text style={[styles.payoutText, userGross > 0 ? { color: '#00e676' } : { color: '#94a3b8' }]}>
-                            ₹{userGross}
+                          <Text style={{ fontSize: 11, color: '#94a3b8' }}>Net Profit</Text>
+                          <Text style={[styles.payoutText, isPostponed ? { color: '#94a3b8' } : (userNet >= 0 ? { color: '#00e676' } : { color: '#ff3d71' })]}>
+                            {isPostponed ? '' : (userNet >= 0 ? '+' : '')}₹{userNet}
                           </Text>
                         </View>
                       </View>
@@ -1262,11 +1289,12 @@ export default function App() {
                                 <Text style={[styles.expandedBetsHeadCell, { flex: 2.2 }]}>Player</Text>
                                 <Text style={[styles.expandedBetsHeadCell, { flex: 2 }]}>Prediction</Text>
                                 <Text style={[styles.expandedBetsHeadCell, { flex: 1.5, textAlign: 'center' }]}>Goals</Text>
-                                <Text style={[styles.expandedBetsHeadCell, { flex: 1.3, textAlign: 'right' }]}>Gross</Text>
+                                <Text style={[styles.expandedBetsHeadCell, { flex: 1.3, textAlign: 'right' }]}>Net</Text>
                               </View>
                               {expandedMatchBets.map((b) => {
                                 const u = allUsers[b.userId] || { name: 'Player' };
                                 const gross = b.amountWon || 0;
+                                const net = isPostponed ? 0 : (gross - totalStake);
                                 return (
                                   <View style={styles.expandedBetsRow} key={b.betId}>
                                     <Text style={[styles.expandedBetsCell, { flex: 2.2, fontWeight: '700' }]} numberOfLines={1}>
@@ -1278,8 +1306,8 @@ export default function App() {
                                     <Text style={[styles.expandedBetsCell, { flex: 1.5, textAlign: 'center', fontWeight: '800', color: '#ffd700' }]}>
                                       {b.goalsTeamA < 0 ? 'N/A' : `${b.goalsTeamA} - ${b.goalsTeamB}`}
                                     </Text>
-                                    <Text style={[styles.expandedBetsCell, { flex: 1.3, textAlign: 'right', fontWeight: '800', color: gross > 0 ? '#00e676' : '#94a3b8' }]}>
-                                      ₹{gross}
+                                    <Text style={[styles.expandedBetsCell, { flex: 1.3, textAlign: 'right', fontWeight: '800', color: isPostponed ? '#94a3b8' : (net >= 0 ? '#00e676' : '#ff3d71') }]}>
+                                      {isPostponed ? '' : (net >= 0 ? '+' : '')}₹{net}
                                     </Text>
                                   </View>
                                 );
@@ -2337,6 +2365,11 @@ const styles = StyleSheet.create({
   badgeLoss: {
     backgroundColor: '#b9202814',
     borderColor: '#b92028',
+    borderWidth: 0.8
+  },
+  badgeRefund: {
+    backgroundColor: '#94a3b820',
+    borderColor: '#94a3b8',
     borderWidth: 0.8
   },
   badgeText: {

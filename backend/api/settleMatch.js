@@ -266,17 +266,18 @@ module.exports = async (req, res) => {
           Object.assign(bet, updatePayload);
         });
       } else {
-        // No goal winners → entire goal pool (placed + forfeits) → kitty
-        if (totalGoalPool > 0) {
-          refereeKittyInflow += totalGoalPool * 0.5;
-          finalsKittyInflow += totalGoalPool * 0.5;
+        // No goal winners → refund goal stakes to all players who placed bets (forfeits are NOT refunded)
+        // Since we refund placed bets, only forfeit goal stakes go to the kitty!
+        if (forfeitGoalPool > 0) {
+          refereeKittyInflow += forfeitGoalPool * 0.5;
+          finalsKittyInflow += forfeitGoalPool * 0.5;
         }
 
         goalLosers.forEach((bet) => {
-          const existingLost = bet.amountLost || 0;
+          const existingWon = bet.amountWon || 0;
           const updatePayload = {
-            goalBetResult: 'lost',
-            amountLost: existingLost + goalStake
+            goalBetResult: 'refunded',
+            amountWon: existingWon + goalStake
           };
           transaction.update(bet.ref, updatePayload);
           Object.assign(bet, updatePayload);
