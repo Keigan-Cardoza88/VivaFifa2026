@@ -1457,7 +1457,7 @@ function App() {
               <h3 className="card-title">Allocate Kitty Funds to Prizes</h3>
               <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-end' }}>
                 <div style={{ flex: 1 }}>
-                  <label className="form-label">Amount to transfer from Referee Kitty to Finals Pot (Rs)</label>
+                  <label className="form-label">Amount to transfer from Referee Kitty to Finals Pot (₹)</label>
                   <input className="form-control" id="kittyAllocAmt" type="number" placeholder="Enter amount (e.g. 1000)"/>
                 </div>
                 <button className="btn btn-success" onClick={() => {

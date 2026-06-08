@@ -2665,15 +2665,15 @@ const styles = StyleSheet.create({
     letterSpacing: 1.2,
   },
   liveBadge: {
-    backgroundColor: '#27773f20',
-    borderColor: '#27773f',
+    backgroundColor: '#00c85320',
+    borderColor: '#00c853',
     borderWidth: 1.2,
     borderRadius: 6,
     paddingHorizontal: 8,
     paddingVertical: 3,
   },
   liveBadgeText: {
-    color: '#27773f',
+    color: '#00c853',
     fontSize: 9,
     fontWeight: '900',
   },
