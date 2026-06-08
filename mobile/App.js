@@ -11,7 +11,8 @@ import {
   Platform,
   Linking,
   StatusBar,
-  Image
+  Image,
+  SafeAreaView
 } from 'react-native';
 import {
   signOut,
@@ -583,125 +584,131 @@ export default function App() {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
+      <SafeAreaView style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#ffd700" />
         <Text style={styles.loadingText}>Connecting to VivaFifa2026...</Text>
-      </View>
+      </SafeAreaView>
     );
   }
 
   // 1. SIGN IN SCREEN (Google Sign-In is primary and only method)
   if (!currentUser) {
     return (
-      <View style={styles.loginContainer}>
-        <StatusBar barStyle="light-content" />
-        <Text style={styles.loginLogo}>VIVAFIFA2026</Text>
-        <Text style={styles.loginSubtitle}>World Cup 2026 Private Arena</Text>
+      <SafeAreaView style={styles.appContainer}>
+        <ScrollView contentContainerStyle={styles.loginContainer}>
+          <StatusBar barStyle="light-content" />
+          <Text style={styles.loginLogo}>VIVAFIFA2026</Text>
+          <Text style={styles.loginSubtitle}>World Cup 2026 Private Arena</Text>
 
-        <View style={styles.card}>
-          <Text style={styles.cardHeader}>Authentication Required</Text>
-          <Text style={{ color: '#82776a', fontSize: 14, marginBottom: 20, textAlign: 'center', lineHeight: 20 }}>
-            This betting arena is closed. Only authorized members can enter. Sign in with your Google Account below.
-          </Text>
-          <TouchableOpacity
-            style={styles.btnPrimary}
-            disabled={Platform.OS !== 'web' && !request}
-            onPress={handleGoogleSignIn}
-          >
-            <Text style={styles.btnText}>Sign in with Google</Text>
-          </TouchableOpacity>
-        </View>
+          <View style={styles.card}>
+            <Text style={styles.cardHeader}>Authentication Required</Text>
+            <Text style={{ color: '#82776a', fontSize: 14, marginBottom: 20, textAlign: 'center', lineHeight: 20 }}>
+              This betting arena is closed. Only authorized members can enter. Sign in with your Google Account below.
+            </Text>
+            <TouchableOpacity
+              style={styles.btnPrimary}
+              disabled={Platform.OS !== 'web' && !request}
+              onPress={handleGoogleSignIn}
+            >
+              <Text style={styles.btnText}>Sign in with Google</Text>
+            </TouchableOpacity>
+          </View>
 
-        {authError ? (
-          <Text style={styles.errorText}>{authError}</Text>
-        ) : null}
-      </View>
+          {authError ? (
+            <Text style={styles.errorText}>{authError}</Text>
+          ) : null}
+        </ScrollView>
+      </SafeAreaView>
     );
   }
 
   // 2. REGISTRATION SCREEN (Unregistered users who just signed in with Google)
   if (currentUser && !userProfile) {
     return (
-      <ScrollView contentContainerStyle={styles.loginContainer}>
-        <StatusBar barStyle="light-content" />
-        <Text style={styles.loginLogo}>REQUEST TO JOIN</Text>
-        <Text style={styles.loginSubtitle}>{currentUser.email}</Text>
+      <SafeAreaView style={styles.appContainer}>
+        <ScrollView contentContainerStyle={styles.loginContainer}>
+          <StatusBar barStyle="light-content" />
+          <Text style={styles.loginLogo}>REQUEST TO JOIN</Text>
+          <Text style={styles.loginSubtitle}>{currentUser.email}</Text>
 
-        <View style={styles.card}>
-          <Text style={styles.cardHeader}>Submit Join Request</Text>
-          <Text style={{ color: '#82776a', fontSize: 13, marginBottom: 18, textAlign: 'center', lineHeight: 20 }}>
-            Enter your name and select a payment plan. Your request will be sent to the referee for approval.
-          </Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Full Name"
-            placeholderTextColor="#64748b"
-            value={nameInput}
-            onChangeText={setNameInput}
-          />
-          <View style={styles.paymentSelect}>
-            <Text style={styles.paymentLabel}>Payment Plan:</Text>
-            <TouchableOpacity
-              style={[styles.paymentBtn, paymentPlan === 'installments' && styles.paymentActive]}
-              onPress={() => setPaymentPlan('installments')}
-            >
-              <Text style={styles.paymentBtnText}>Installments</Text>
+          <View style={styles.card}>
+            <Text style={styles.cardHeader}>Submit Join Request</Text>
+            <Text style={{ color: '#82776a', fontSize: 13, marginBottom: 18, textAlign: 'center', lineHeight: 20 }}>
+              Enter your name and select a payment plan. Your request will be sent to the referee for approval.
+            </Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Full Name"
+              placeholderTextColor="#64748b"
+              value={nameInput}
+              onChangeText={setNameInput}
+            />
+            <View style={styles.paymentSelect}>
+              <Text style={styles.paymentLabel}>Payment Plan:</Text>
+              <TouchableOpacity
+                style={[styles.paymentBtn, paymentPlan === 'installments' && styles.paymentActive]}
+                onPress={() => setPaymentPlan('installments')}
+              >
+                <Text style={styles.paymentBtnText}>Installments</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.paymentBtn, paymentPlan === 'lumpsum' && styles.paymentActive]}
+                onPress={() => setPaymentPlan('lumpsum')}
+              >
+                <Text style={styles.paymentBtnText}>Lumpsum</Text>
+              </TouchableOpacity>
+            </View>
+            <TouchableOpacity style={styles.btnSuccess} onPress={handleRegister} disabled={registering}>
+              {registering ? (
+                <ActivityIndicator color="white" />
+              ) : (
+                <Text style={styles.btnText}>Send Join Request</Text>
+              )}
             </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.paymentBtn, paymentPlan === 'lumpsum' && styles.paymentActive]}
-              onPress={() => setPaymentPlan('lumpsum')}
-            >
-              <Text style={styles.paymentBtnText}>Lumpsum</Text>
+
+            <TouchableOpacity style={styles.btnSecondary} onPress={handleLogout}>
+              <Text style={styles.btnSecondaryText}>Cancel / Sign Out</Text>
             </TouchableOpacity>
           </View>
-          <TouchableOpacity style={styles.btnSuccess} onPress={handleRegister} disabled={registering}>
-            {registering ? (
-              <ActivityIndicator color="white" />
-            ) : (
-              <Text style={styles.btnText}>Send Join Request</Text>
-            )}
-          </TouchableOpacity>
 
-          <TouchableOpacity style={styles.btnSecondary} onPress={handleLogout}>
-            <Text style={styles.btnSecondaryText}>Cancel / Sign Out</Text>
-          </TouchableOpacity>
-        </View>
-
-        {authError ? (
-          <Text style={styles.errorText}>{authError}</Text>
-        ) : null}
-      </ScrollView>
+          {authError ? (
+            <Text style={styles.errorText}>{authError}</Text>
+          ) : null}
+        </ScrollView>
+      </SafeAreaView>
     );
   }
 
   // 2b. PENDING APPROVAL SCREEN (Request submitted but referee hasn't approved yet)
   if (currentUser && userProfile && userProfile.role === 'pending') {
     return (
-      <ScrollView contentContainerStyle={styles.loginContainer}>
-        <StatusBar barStyle="light-content" />
-        <Text style={styles.loginLogo}>⏳ AWAITING APPROVAL</Text>
-        <Text style={styles.loginSubtitle}>{currentUser.email}</Text>
+      <SafeAreaView style={styles.appContainer}>
+        <ScrollView contentContainerStyle={styles.loginContainer}>
+          <StatusBar barStyle="light-content" />
+          <Text style={styles.loginLogo}>⏳ AWAITING APPROVAL</Text>
+          <Text style={styles.loginSubtitle}>{currentUser.email}</Text>
 
-        <View style={styles.card}>
-          <Text style={styles.cardHeader}>Request Submitted ✓</Text>
-          <Text style={{ color: '#82776a', fontSize: 14, textAlign: 'center', lineHeight: 22, marginBottom: 20 }}>
-            Your join request has been sent to the referee.{'\n\n'}You will automatically gain access once your account is approved. Please check back shortly.
-          </Text>
-          <View style={{ backgroundColor: '#fdfcf9', borderRadius: 10, padding: 16, marginBottom: 20, borderWidth: 1.5, borderColor: 'rgba(62, 56, 48, 0.15)', gap: 8 }}>
-            <View style={[styles.paymentSelect, { justifyContent: 'flex-start', marginBottom: 0 }]}>
-              <Text style={{ color: '#b45309', fontWeight: '700', fontSize: 13, width: 60 }}>Name: </Text>
-              <Text style={{ color: '#302b25', fontWeight: '600', fontSize: 13 }}>{userProfile.name}</Text>
+          <View style={styles.card}>
+            <Text style={styles.cardHeader}>Request Submitted ✓</Text>
+            <Text style={{ color: '#82776a', fontSize: 14, textAlign: 'center', lineHeight: 22, marginBottom: 20 }}>
+              Your join request has been sent to the referee.{'\n\n'}You will automatically gain access once your account is approved. Please check back shortly.
+            </Text>
+            <View style={{ backgroundColor: '#fdfcf9', borderRadius: 10, padding: 16, marginBottom: 20, borderWidth: 1.5, borderColor: 'rgba(62, 56, 48, 0.15)', gap: 8 }}>
+              <View style={[styles.paymentSelect, { justifyContent: 'flex-start', marginBottom: 0 }]}>
+                <Text style={{ color: '#b45309', fontWeight: '700', fontSize: 13, width: 60 }}>Name: </Text>
+                <Text style={{ color: '#302b25', fontWeight: '600', fontSize: 13 }}>{userProfile.name}</Text>
+              </View>
+              <View style={[styles.paymentSelect, { justifyContent: 'flex-start', marginBottom: 0 }]}>
+                <Text style={{ color: '#b45309', fontWeight: '700', fontSize: 13, width: 60 }}>Plan: </Text>
+                <Text style={{ color: '#302b25', fontWeight: '600', fontSize: 13, textTransform: 'capitalize' }}>{userProfile.paymentPlan}</Text>
+              </View>
             </View>
-            <View style={[styles.paymentSelect, { justifyContent: 'flex-start', marginBottom: 0 }]}>
-              <Text style={{ color: '#b45309', fontWeight: '700', fontSize: 13, width: 60 }}>Plan: </Text>
-              <Text style={{ color: '#302b25', fontWeight: '600', fontSize: 13, textTransform: 'capitalize' }}>{userProfile.paymentPlan}</Text>
-            </View>
+            <TouchableOpacity style={styles.btnSecondary} onPress={handleLogout}>
+              <Text style={styles.btnSecondaryText}>Sign Out</Text>
+            </TouchableOpacity>
           </View>
-          <TouchableOpacity style={styles.btnSecondary} onPress={handleLogout}>
-            <Text style={styles.btnSecondaryText}>Sign Out</Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
+        </ScrollView>
+      </SafeAreaView>
     );
   }
 
@@ -806,7 +813,7 @@ export default function App() {
   };
 
   return (
-    <View style={styles.appContainer}>
+    <SafeAreaView style={styles.appContainer}>
       <View style={styles.ambientGlow1} />
       <View style={styles.ambientGlow2} />
       <StatusBar barStyle="light-content" />
@@ -1643,7 +1650,7 @@ export default function App() {
           </View>
         </Modal>
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -1663,7 +1670,7 @@ const styles = StyleSheet.create({
   appContainer: {
     flex: 1,
     backgroundColor: '#f1ebd9',
-    paddingTop: Platform.OS === 'ios' ? 44 : 20,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight || 24 : 0,
     width: '100%',
   },
   header: {
@@ -2318,12 +2325,12 @@ const styles = StyleSheet.create({
     fontSize: 14
   },
   footerTabBar: {
-    height: 65,
+    height: 56,
     borderTopWidth: 1.5,
     borderTopColor: 'rgba(62, 56, 48, 0.12)',
     flexDirection: 'row',
     backgroundColor: '#e8dfc7',
-    paddingBottom: Platform.OS === 'ios' ? 15 : 0,
+    paddingBottom: 0,
   },
   tabItem: {
     flex: 1,
