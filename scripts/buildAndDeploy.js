@@ -73,6 +73,12 @@ fs.copyFileSync(
   path.join(publicWeb, 'VivaFifaLogo.jpeg')
 );
 
+console.log('=== 7b. Writing cache-buster version files ===');
+const buildTimestamp = Date.now().toString();
+fs.writeFileSync(path.join(publicWeb, 'version.json'), JSON.stringify({ timestamp: buildTimestamp }));
+fs.writeFileSync(path.join(adminDest, 'version.json'), JSON.stringify({ timestamp: buildTimestamp }));
+console.log(`Version files written with timestamp: ${buildTimestamp}`);
+
 console.log('=== 8. Injecting manifest, favicon, title & fixing full-width CSS in index.html ===');
 const indexPath = path.join(publicWeb, 'index.html');
 let html = fs.readFileSync(indexPath, 'utf8');

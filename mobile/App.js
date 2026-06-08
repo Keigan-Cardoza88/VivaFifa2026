@@ -213,6 +213,28 @@ export default function App() {
   const [selectedTeamName, setSelectedTeamName] = useState('Mexico');
   const [teamsViewMode, setTeamsViewMode] = useState('roster');
   const [expandedMatchBets, setExpandedMatchBets] = useState([]);
+  useEffect(() => {
+    if (Platform.OS === 'web') {
+      const checkVersion = async () => {
+        try {
+          const res = await fetch(`/version.json?t=${Date.now()}`);
+          if (res.ok) {
+            const data = await res.json();
+            const lastVersion = localStorage.getItem('app_version_timestamp');
+            if (lastVersion && lastVersion !== String(data.timestamp)) {
+              localStorage.setItem('app_version_timestamp', String(data.timestamp));
+              window.location.reload(true);
+            } else if (!lastVersion) {
+              localStorage.setItem('app_version_timestamp', String(data.timestamp));
+            }
+          }
+        } catch (e) {
+          console.error('Failed to check app version:', e);
+        }
+      };
+      checkVersion();
+    }
+  }, []);
 
   // Bracket Pinch to Zoom Handlers
   const handleBracketTouchStart = (e) => {

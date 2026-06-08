@@ -104,6 +104,27 @@ const getTeamFlag = (teamName) => {
 };
 
 function App() {
+  useEffect(() => {
+    const checkVersion = async () => {
+      try {
+        const res = await fetch(`/admin/version.json?t=${Date.now()}`);
+        if (res.ok) {
+          const data = await res.json();
+          const lastVersion = localStorage.getItem('admin_version_timestamp');
+          if (lastVersion && lastVersion !== String(data.timestamp)) {
+            localStorage.setItem('admin_version_timestamp', String(data.timestamp));
+            window.location.reload();
+          } else if (!lastVersion) {
+            localStorage.setItem('admin_version_timestamp', String(data.timestamp));
+          }
+        }
+      } catch (e) {
+        console.error('Failed to check admin version:', e);
+      }
+    };
+    checkVersion();
+  }, []);
+
   const [user, setUser] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isAuditor, setIsAuditor] = useState(false);
