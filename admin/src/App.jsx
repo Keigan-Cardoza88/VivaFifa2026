@@ -325,6 +325,41 @@ function App() {
   const handleSettleMatch = async (e) => {
     e.preventDefault();
     if (isAuditor) return;
+
+    const goalsA = Number(scoreInput.teamAGoals);
+    const goalsB = Number(scoreInput.teamBGoals);
+    const winner = scoreInput.winner;
+
+    // Enforce match winner logic consistency
+    if (selectedMatch.stage === 'group') {
+      if (goalsA > goalsB && winner !== 'teamA') {
+        alert(`Validation Error: In group stage, if ${selectedMatch.teamA} scored more goals, they must be selected as the winner.`);
+        return;
+      }
+      if (goalsB > goalsA && winner !== 'teamB') {
+        alert(`Validation Error: In group stage, if ${selectedMatch.teamB} scored more goals, they must be selected as the winner.`);
+        return;
+      }
+      if (goalsA === goalsB && winner !== 'draw') {
+        alert("Validation Error: In group stage, equal scores must result in a Draw.");
+        return;
+      }
+    } else {
+      // Knockout stages (r32, r16, qf, sf, third_place, final)
+      if (goalsA > goalsB && winner !== 'teamA') {
+        alert(`Validation Error: In knockout stage, if ${selectedMatch.teamA} scored more goals, they must be selected as the winner.`);
+        return;
+      }
+      if (goalsB > goalsA && winner !== 'teamB') {
+        alert(`Validation Error: In knockout stage, if ${selectedMatch.teamB} scored more goals, they must be selected as the winner.`);
+        return;
+      }
+      if (goalsA === goalsB && winner === 'draw') {
+        alert("Validation Error: Knockout matches cannot end in a Draw. Select the penalty shootout winner (Team A or Team B).");
+        return;
+      }
+    }
+
     setActionLoading(true);
     setStatusMessage({ type: 'info', text: 'Processing settlement calculations server-side...' });
     
@@ -982,16 +1017,50 @@ function App() {
               <div className="content-card" style={{ border: '2px solid var(--brazil-gold)' }}>
                 <h3 className="card-title">Settle Match #{selectedMatch.matchId}</h3>
                 <form onSubmit={handleSettleMatch}>
-                  <div style={{ display: 'flex', gap: '20px', marginBottom: '20px' }}>
+                   <div style={{ display: 'flex', gap: '20px', marginBottom: '20px' }}>
                     <div style={{ flex: 1 }}>
                       <label className="form-label">{getTeamFlag(selectedMatch.teamA)} {selectedMatch.teamA} Goals</label>
                       <input className="form-control" type="number" min="0" required 
-                             value={scoreInput.teamAGoals} onChange={e => setScoreInput({ ...scoreInput, teamAGoals: e.target.value })}/>
+                             value={scoreInput.teamAGoals} onChange={e => {
+                               const val = e.target.value;
+                               const otherVal = scoreInput.teamBGoals;
+                               let newWinner = scoreInput.winner;
+                               if (val !== '' && otherVal !== '') {
+                                 const goalsA = Number(val);
+                                 const goalsB = Number(otherVal);
+                                 if (selectedMatch.stage === 'group') {
+                                   if (goalsA > goalsB) newWinner = 'teamA';
+                                   else if (goalsB > goalsA) newWinner = 'teamB';
+                                   else newWinner = 'draw';
+                                 } else {
+                                   if (goalsA > goalsB) newWinner = 'teamA';
+                                   else if (goalsB > goalsA) newWinner = 'teamB';
+                                 }
+                               }
+                               setScoreInput({ ...scoreInput, teamAGoals: val, winner: newWinner });
+                             }}/>
                     </div>
                     <div style={{ flex: 1 }}>
                       <label className="form-label">{selectedMatch.teamB} {getTeamFlag(selectedMatch.teamB)} Goals</label>
                       <input className="form-control" type="number" min="0" required 
-                             value={scoreInput.teamBGoals} onChange={e => setScoreInput({ ...scoreInput, teamBGoals: e.target.value })}/>
+                             value={scoreInput.teamBGoals} onChange={e => {
+                               const val = e.target.value;
+                               const otherVal = scoreInput.teamAGoals;
+                               let newWinner = scoreInput.winner;
+                               if (val !== '' && otherVal !== '') {
+                                 const goalsA = Number(otherVal);
+                                 const goalsB = Number(val);
+                                 if (selectedMatch.stage === 'group') {
+                                   if (goalsA > goalsB) newWinner = 'teamA';
+                                   else if (goalsB > goalsA) newWinner = 'teamB';
+                                   else newWinner = 'draw';
+                                 } else {
+                                   if (goalsA > goalsB) newWinner = 'teamA';
+                                   else if (goalsB > goalsA) newWinner = 'teamB';
+                                 }
+                               }
+                               setScoreInput({ ...scoreInput, teamBGoals: val, winner: newWinner });
+                             }}/>
                     </div>
                   </div>
 
