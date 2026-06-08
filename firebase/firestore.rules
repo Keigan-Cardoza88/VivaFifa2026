@@ -33,12 +33,6 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
 
-    function isAuditor() {
-      return signedIn() && (
-        getUserData().role == 'auditor'
-      );
-    }
-
     function canPlaceBet(matchId, resourceData) {
       return signedIn() && (
         isAdmin() || 
@@ -61,7 +55,7 @@ service cloud.firestore {
 
     // User profiles rules
     match /users/{userId} {
-      allow read: if signedIn() && (isAdmin() || isUserDoc(userId) || isAuditor());
+      allow read: if signedIn() && (isAdmin() || isUserDoc(userId));
       // Admins can create/update any profile.
       // Users can create their own pending join request profile if they don't already have one.
       allow create: if signedIn() && (isAdmin() || (isUserDoc(userId) && !exists(/databases/$(database)/documents/users/$(userId))));
@@ -71,7 +65,7 @@ service cloud.firestore {
 
     // Matches rules
     match /matches/{matchId} {
-      allow read: if isRegistered() || isAuditor();
+      allow read: if isRegistered();
       allow write: if isAdmin();
     }
 
@@ -81,7 +75,6 @@ service cloud.firestore {
       // Users can only read other users' bets after the match has kicked off or status is closed/completed/postponed
       allow read: if signedIn() && (
         isAdmin() || 
-        isAuditor() ||
         resource.data.userId == request.auth.uid ||
         get(/databases/$(database)/documents/matches/$(resource.data.matchId)).data.status in ['betting_closed', 'completed', 'live', 'postponed'] ||
         request.time >= get(/databases/$(database)/documents/matches/$(resource.data.matchId)).data.kickoffTimeIST
@@ -95,13 +88,19 @@ service cloud.firestore {
 
     // Leaderboard rules
     match /leaderboard/{userId} {
-      allow read: if isRegistered() || isAuditor();
+      allow read: if isRegistered();
       allow write: if isAdmin();
     }
 
     // Kitty logs rules
     match /kitty/{kittyId} {
-      allow read: if isAdmin() || isAuditor();
+      allow read: if isAdmin();
+      allow write: if isAdmin();
+    }
+
+    // Settlement backups rules
+    match /settlement_backups/{matchId} {
+      allow read: if isAdmin();
       allow write: if isAdmin();
     }
 

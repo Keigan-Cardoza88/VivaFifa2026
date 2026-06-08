@@ -127,7 +127,6 @@ function App() {
 
   const [user, setUser] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [isAuditor, setIsAuditor] = useState(false);
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState(null);
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -165,37 +164,22 @@ function App() {
           const email = currentUser.email;
           const isSysAdmin = ADMIN_EMAILS.includes(email);
 
-          // Fetch user document to check if auditor role exists
-          const userDocRef = doc(db, 'users', currentUser.uid);
-          const userDoc = await getDoc(userDocRef);
-          const role = userDoc.exists() ? userDoc.data().role : null;
-          const isSysAuditor = role === 'auditor';
-
-          if (isSysAdmin || isSysAuditor) {
+          if (isSysAdmin) {
             setUser(currentUser);
-            setIsAdmin(isSysAdmin);
-            setIsAuditor(isSysAuditor);
+            setIsAdmin(true);
           } else {
-            // Check if they are trying to register as admin on first setup
-            if (ADMIN_EMAILS.includes(email)) {
-               setUser(currentUser);
-               setIsAdmin(true);
-            } else {
-               await signOut(auth);
-               setAuthError('Unauthorized: Access denied. This portal is for Referees and Auditors only.');
-            }
+            await signOut(auth);
+            setAuthError('Unauthorized: Access denied. This portal is for referees only.');
           }
         } else {
           setUser(null);
           setIsAdmin(false);
-          setIsAuditor(false);
         }
       } catch (err) {
         console.error("Auth sync error:", err);
         setAuthError(`Connection Error: ${err.message}`);
         setUser(null);
         setIsAdmin(false);
-        setIsAuditor(false);
       } finally {
         setLoading(false);
       }
@@ -265,7 +249,6 @@ function App() {
   // 3. Actions
   // A. Approve a pending user's join request
   const handleApproveUser = async (pendingUser) => {
-    if (isAuditor) return;
     setActionLoading(true);
     try {
       // Determine late entry fee
@@ -298,7 +281,7 @@ function App() {
         accuracyPercent: 0
       });
 
-      setStatusMessage({ type: 'success', text: `✅ ${pendingUser.name} approved and added as a participant.` });
+      setStatusMessage({ type: 'success', text: `${pendingUser.name} approved and added as a participant.` });
     } catch (err) {
       setStatusMessage({ type: 'error', text: `Failed to approve user: ${err.message}` });
     } finally {
@@ -308,12 +291,11 @@ function App() {
 
   // B. Reject a pending user's join request (deletes their profile)
   const handleRejectUser = async (pendingUser) => {
-    if (isAuditor) return;
     if (!window.confirm(`Reject ${pendingUser.name}'s join request? Their profile will be deleted.`)) return;
     setActionLoading(true);
     try {
       await deleteDoc(doc(db, 'users', pendingUser.uid));
-      setStatusMessage({ type: 'success', text: `❌ ${pendingUser.name}'s request rejected and profile removed.` });
+      setStatusMessage({ type: 'success', text: `${pendingUser.name}'s request rejected and profile removed.` });
     } catch (err) {
       setStatusMessage({ type: 'error', text: `Failed to reject user: ${err.message}` });
     } finally {
@@ -324,7 +306,6 @@ function App() {
   // C. Payout Settlement (Settle Match)
   const handleSettleMatch = async (e) => {
     e.preventDefault();
-    if (isAuditor) return;
 
     const goalsA = Number(scoreInput.teamAGoals);
     const goalsB = Number(scoreInput.teamBGoals);
@@ -433,7 +414,6 @@ function App() {
 
   // C. Postpone Match
   const handlePostponeMatch = async (matchId) => {
-    if (isAuditor) return;
     if (!window.confirm(`Are you sure you want to postpone Match ${matchId}? This will void all bets for this match and refund player stakes.`)) return;
     setActionLoading(true);
 
@@ -466,7 +446,6 @@ function App() {
 
   // D. Update User Payment status
   const handleUpdatePayment = async (userId, field, value) => {
-    if (isAuditor) return;
     try {
       const userRef = doc(db, 'users', userId);
       await updateDoc(userRef, { [field]: value });
@@ -478,7 +457,6 @@ function App() {
 
   // E. Override Late Entry Fee
   const handleOverrideFee = async (userId, fee) => {
-    if (isAuditor) return;
     try {
       const userRef = doc(db, 'users', userId);
       await updateDoc(userRef, { entryFee: Number(fee) });
@@ -488,22 +466,8 @@ function App() {
     }
   };
 
-  // F. Assign Co-Auditor role
-  const handleToggleAuditor = async (targetUser) => {
-    if (isAuditor) return;
-    try {
-      const newRole = targetUser.role === 'auditor' ? 'participant' : 'auditor';
-      const userRef = doc(db, 'users', targetUser.uid);
-      await updateDoc(userRef, { role: newRole });
-      setStatusMessage({ type: 'success', text: `User role updated to ${newRole}.` });
-    } catch (err) {
-      setStatusMessage({ type: 'error', text: `Error changing role: ${err.message}` });
-    }
-  };
-
   // G. Edit Stakes per Stage
   const handleUpdateStakes = async (stage, field, value) => {
-    if (isAuditor) return;
     try {
       const newStakes = { ...globalSettings.stakes };
       newStakes[stage][field] = Number(value);
@@ -516,7 +480,6 @@ function App() {
 
   // H. Edit Prize Percentages
   const handleUpdatePrizes = async (field, value) => {
-    if (isAuditor) return;
     try {
       const newPrizes = { ...globalSettings.prizes, [field]: Number(value) };
       await updateDoc(doc(db, 'settings', 'global'), { prizes: newPrizes });
@@ -528,7 +491,6 @@ function App() {
 
   // I. Allocate Kitty to Finals
   const handleAllocateKitty = async (amount) => {
-    if (isAuditor) return;
     const numAmt = Number(amount);
     if (isNaN(numAmt) || numAmt <= 0) return alert('Enter valid amount');
     try {
@@ -543,7 +505,7 @@ function App() {
         splitFinals: numAmt,
         createdAt: new Date()
       });
-      setStatusMessage({ type: 'success', text: `Allocated ₹${numAmt} from Referee Kitty to Finals Pool.` });
+      setStatusMessage({ type: 'success', text: `Allocated Rs ${numAmt} from Referee Kitty to Finals Pool.` });
     } catch (err) {
        setStatusMessage({ type: 'error', text: err.message });
     }
@@ -551,7 +513,6 @@ function App() {
 
   // J. Trigger Cron Scheduler Manually
   const handleTriggerCron = async () => {
-    if (isAuditor) return;
     setActionLoading(true);
     setStatusMessage({ type: 'info', text: 'Triggering lock scheduler...' });
     try {
@@ -569,7 +530,6 @@ function App() {
   // K. Create Custom Match Fixture
   const handleCreateCustomMatch = async (e) => {
     e.preventDefault();
-    if (isAuditor) return;
     if (!customMatch.matchId || !customMatch.teamA || !customMatch.teamB || !customMatch.kickoffTime) {
       return alert('Please fill in all fields.');
     }
@@ -596,7 +556,6 @@ function App() {
 
   // L. Delete User from Database
   const handleDeleteUser = async (userId) => {
-    if (isAuditor) return;
     if (!window.confirm("Are you sure you want to delete this user? All their leaderboard data and bets will be removed.")) return;
     try {
       await deleteDoc(doc(db, 'users', userId));
@@ -618,7 +577,6 @@ function App() {
 
   // N. Delete Match Fixture
   const handleDeleteMatch = async (matchId) => {
-    if (isAuditor) return;
     if (!window.confirm(`Are you sure you want to delete Match #${matchId}? This cannot be undone.`)) return;
     try {
       await deleteDoc(doc(db, 'matches', String(matchId)));
@@ -631,7 +589,6 @@ function App() {
   // O. Save Edited Match Fixture
   const handleSaveEditMatch = async (e) => {
     e.preventDefault();
-    if (isAuditor) return;
     if (!editMatchForm.teamA || !editMatchForm.teamB || !editMatchForm.kickoffTime) {
       return alert('All fields are required.');
     }
@@ -679,7 +636,6 @@ function App() {
   // Q. Override Bet for User
   const handleOverrideBetSubmit = async (e, matchId) => {
     e.preventDefault();
-    if (isAuditor) return;
     if (!overrideBetForm.userId || !overrideBetForm.teamPrediction || overrideBetForm.goalsTeamA === '' || overrideBetForm.goalsTeamB === '') {
       return alert('Please fill in all override bet fields.');
     }
@@ -713,7 +669,6 @@ function App() {
 
   // Close betting for all non-completed matches
   const handleCloseAllBets = async () => {
-    if (isAuditor) return;
     if (!window.confirm("Are you sure you want to CLOSE betting for all upcoming/live matches immediately?")) return;
     setActionLoading(true);
     setStatusMessage({ type: 'info', text: 'Closing wagers for all upcoming matches...' });
@@ -732,7 +687,6 @@ function App() {
 
   // Open betting for all non-completed matches
   const handleStartAllBets = async () => {
-    if (isAuditor) return;
     if (!window.confirm("Are you sure you want to OPEN betting for all non-completed/non-postponed matches immediately?")) return;
     setActionLoading(true);
     setStatusMessage({ type: 'info', text: 'Opening wagers for all matches...' });
@@ -877,16 +831,14 @@ function App() {
           </li>
           <li className="menu-item">
             <a className={`menu-link ${activeTab === 'kitty' ? 'active' : ''}`} onClick={() => { setActiveTab('kitty'); setIsSidebarOpen(false); }}>
-              Kitty & Audits
+              Kitty & Logs
             </a>
           </li>
-          {!isAuditor && (
-            <li className="menu-item">
-              <a className={`menu-link ${activeTab === 'tools' ? 'active' : ''}`} onClick={() => { setActiveTab('tools'); setIsSidebarOpen(false); }}>
-                System Tools
-              </a>
-            </li>
-          )}
+          <li className="menu-item">
+            <a className={`menu-link ${activeTab === 'tools' ? 'active' : ''}`} onClick={() => { setActiveTab('tools'); setIsSidebarOpen(false); }}>
+              System Tools
+            </a>
+          </li>
         </ul>
 
         <div className="sidebar-footer">
@@ -894,7 +846,7 @@ function App() {
             <div>Signed in as:</div>
             <div className="user-email">{user.email}</div>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-sub)' }}>
-              Role: {isAdmin ? 'System Referee' : 'Auditor'}
+              Role: System Referee
             </div>
             <button className="btn-logout" onClick={handleLogout}>Log Out</button>
           </div>
@@ -923,15 +875,15 @@ function App() {
             <div className="stats-grid">
               <div className="stat-card brazil">
                 <span className="stat-label">Total Stakes Pot</span>
-                <span className="stat-value">₹{entryPot.toLocaleString()}</span>
+                <span className="stat-value">Rs {entryPot.toLocaleString()}</span>
               </div>
               <div className="stat-card argentina">
                 <span className="stat-label">Finals Kitty Pool</span>
-                <span className="stat-value">₹{finalsKittyBonus.toLocaleString()}</span>
+                <span className="stat-value">Rs {finalsKittyBonus.toLocaleString()}</span>
               </div>
               <div className="stat-card spain">
                 <span className="stat-label">Referee Kitty Reserve</span>
-                <span className="stat-value">₹{refereeKitty.toLocaleString()}</span>
+                <span className="stat-value">Rs {refereeKitty.toLocaleString()}</span>
               </div>
               <div className="stat-card">
                 <span className="stat-label">Settled Fixtures</span>
@@ -950,7 +902,7 @@ function App() {
                       <th>Payment Status</th>
                       <th>Winnings (Won)</th>
                       <th>Losses (Lost)</th>
-                      <th>Net Profit (₹)</th>
+                      <th>Net Profit (Rs)</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -965,9 +917,9 @@ function App() {
                               {u.paymentStatus}
                             </span>
                           </td>
-                          <td style={{ color: 'var(--win-green)' }}>₹0</td>
-                          <td style={{ color: 'var(--loss-red)' }}>₹{u.entryFee || 0}</td>
-                          <td style={{ fontWeight: 'bold' }}>₹0</td>
+                          <td style={{ color: 'var(--win-green)' }}>Rs 0</td>
+                          <td style={{ color: 'var(--loss-red)' }}>Rs {u.entryFee || 0}</td>
+                          <td style={{ fontWeight: 'bold' }}>Rs 0</td>
                         </tr>
                       );
                     })}
@@ -986,16 +938,15 @@ function App() {
               <p className="page-subtitle">Configure kickoff states and enter final game scorelines.</p>
             </div>
 
-            {!isAuditor && (
-              <div className="content-card" style={{ marginBottom: '24px', display: 'flex', flexWrap: 'wrap', gap: '16px', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)' }}>
+            <div className="content-card" style={{ marginBottom: '24px', display: 'flex', flexWrap: 'wrap', gap: '16px', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)' }}>
                 <div style={{ display: 'flex', gap: '12px' }}>
                   <button className="btn" style={{ backgroundColor: 'var(--loss-red)', border: 'none', color: 'white', padding: '8px 16px', fontWeight: '800', borderRadius: '4px', cursor: 'pointer' }}
                           disabled={actionLoading} onClick={handleCloseAllBets}>
-                    🔒 Close All Bets
+                    Close All Bets
                   </button>
                   <button className="btn" style={{ backgroundColor: 'var(--win-green)', border: 'none', color: 'white', padding: '8px 16px', fontWeight: '800', borderRadius: '4px', cursor: 'pointer' }}
                           disabled={actionLoading} onClick={handleStartAllBets}>
-                    🔓 Start All Bets
+                    Start All Bets
                   </button>
                 </div>
                 
@@ -1011,7 +962,6 @@ function App() {
                   </select>
                 </div>
               </div>
-            )}
 
             {selectedMatch ? (
               <div className="content-card" style={{ border: '2px solid var(--brazil-gold)' }}>
@@ -1154,8 +1104,7 @@ function App() {
                     Kickoff: {new Date(match.kickoffTimeIST.seconds * 1000).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })} (IST)
                   </div>
 
-                  {!isAuditor && (
-                    <div className="match-item-footer" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div className="match-item-footer" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                       <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
                         {match.status !== 'completed' && match.status !== 'postponed' ? (
                           <>
@@ -1188,12 +1137,12 @@ function App() {
                                             winner: match.winner || ''
                                           });
                                         }}>
-                                  ⚙️ Resettle
+                                  Resettle
                                 </button>
                               )}
                               <button className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '4px' }}
                                       onClick={() => handleDownloadBackup(match.matchId)}>
-                                📥 Backup
+                                Backup
                               </button>
                             </div>
                           </div>
@@ -1222,7 +1171,6 @@ function App() {
                         </button>
                       </div>
                     </div>
-                  )}
 
                   {/* Expandable View Bets Section */}
                   {viewingMatchBets === match.matchId && (
@@ -1263,8 +1211,7 @@ function App() {
                           )}
 
                           {/* Override Form */}
-                          {!isAuditor && (
-                            <div style={{ marginTop: '16px', padding: '12px', backgroundColor: 'rgba(19, 27, 46, 0.4)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                          <div style={{ marginTop: '16px', padding: '12px', backgroundColor: 'rgba(19, 27, 46, 0.4)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
                               <h5 style={{ fontSize: '0.8rem', marginBottom: '8px', color: '#ffd700' }}>Override/Place Bet for User</h5>
                               <form onSubmit={(e) => handleOverrideBetSubmit(e, match.matchId)}>
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
@@ -1297,7 +1244,6 @@ function App() {
                                 </div>
                               </form>
                             </div>
-                          )}
                         </>
                       )}
                     </div>
@@ -1317,9 +1263,9 @@ function App() {
             </div>
 
             {/* PENDING JOIN REQUESTS */}
-            {!isAuditor && users.filter(u => u.role === 'pending').length > 0 && (
+            {users.filter(u => u.role === 'pending').length > 0 && (
               <div className="content-card" style={{ borderColor: '#ffd700', borderWidth: '2px' }}>
-                <h3 className="card-title" style={{ color: '#ffd700' }}>⏳ Pending Join Requests ({users.filter(u => u.role === 'pending').length})</h3>
+                <h3 className="card-title" style={{ color: '#ffd700' }}>Pending Join Requests ({users.filter(u => u.role === 'pending').length})</h3>
                 <div className="table-responsive">
                   <table className="scoreboard-table">
                     <thead>
@@ -1346,7 +1292,7 @@ function App() {
                                 disabled={actionLoading}
                                 onClick={() => handleApproveUser(u)}
                               >
-                                ✓ Accept
+                                Accept
                               </button>
                               <button
                                 className="btn"
@@ -1354,7 +1300,7 @@ function App() {
                                 disabled={actionLoading}
                                 onClick={() => handleRejectUser(u)}
                               >
-                                ✕ Reject
+                                Reject
                               </button>
                             </div>
                           </td>
@@ -1379,7 +1325,7 @@ function App() {
                       <th>Payment Plan</th>
                       <th>Payment Status</th>
                       <th>Entry Fee Overrides</th>
-                      {!isAuditor && <th>Actions</th>}
+                      <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1388,46 +1334,32 @@ function App() {
                         <td><strong>{u.name}</strong></td>
                         <td>{u.email}</td>
                         <td>
-                          <span className={`badge ${u.role === 'admin' ? 'win' : (u.role === 'auditor' ? 'info' : 'secondary')}`}>
+                          <span className={`badge ${u.role === 'admin' ? 'win' : 'secondary'}`}>
                             {u.role}
                           </span>
                         </td>
                         <td>{u.paymentPlan || 'installments'}</td>
                         <td>
-                          {isAuditor ? (
-                            u.paymentStatus
-                          ) : (
-                            <select className="form-control" style={{ padding: '4px', fontSize: '0.85rem' }} value={u.paymentStatus}
-                                    onChange={e => handleUpdatePayment(u.id, 'paymentStatus', e.target.value)}>
-                              <option value="unpaid">unpaid</option>
-                              <option value="partially_paid">partially paid</option>
-                              <option value="paid">paid</option>
-                            </select>
-                          )}
+                          <select className="form-control" style={{ padding: '4px', fontSize: '0.85rem' }} value={u.paymentStatus}
+                                  onChange={e => handleUpdatePayment(u.id, 'paymentStatus', e.target.value)}>
+                            <option value="unpaid">unpaid</option>
+                            <option value="partially_paid">partially paid</option>
+                            <option value="paid">paid</option>
+                          </select>
                         </td>
                         <td>
-                          {isAuditor ? (
-                            `₹${u.entryFee || 10400}`
-                          ) : (
-                            <input className="form-control" type="number" style={{ width: '100px', padding: '4px', fontSize: '0.85rem' }} 
-                                   defaultValue={u.entryFee !== undefined ? u.entryFee : 10400}
-                                   onBlur={e => handleOverrideFee(u.id, e.target.value)}/>
-                          )}
+                          <input className="form-control" type="number" style={{ width: '100px', padding: '4px', fontSize: '0.85rem' }} 
+                                 defaultValue={u.entryFee !== undefined ? u.entryFee : 10400}
+                                 onBlur={e => handleOverrideFee(u.id, e.target.value)}/>
                         </td>
-                        {!isAuditor && (
-                          <td>
-                            <div style={{ display: 'flex', gap: '8px' }}>
-                              <button className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: '0.75rem' }}
-                                      onClick={() => handleToggleAuditor(u)}>
-                                {u.role === 'auditor' ? 'Demote to Player' : 'Set Auditor'}
-                              </button>
-                              <button className="btn" style={{ padding: '4px 8px', fontSize: '0.75rem', backgroundColor: 'var(--loss-red)', border: 'none', color: '#fff', borderRadius: '4px', cursor: 'pointer' }}
-                                      onClick={() => handleDeleteUser(u.id)}>
-                                Delete
-                              </button>
-                            </div>
-                          </td>
-                        )}
+                        <td>
+                          <div style={{ display: 'flex', gap: '8px' }}>
+                            <button className="btn" style={{ padding: '4px 8px', fontSize: '0.75rem', backgroundColor: 'var(--loss-red)', border: 'none', color: '#fff', borderRadius: '4px', cursor: 'pointer' }}
+                                    onClick={() => handleDeleteUser(u.id)}>
+                              Delete
+                            </button>
+                          </div>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -1448,14 +1380,14 @@ function App() {
             {globalSettings && (
               <>
                 <div className="content-card">
-                  <h3 className="card-title">Stage Stake Settings (₹)</h3>
+                  <h3 className="card-title">Stage Stake Settings (Rs)</h3>
                   <div className="table-responsive">
                     <table className="scoreboard-table">
                       <thead>
                         <tr>
                           <th>Stage</th>
-                          <th>Team Prediction Stake (₹)</th>
-                          <th>Goal Prediction Stake (₹)</th>
+                          <th>Team Prediction Stake (Rs)</th>
+                          <th>Goal Prediction Stake (Rs)</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1467,13 +1399,11 @@ function App() {
                             <td><strong style={{ textTransform: 'uppercase' }}>{stage}</strong></td>
                             <td>
                               <input className="form-control" type="number" style={{ width: '120px', padding: '6px' }}
-                                     disabled={isAuditor}
                                      value={globalSettings.stakes[stage].team}
                                      onChange={e => handleUpdateStakes(stage, 'team', e.target.value)}/>
                             </td>
                             <td>
                               <input className="form-control" type="number" style={{ width: '120px', padding: '6px' }}
-                                     disabled={isAuditor}
                                      value={globalSettings.stakes[stage].goal}
                                      onChange={e => handleUpdateStakes(stage, 'goal', e.target.value)}/>
                             </td>
@@ -1489,19 +1419,19 @@ function App() {
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '24px' }}>
                     <div>
                       <label className="form-label">1st Place Weight (%)</label>
-                      <input className="form-control" type="number" disabled={isAuditor}
+                      <input className="form-control" type="number"
                              value={globalSettings.prizes.firstPlacePercent}
                              onChange={e => handleUpdatePrizes('firstPlacePercent', e.target.value)}/>
                     </div>
                     <div>
                       <label className="form-label">2nd Place Weight (%)</label>
-                      <input className="form-control" type="number" disabled={isAuditor}
+                      <input className="form-control" type="number"
                              value={globalSettings.prizes.secondPlacePercent}
                              onChange={e => handleUpdatePrizes('secondPlacePercent', e.target.value)}/>
                     </div>
                     <div>
                       <label className="form-label">3rd Place Weight (%)</label>
-                      <input className="form-control" type="number" disabled={isAuditor}
+                      <input className="form-control" type="number"
                              value={globalSettings.prizes.thirdPlacePercent}
                              onChange={e => handleUpdatePrizes('thirdPlacePercent', e.target.value)}/>
                     </div>
@@ -1515,31 +1445,29 @@ function App() {
           </div>
         )}
 
-        {/* TAB 5: KITTY & AUDITS */}
+        {/* TAB 5: KITTY & LOGS */}
         {activeTab === 'kitty' && (
           <div>
             <div className="page-header">
-              <h2 className="page-title">Kitty Reserves & Audit Trails</h2>
-              <p className="page-subtitle">Trace every financial transaction, forfeit logs, and auditor observations.</p>
+              <h2 className="page-title">Kitty Reserves & Transaction Logs</h2>
+              <p className="page-subtitle">Trace every financial transaction, forfeit logs, and reserve transfers.</p>
             </div>
 
-            {!isAuditor && (
-              <div className="content-card">
-                <h3 className="card-title">Allocate Kitty Funds to Prizes</h3>
-                <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-end' }}>
-                  <div style={{ flex: 1 }}>
-                    <label className="form-label">Amount to transfer from Referee Kitty to Finals Pot (₹)</label>
-                    <input className="form-control" id="kittyAllocAmt" type="number" placeholder="Enter amount (e.g. 1000)"/>
-                  </div>
-                  <button className="btn btn-success" onClick={() => {
-                    const amt = document.getElementById('kittyAllocAmt').value;
-                    handleAllocateKitty(amt);
-                  }}>
-                    Transfer Funds
-                  </button>
+            <div className="content-card">
+              <h3 className="card-title">Allocate Kitty Funds to Prizes</h3>
+              <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-end' }}>
+                <div style={{ flex: 1 }}>
+                  <label className="form-label">Amount to transfer from Referee Kitty to Finals Pot (Rs)</label>
+                  <input className="form-control" id="kittyAllocAmt" type="number" placeholder="Enter amount (e.g. 1000)"/>
                 </div>
+                <button className="btn btn-success" onClick={() => {
+                  const amt = document.getElementById('kittyAllocAmt').value;
+                  handleAllocateKitty(amt);
+                }}>
+                  Transfer Funds
+                </button>
               </div>
-            )}
+            </div>
 
             <div className="content-card">
               <h3 className="card-title">Transaction Ledger</h3>
@@ -1550,9 +1478,9 @@ function App() {
                       <th>Transaction ID</th>
                       <th>Source Type</th>
                       <th>Fixture ID</th>
-                      <th>Total Amount (₹)</th>
-                      <th>Referee Kitty (₹)</th>
-                      <th>Finals Pool (₹)</th>
+                      <th>Total Amount (Rs)</th>
+                      <th>Referee Kitty (Rs)</th>
+                      <th>Finals Pool (Rs)</th>
                       <th>Logged Date</th>
                     </tr>
                   </thead>
@@ -1566,12 +1494,12 @@ function App() {
                           </span>
                         </td>
                         <td>{log.matchId ? `Match #${log.matchId}` : 'N/A'}</td>
-                        <td style={{ fontWeight: 'bold' }}>₹{Math.abs(log.amount)}</td>
+                        <td style={{ fontWeight: 'bold' }}>Rs {Math.abs(log.amount)}</td>
                         <td style={{ color: log.splitReferee < 0 ? 'var(--loss-red)' : 'var(--win-green)' }}>
-                          {log.splitReferee < 0 ? '-' : '+'}₹{Math.abs(log.splitReferee)}
+                          {log.splitReferee < 0 ? '-' : '+'}Rs {Math.abs(log.splitReferee)}
                         </td>
                         <td style={{ color: log.splitFinals < 0 ? 'var(--loss-red)' : 'var(--win-green)' }}>
-                          {log.splitFinals < 0 ? '-' : '+'}₹{Math.abs(log.splitFinals)}
+                          {log.splitFinals < 0 ? '-' : '+'}Rs {Math.abs(log.splitFinals)}
                         </td>
                         <td>{log.createdAt ? new Date(log.createdAt.seconds * 1000).toLocaleString() : 'N/A'}</td>
                       </tr>
@@ -1596,75 +1524,65 @@ function App() {
               <p className="page-subtitle">Perform manual scheduler triggers, fixture adjustments, and database resets.</p>
             </div>
 
-            {!isAuditor && (
-              <>
-                {/* Section 1: Cron Scheduler */}
-                <div className="content-card">
-                  <h3 className="card-title">Lock & Reminder Scheduler (Cron)</h3>
-                  <p style={{ fontSize: '0.9rem', color: 'var(--text-sub)', marginBottom: '16px' }}>
-                    Trigger the serverless task scheduler immediately. This will run the match lock check, auto-forfeiting empty wagers for fixtures kickoff within 8 hours, and distributing reminders.
-                  </p>
-                  <button className="btn btn-primary" onClick={handleTriggerCron} disabled={actionLoading}>
-                    {actionLoading ? 'Triggering...' : 'Trigger Lock Scheduler (Run Cron)'}
+            <>
+              {/* Section 1: Cron Scheduler */}
+              <div className="content-card">
+                <h3 className="card-title">Lock & Reminder Scheduler (Cron)</h3>
+                <p style={{ fontSize: '0.9rem', color: 'var(--text-sub)', marginBottom: '16px' }}>
+                  Trigger the serverless task scheduler immediately. This will run the match lock check, auto-forfeiting empty wagers for fixtures kickoff within 8 hours, and distributing reminders.
+                </p>
+                <button className="btn btn-primary" onClick={handleTriggerCron} disabled={actionLoading}>
+                  {actionLoading ? 'Triggering...' : 'Trigger Lock Scheduler (Run Cron)'}
+                </button>
+              </div>
+
+              {/* Section 2: Create Custom Match */}
+              <div className="content-card">
+                <h3 className="card-title">Register Custom Match / Fixture</h3>
+                <form onSubmit={handleCreateCustomMatch}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+                    <div>
+                      <label className="form-label">Match ID (Number, e.g. 105)</label>
+                      <input className="form-control" type="number" required placeholder="105"
+                             value={customMatch.matchId} onChange={e => setCustomMatch({ ...customMatch, matchId: e.target.value })}/>
+                    </div>
+                    <div>
+                      <label className="form-label">Stage</label>
+                      <select className="form-control" required value={customMatch.stage}
+                              onChange={e => setCustomMatch({ ...customMatch, stage: e.target.value })}>
+                        <option value="group">Group Stage</option>
+                        <option value="r32">Round of 32</option>
+                        <option value="r16">Round of 16</option>
+                        <option value="qf">Quarter-final</option>
+                        <option value="sf">Semi-final</option>
+                        <option value="third_place">Third Place Play-off</option>
+                        <option value="final">Final</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+                    <div>
+                      <label className="form-label">Team A Name</label>
+                      <input className="form-control" type="text" required placeholder="e.g. France"
+                             value={customMatch.teamA} onChange={e => setCustomMatch({ ...customMatch, teamA: e.target.value })}/>
+                    </div>
+                    <div>
+                      <label className="form-label">Team B Name</label>
+                      <input className="form-control" type="text" required placeholder="e.g. Brazil"
+                             value={customMatch.teamB} onChange={e => setCustomMatch({ ...customMatch, teamB: e.target.value })}/>
+                    </div>
+                  </div>
+                  <div className="form-group" style={{ marginBottom: '20px' }}>
+                    <label className="form-label">Kickoff Time (Local Time)</label>
+                    <input className="form-control" type="datetime-local" required
+                           value={customMatch.kickoffTime} onChange={e => setCustomMatch({ ...customMatch, kickoffTime: e.target.value })}/>
+                  </div>
+                  <button className="btn btn-success" type="submit" disabled={actionLoading}>
+                    Add Custom Fixture
                   </button>
-                </div>
-
-                {/* Section 2: Create Custom Match */}
-                <div className="content-card">
-                  <h3 className="card-title">Register Custom Match / Fixture</h3>
-                  <form onSubmit={handleCreateCustomMatch}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
-                      <div>
-                        <label className="form-label">Match ID (Number, e.g. 105)</label>
-                        <input className="form-control" type="number" required placeholder="105"
-                               value={customMatch.matchId} onChange={e => setCustomMatch({ ...customMatch, matchId: e.target.value })}/>
-                      </div>
-                      <div>
-                        <label className="form-label">Stage</label>
-                        <select className="form-control" required value={customMatch.stage}
-                                onChange={e => setCustomMatch({ ...customMatch, stage: e.target.value })}>
-                          <option value="group">Group Stage</option>
-                          <option value="r32">Round of 32</option>
-                          <option value="r16">Round of 16</option>
-                          <option value="qf">Quarter-final</option>
-                          <option value="sf">Semi-final</option>
-                          <option value="third_place">Third Place Play-off</option>
-                          <option value="final">Final</option>
-                        </select>
-                      </div>
-                    </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
-                      <div>
-                        <label className="form-label">Team A Name</label>
-                        <input className="form-control" type="text" required placeholder="e.g. France"
-                               value={customMatch.teamA} onChange={e => setCustomMatch({ ...customMatch, teamA: e.target.value })}/>
-                      </div>
-                      <div>
-                        <label className="form-label">Team B Name</label>
-                        <input className="form-control" type="text" required placeholder="e.g. Brazil"
-                               value={customMatch.teamB} onChange={e => setCustomMatch({ ...customMatch, teamB: e.target.value })}/>
-                      </div>
-                    </div>
-                    <div className="form-group" style={{ marginBottom: '20px' }}>
-                      <label className="form-label">Kickoff Time (Local Time)</label>
-                      <input className="form-control" type="datetime-local" required
-                             value={customMatch.kickoffTime} onChange={e => setCustomMatch({ ...customMatch, kickoffTime: e.target.value })}/>
-                    </div>
-                    <button className="btn btn-success" type="submit" disabled={actionLoading}>
-                      Add Custom Fixture
-                    </button>
-                  </form>
-                </div>
-
-
-              </>
-            )}
-
-            {isAuditor && (
-              <p style={{ color: 'var(--text-sub)' }}>
-                Auditors do not have permission to execute system controls or modify database states.
-              </p>
-            )}
+                </form>
+              </div>
+            </>
           </div>
         )}
       </main>
@@ -1673,3 +1591,4 @@ function App() {
 }
 
 export default App;
+
