@@ -1067,7 +1067,7 @@ function App() {
                 <div className="match-item-card" key={match.id}>
                   <div className="match-item-header">
                     <span className="match-stage-label">{match.stage} (Match #{match.matchId})</span>
-                    <span className={`badge ${match.status === 'upcoming' ? 'info' : (match.status === 'completed' ? 'win' : 'loss')}`}>
+                    <span className={`badge ${match.status === 'upcoming' ? 'win' : (match.status === 'completed' ? 'info' : 'loss')}`}>
                       {match.status}
                     </span>
                   </div>
