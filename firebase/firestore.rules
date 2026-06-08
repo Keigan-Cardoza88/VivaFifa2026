@@ -39,6 +39,26 @@ service cloud.firestore {
       );
     }
 
+    function canPlaceBet(matchId, resourceData) {
+      return signedIn() && (
+        isAdmin() || 
+        (
+          resourceData.userId == request.auth.uid &&
+          !resourceData.isDefault &&
+          request.time < get(/databases/$(database)/documents/matches/$(matchId)).data.kickoffTimeIST &&
+          get(/databases/$(database)/documents/matches/$(matchId)).data.status in ['upcoming', 'betting_open'] &&
+          (
+            // If team A wins, goal A > goal B
+            (resourceData.teamPrediction == 'teamA' && resourceData.goalsTeamA > resourceData.goalsTeamB) ||
+            // If team B wins, goal B > goal A
+            (resourceData.teamPrediction == 'teamB' && resourceData.goalsTeamB > resourceData.goalsTeamA) ||
+            // If draw, goal A == goal B
+            (resourceData.teamPrediction == 'draw' && resourceData.goalsTeamA == resourceData.goalsTeamB)
+          )
+        )
+      );
+    }
+
     // User profiles rules
     match /users/{userId} {
       allow read: if signedIn() && (isAdmin() || isUserDoc(userId) || isAuditor());
@@ -67,31 +87,9 @@ service cloud.firestore {
         request.time >= get(/databases/$(database)/documents/matches/$(resource.data.matchId)).data.kickoffTimeIST
       );
       
-      // Creating a bet is allowed only:
-      // 1. By the user themselves (or admin)
-      // 2. Before the match cutoff time (8:00 PM IST on kick-off day)
-      // 3. Match status must be 'upcoming' or 'betting_open'
-      // 4. Input validation (goals must match team prediction outcome)
-      allow create: if signedIn() && (
-        isAdmin() || 
-        (
-          request.resource.data.userId == request.auth.uid &&
-          !request.resource.data.isDefault &&
-          request.time < get(/databases/$(database)/documents/matches/$(request.resource.data.matchId)).data.kickoffTimeIST &&
-          get(/databases/$(database)/documents/matches/$(request.resource.data.matchId)).data.status in ['upcoming', 'betting_open'] &&
-          (
-            // If team A wins, goal A > goal B
-            (request.resource.data.teamPrediction == 'teamA' && request.resource.data.goalsTeamA > request.resource.data.goalsTeamB) ||
-            // If team B wins, goal B > goal A
-            (request.resource.data.teamPrediction == 'teamB' && request.resource.data.goalsTeamB > request.resource.data.goalsTeamA) ||
-            // If draw, goal A == goal B
-            (request.resource.data.teamPrediction == 'draw' && request.resource.data.goalsTeamA == request.resource.data.goalsTeamB)
-          )
-        )
-      );
-
-      // Once placed, bets cannot be updated or deleted by normal users
-      allow update: if isAdmin();
+      // Users can place or edit their bets before lock time, as long as the match status is upcoming/open.
+      allow create: if canPlaceBet(request.resource.data.matchId, request.resource.data);
+      allow update: if canPlaceBet(request.resource.data.matchId, request.resource.data);
       allow delete: if isAdmin();
     }
 

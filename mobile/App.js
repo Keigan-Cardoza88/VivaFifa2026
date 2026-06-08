@@ -513,6 +513,16 @@ export default function App() {
   const handleConfirmBetSubmit = async () => {
     setBetSaving(true);
     try {
+      // Fetch latest match status from local matches state
+      const latestMatch = matches.find(m => m.matchId === selectedMatch.matchId);
+      if (!latestMatch) {
+        throw new Error('Match not found.');
+      }
+      const isLocked = new Date().getTime() >= (latestMatch.bettingLockTimeIST ? latestMatch.bettingLockTimeIST.seconds * 1000 : 0);
+      if (isLocked || latestMatch.status !== 'upcoming') {
+        throw new Error('This match has been locked or completed. You cannot place or edit predictions anymore.');
+      }
+
       const betId = `${currentUser.uid}_${selectedMatch.matchId}`;
       const betRef = doc(db, 'bets', betId);
 
