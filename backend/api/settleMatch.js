@@ -95,7 +95,7 @@ module.exports = async (req, res) => {
     }
 
     if (status !== 'completed') {
-      return res.status(400).json({ error: 'Invalid match status. Usecompleted or postponed.' });
+      return res.status(400).json({ error: 'Invalid match status. Use completed or postponed.' });
     }
 
     if (resultTeamAGoals === undefined || resultTeamBGoals === undefined || !winner) {
@@ -124,29 +124,32 @@ module.exports = async (req, res) => {
       let refereeKittyInflow = 0;
       let finalsKittyInflow = 0;
 
-      const processedBets = [];
+      // Forfeit sub-pools — money routing decided AFTER we know if winners exist
+      let forfeitTeamPool = 0;
+      let forfeitGoalPool = 0;
+
+      const placedBets = [];
       const participants = users.filter(u => u.role === 'participant' || ADMIN_EMAILS.includes(u.email));
 
-      // A. Create Default Bets (Missed Bets) & evaluate existing bets
+      // A. Separate forfeits from placed bets, write forfeit docs
       participants.forEach((user) => {
-        // Late entry check: If user joined AFTER kickoff time, they don't participate and don't forfeit
+        // Late entry check: If user joined AFTER kickoff time, skip entirely
         if (user.joinedAt && user.joinedAt.toDate() > matchData.kickoffTimeIST.toDate()) {
           return;
         }
 
-        let userBet = existingBets[user.uid];
+        const userBet = existingBets[user.uid];
 
         if (!userBet) {
-          // MISSING BET PENALTY
-          // Forfeit stake: 50% Referee, 50% Finals
+          // MISSING BET — write forfeit doc, accumulate forfeit sub-pools
           const defaultBetId = `${user.uid}_${matchId}`;
           const defaultBetRef = db.collection('bets').doc(defaultBetId);
-          
-          userBet = {
+
+          transaction.set(defaultBetRef, {
             betId: defaultBetId,
             userId: user.uid,
             matchId: String(matchId),
-            teamPrediction: winner === 'teamA' ? 'teamB' : 'teamA', // Auto lose
+            teamPrediction: winner === 'teamA' ? 'teamB' : 'teamA', // Auto wrong
             goalsTeamA: -1,
             goalsTeamB: -1,
             placedAt: admin.firestore.Timestamp.now(),
@@ -155,22 +158,17 @@ module.exports = async (req, res) => {
             goalBetResult: 'forfeited',
             amountWon: 0,
             amountLost: totalStake
-          };
+          });
 
-          transaction.set(defaultBetRef, userBet);
-          
-          refereeKittyInflow += totalStake * 0.5;
-          finalsKittyInflow += totalStake * 0.5;
+          // Track forfeit pools separately — routed after evaluating placed bets
+          forfeitTeamPool += teamStake;
+          forfeitGoalPool += goalStake;
         } else {
-          processedBets.push(userBet);
+          placedBets.push(userBet);
         }
       });
 
-      // B. Evaluate Placed Bets
-      // Filter out defaults
-      const placedBets = processedBets;
-
-      // TEAM BETS EVALUATION
+      // B. Evaluate placed bets for TEAM outcome
       const teamWinners = [];
       const teamLosers = [];
 
@@ -181,9 +179,13 @@ module.exports = async (req, res) => {
           teamLosers.push(bet);
         }
       });
-      if (teamWinners.length > 0 && teamLosers.length > 0) {
-        // Losers lose their stake, winners share the losers' pool
-        const loserPool = teamLosers.length * teamStake;
+
+      // Route forfeit TEAM pool:
+      //   - If team winners exist → forfeit pool augments the winners' prize
+      //   - If no team winners → forfeit pool goes to kitty
+      if (teamWinners.length > 0) {
+        // Losers' stakes + forfeit team stakes all go to winners
+        const loserPool = (teamLosers.length * teamStake) + forfeitTeamPool;
         const sharePerWinner = loserPool / teamWinners.length;
 
         teamWinners.forEach((bet) => {
@@ -203,23 +205,14 @@ module.exports = async (req, res) => {
           transaction.update(bet.ref, updatePayload);
           Object.assign(bet, updatePayload);
         });
-      } else if (teamWinners.length > 0 && teamLosers.length === 0) {
-        // Everyone picked the winner -> refund stakes
-        teamWinners.forEach((bet) => {
-          const updatePayload = {
-            teamBetResult: winner === 'draw' ? 'draw_win' : 'won',
-            amountWon: teamStake,
-            amountLost: 0
-          };
-          transaction.update(bet.ref, updatePayload);
-          Object.assign(bet, updatePayload);
-        });
-      } else if (teamWinners.length === 0 && teamLosers.length > 0) {
-        // Everyone lost (e.g. no one predicted draw, or everyone picked wrong team)
-        // Entire team bet pool goes 50% Referee, 50% Finals
-        const totalTeamPool = teamLosers.length * teamStake;
-        refereeKittyInflow += totalTeamPool * 0.5;
-        finalsKittyInflow += totalTeamPool * 0.5;
+        // forfeitTeamPool routed to winners — nothing extra to kitty for team bets
+      } else {
+        // No team winners at all — everyone lost + forfeits → kitty
+        const totalTeamPool = (teamLosers.length * teamStake) + forfeitTeamPool;
+        if (totalTeamPool > 0) {
+          refereeKittyInflow += totalTeamPool * 0.5;
+          finalsKittyInflow += totalTeamPool * 0.5;
+        }
 
         teamLosers.forEach((bet) => {
           const updatePayload = {
@@ -230,7 +223,8 @@ module.exports = async (req, res) => {
           Object.assign(bet, updatePayload);
         });
       }
-      // GOAL BETS EVALUATION
+
+      // C. Evaluate placed bets for GOAL scoreline
       const goalWinners = [];
       const goalLosers = [];
 
@@ -242,15 +236,18 @@ module.exports = async (req, res) => {
         }
       });
 
-      const totalGoalPool = placedBets.length * goalStake;
+      // Total goal pool = placed bets + forfeit goal stakes
+      const totalGoalPool = (placedBets.length * goalStake) + forfeitGoalPool;
+
+      // Route forfeit GOAL pool:
+      //   - If goal winners exist → forfeit goal pool augments the winners' prize
+      //   - If no goal winners → forfeit goal pool goes to kitty
       if (goalWinners.length > 0) {
-        // Split goal pool among winners
         const sharePerWinner = totalGoalPool / goalWinners.length;
 
         goalWinners.forEach((bet) => {
-          // If they also won team bet, add to amountWon, else set it
-          const existingWon = winner === bet.teamPrediction ? (teamStake + (teamLosers.length * teamStake / (teamWinners.length || 1))) : 0;
-          
+          // Use already-computed amountWon from team evaluation, then add goal winnings on top
+          const existingWon = bet.amountWon || 0;
           const updatePayload = {
             goalBetResult: 'won',
             amountWon: existingWon + sharePerWinner
@@ -260,8 +257,7 @@ module.exports = async (req, res) => {
         });
 
         goalLosers.forEach((bet) => {
-          // Add goalStake to amountLost
-          const existingLost = winner !== bet.teamPrediction ? teamStake : 0;
+          const existingLost = bet.amountLost || 0;
           const updatePayload = {
             goalBetResult: 'lost',
             amountLost: existingLost + goalStake
@@ -270,12 +266,14 @@ module.exports = async (req, res) => {
           Object.assign(bet, updatePayload);
         });
       } else {
-        // No goal winners -> Goal pool goes 50% Referee, 50% Finals
-        refereeKittyInflow += totalGoalPool * 0.5;
-        finalsKittyInflow += totalGoalPool * 0.5;
+        // No goal winners → entire goal pool (placed + forfeits) → kitty
+        if (totalGoalPool > 0) {
+          refereeKittyInflow += totalGoalPool * 0.5;
+          finalsKittyInflow += totalGoalPool * 0.5;
+        }
 
         goalLosers.forEach((bet) => {
-          const existingLost = winner !== bet.teamPrediction ? teamStake : 0;
+          const existingLost = bet.amountLost || 0;
           const updatePayload = {
             goalBetResult: 'lost',
             amountLost: existingLost + goalStake
@@ -284,12 +282,16 @@ module.exports = async (req, res) => {
           Object.assign(bet, updatePayload);
         });
       }
-      // Write Kitty Logs if there was inflow
+
+      // D. Write Kitty Logs if there was inflow
       if (refereeKittyInflow > 0 || finalsKittyInflow > 0) {
         const kittyLogRef = db.collection('kitty').doc();
+        const kittyType = teamWinners.length === 0 && goalWinners.length === 0
+          ? 'goalbet_unsolved'
+          : (winner === 'draw' && teamWinners.length === 0 ? 'draw' : 'forfeit');
         transaction.set(kittyLogRef, {
           kittyId: kittyLogRef.id,
-          type: goalWinners.length === 0 && teamWinners.length === 0 ? 'goalbet_unsolved' : (winner === 'draw' && teamWinners.length === 0 ? 'draw' : 'forfeit'),
+          type: kittyType,
           matchId: String(matchId),
           amount: refereeKittyInflow + finalsKittyInflow,
           splitReferee: refereeKittyInflow,
@@ -403,7 +405,7 @@ async function rebuildLeaderboard() {
     });
 
     let totalWon = 0;
-    let totalLost = 0; // Will represent total contribution stakes
+    let totalLost = 0;
     let correctPredictions = 0;
     let totalPredictions = 0;
 
@@ -417,7 +419,6 @@ async function rebuildLeaderboard() {
       }
 
       if (match.status === 'postponed') {
-        // Postponed matches are voided, count as 0 predictions
         return;
       }
 
@@ -427,7 +428,7 @@ async function rebuildLeaderboard() {
       const goalStake = stageStakes.goal;
 
       totalPredictions += 2; // Team + Goal predictions
-      totalLost += teamStake + goalStake; // Always add the user's total stake contribution for this match
+      totalLost += teamStake + goalStake; // Always add the user's total stake contribution
 
       const bet = userBets[matchId];
       if (bet) {
