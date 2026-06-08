@@ -721,10 +721,23 @@ export default function App() {
     matches.forEach(m => {
       const bet = myBets[m.matchId];
       if (bet && (bet.amountWon !== undefined || bet.amountLost !== undefined)) {
+        if (m.status === 'postponed') return;
+        const stage = m.stage;
+        const stageStakes = settings?.stakes?.[stage] || {
+          group: { team: 50, goal: 50 },
+          r32: { team: 75, goal: 75 },
+          r16: { team: 100, goal: 100 },
+          qf: { team: 125, goal: 125 },
+          sf: { team: 150, goal: 150 },
+          third_place: { team: 150, goal: 150 },
+          final: { team: 200, goal: 200 }
+        }[stage] || { team: 50, goal: 50 };
+        const totalStake = (stageStakes.team || 50) + (stageStakes.goal || 50);
+
         settledBets.push({
           matchId: m.matchId,
           kickoff: m.kickoffTimeIST?.seconds || 0,
-          profit: (bet.amountWon || 0) - (bet.amountLost || 0)
+          profit: (bet.amountWon || 0) - totalStake
         });
       }
     });
@@ -1073,6 +1086,18 @@ export default function App() {
               const isPostponed = match.status === 'postponed';
               const isExpanded = expandedMatchId === match.matchId;
 
+              const stage = match.stage;
+              const stageStakes = settings?.stakes?.[stage] || {
+                group: { team: 50, goal: 50 },
+                r32: { team: 75, goal: 75 },
+                r16: { team: 100, goal: 100 },
+                qf: { team: 125, goal: 125 },
+                sf: { team: 150, goal: 150 },
+                third_place: { team: 150, goal: 150 },
+                final: { team: 200, goal: 200 }
+              }[stage] || { team: 50, goal: 50 };
+              const totalStake = isPostponed ? 0 : (stageStakes.team || 50) + (stageStakes.goal || 50);
+
               const toggleExpand = () => {
                 if (isExpanded) {
                   setExpandedMatchId(null);
@@ -1080,6 +1105,8 @@ export default function App() {
                   setExpandedMatchId(match.matchId);
                 }
               };
+
+              const userNet = bet ? (bet.amountWon || 0) - totalStake : -totalStake;
 
               return (
                 <View key={match.id}>
@@ -1098,7 +1125,7 @@ export default function App() {
                     <View style={styles.historyBetRow}>
                       {bet ? (
                         <View style={{ flex: 1 }}>
-                          <Text style={styles.historyBetTitle}>Your Prediction:</Text>
+                          <Text style={styles.historyBetLabel}>Your Prediction:</Text>
                           <Text style={styles.historyBetValue}>
                             {bet.teamPrediction === 'teamA' ? <>{getTeamFlag(match.teamA)} {match.teamA}</> : (bet.teamPrediction === 'teamB' ? <>{match.teamB} {getTeamFlag(match.teamB)}</> : 'Draw')} ({bet.goalsTeamA}-{bet.goalsTeamB})
                           </Text>
@@ -1115,14 +1142,12 @@ export default function App() {
                         <Text style={styles.historyNoBet}>Forfeited (Did not place bet)</Text>
                       )}
 
-                      {bet && (
-                        <View style={{ alignItems: 'flex-end' }}>
-                          <Text style={{ fontSize: 11, color: '#94a3b8' }}>Payout</Text>
-                          <Text style={[styles.payoutText, (bet.amountWon - bet.amountLost) >= 0 ? { color: '#00e676' } : { color: '#ff3d71' }]}>
-                            {(bet.amountWon - bet.amountLost) >= 0 ? '+' : ''}₹{bet.amountWon - bet.amountLost}
-                          </Text>
-                        </View>
-                      )}
+                      <View style={{ alignItems: 'flex-end' }}>
+                        <Text style={{ fontSize: 11, color: '#94a3b8' }}>Net</Text>
+                        <Text style={[styles.payoutText, userNet >= 0 ? { color: '#00e676' } : { color: '#ff3d71' }]}>
+                          {userNet >= 0 ? '+' : ''}₹{userNet}
+                        </Text>
+                      </View>
                     </View>
 
                     {isExpanded && (
@@ -1141,7 +1166,7 @@ export default function App() {
                             </View>
                             {expandedMatchBets.map((b) => {
                               const u = allUsers[b.userId] || { name: 'Player' };
-                              const net = (b.amountWon || 0) - (b.amountLost || 0);
+                              const net = (b.amountWon || 0) - totalStake;
                               return (
                                 <View style={styles.expandedBetsRow} key={b.betId}>
                                   <Text style={[styles.expandedBetsCell, { flex: 2.2, fontWeight: '700' }]} numberOfLines={1}>

@@ -369,6 +369,20 @@ async function rebuildLeaderboard() {
     completedMatches[doc.id] = doc.data();
   });
 
+  // Fetch global settings to get stakes dynamically
+  const settingsDoc = await db.collection('settings').doc('global').get();
+  const settings = settingsDoc.exists ? settingsDoc.data() : {
+    stakes: {
+      group: { team: 50, goal: 50 },
+      r32: { team: 75, goal: 75 },
+      r16: { team: 100, goal: 100 },
+      qf: { team: 125, goal: 125 },
+      sf: { team: 150, goal: 150 },
+      third_place: { team: 150, goal: 150 },
+      final: { team: 200, goal: 200 }
+    }
+  };
+
   const batch = db.batch();
 
   for (const userDoc of usersSnapshot.docs) {
@@ -383,7 +397,7 @@ async function rebuildLeaderboard() {
     });
 
     let totalWon = 0;
-    let totalLost = 0;
+    let totalLost = 0; // Will represent total contribution stakes
     let correctPredictions = 0;
     let totalPredictions = 0;
 
@@ -401,12 +415,17 @@ async function rebuildLeaderboard() {
         return;
       }
 
+      const stage = match.stage;
+      const stageStakes = settings.stakes[stage] || { team: 50, goal: 50 };
+      const teamStake = stageStakes.team;
+      const goalStake = stageStakes.goal;
+
       totalPredictions += 2; // Team + Goal predictions
+      totalLost += teamStake + goalStake; // Always add the user's total stake contribution for this match
 
       const bet = userBets[matchId];
       if (bet) {
         totalWon += bet.amountWon || 0;
-        totalLost += bet.amountLost || 0;
 
         if (bet.teamBetResult === 'won' || bet.teamBetResult === 'draw_win') {
           correctPredictions += 1;
@@ -414,16 +433,6 @@ async function rebuildLeaderboard() {
         if (bet.goalBetResult === 'won') {
           correctPredictions += 1;
         }
-      } else {
-        // No bet found (should have been handled by defaults, but safety fallback)
-        // Counts as forfeit loss
-        const settingsDocRef = db.collection('settings').doc('global');
-        // We assume default stakes if not loaded dynamically
-        const stage = match.stage;
-        const stakesMap = {
-          group: 100, r32: 150, r16: 200, qf: 250, sf: 300, third_place: 300, final: 400
-        };
-        totalLost += stakesMap[stage] || 100;
       }
     });
 
