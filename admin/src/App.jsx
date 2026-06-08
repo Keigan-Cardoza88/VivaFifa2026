@@ -350,27 +350,47 @@ function App() {
         throw new Error(result.error || 'Failed to settle match');
       }
 
-      // Automatically download a physical local file backup
-      if (result.backup) {
-        try {
-          const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(
-            JSON.stringify(result.backup, null, 2)
-          )}`;
-          const downloadAnchor = document.createElement('a');
-          downloadAnchor.setAttribute('href', jsonString);
-          downloadAnchor.setAttribute('download', `settlement_backup_match_${selectedMatch.matchId}.json`);
-          document.body.appendChild(downloadAnchor);
-          downloadAnchor.click();
-          downloadAnchor.remove();
-        } catch (e) {
-          console.error("Local file backup download failed", e);
-        }
-      }
-
-      setStatusMessage({ type: 'success', text: `Match ${selectedMatch.matchId} settled successfully! Backup downloaded.` });
+      setStatusMessage({ type: 'success', text: `Match ${selectedMatch.matchId} settled successfully! Leaderboard updated.` });
       setSelectedMatch(null);
     } catch (err) {
       setStatusMessage({ type: 'error', text: err.message });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // B. Download Backup
+  const handleDownloadBackup = async (matchId) => {
+    setActionLoading(true);
+    setStatusMessage({ type: 'info', text: `Fetching settlement backup for Match #${matchId}...` });
+    try {
+      const backupRef = doc(db, 'settlement_backups', String(matchId));
+      const backupDoc = await getDoc(backupRef);
+      if (!backupDoc.exists()) {
+        throw new Error('Settlement backup not found for this match.');
+      }
+      
+      const backupData = backupDoc.data();
+      const formattedBackup = {
+        ...backupData,
+        settledAt: backupData.settledAt?.toDate ? backupData.settledAt.toDate().toISOString() : backupData.settledAt
+      };
+      
+      const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(
+        JSON.stringify(formattedBackup, null, 2)
+      )}`;
+      
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute('href', jsonString);
+      downloadAnchor.setAttribute('download', `settlement_backup_match_${matchId}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+      
+      setStatusMessage({ type: 'success', text: `Backup for Match #${matchId} downloaded successfully.` });
+    } catch (err) {
+      console.error(err);
+      setStatusMessage({ type: 'error', text: `Failed to download backup: ${err.message}` });
     } finally {
       setActionLoading(false);
     }
@@ -1083,8 +1103,14 @@ function App() {
                             </button>
                           </>
                         ) : (
-                          <div style={{ fontSize: '0.75rem', color: 'var(--text-sub)' }}>
-                            Result: <strong>{match.winner === 'draw' ? 'Draw' : (match.winner === 'teamA' ? <>{getTeamFlag(match.teamA)} {match.teamA}</> : <>{match.teamB} {getTeamFlag(match.teamB)}</>)}</strong>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text-sub)' }}>
+                              Result: <strong>{match.winner === 'draw' ? 'Draw' : (match.winner === 'teamA' ? <>{getTeamFlag(match.teamA)} {match.teamA}</> : <>{match.teamB} {getTeamFlag(match.teamB)}</>)}</strong>
+                            </div>
+                            <button className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                                    onClick={() => handleDownloadBackup(match.matchId)}>
+                              📥 Backup
+                            </button>
                           </div>
                         )}
                       </div>

@@ -1,4 +1,4 @@
-const { db, auth, admin } = require('../utils/firebase');
+let db, auth, admin;
 
 const ADMIN_EMAILS = [
   'cardoza.kian@gmail.com',
@@ -8,8 +8,9 @@ const ADMIN_EMAILS = [
 
 module.exports = async (req, res) => {
   // Handle CORS
-  res.setHeader('Access-Control-Allow-Credentials', true);
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  const origin = req.headers.origin || '*';
+  res.setHeader('Access-Control-Allow-Origin', origin);
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
   res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization');
 
@@ -22,6 +23,11 @@ module.exports = async (req, res) => {
   }
 
   try {
+    const firebase = require('../utils/firebase');
+    db = firebase.db;
+    auth = firebase.auth;
+    admin = firebase.admin;
+
     // 1. Authorize Admin
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
