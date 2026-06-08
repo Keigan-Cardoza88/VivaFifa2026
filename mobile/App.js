@@ -205,11 +205,43 @@ export default function App() {
   const [allUsers, setAllUsers] = useState({});
   const [firstMatchBets, setFirstMatchBets] = useState([]);
   const [expandedMatchId, setExpandedMatchId] = useState(null);
-  const [bracketZoom, setBracketZoom] = useState(1.0);
+  const [bracketZoom, setBracketZoom] = useState(0.5);
+  const [initialDistance, setInitialDistance] = useState(null);
+  const [initialZoom, setInitialZoom] = useState(0.5);
   const [selectedTeamGroup, setSelectedTeamGroup] = useState('A');
   const [selectedTeamName, setSelectedTeamName] = useState('Mexico');
   const [teamsViewMode, setTeamsViewMode] = useState('roster');
   const [expandedMatchBets, setExpandedMatchBets] = useState([]);
+
+  // Bracket Pinch to Zoom Handlers
+  const handleBracketTouchStart = (e) => {
+    if (e.nativeEvent.touches && e.nativeEvent.touches.length === 2) {
+      const touch1 = e.nativeEvent.touches[0];
+      const touch2 = e.nativeEvent.touches[1];
+      const dx = touch1.pageX - touch2.pageX;
+      const dy = touch1.pageY - touch2.pageY;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      setInitialDistance(distance);
+      setInitialZoom(bracketZoom);
+    }
+  };
+
+  const handleBracketTouchMove = (e) => {
+    if (e.nativeEvent.touches && e.nativeEvent.touches.length === 2 && initialDistance) {
+      const touch1 = e.nativeEvent.touches[0];
+      const touch2 = e.nativeEvent.touches[1];
+      const dx = touch1.pageX - touch2.pageX;
+      const dy = touch1.pageY - touch2.pageY;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      const scale = distance / initialDistance;
+      const nextZoom = Math.min(1.5, Math.max(0.3, initialZoom * scale));
+      setBracketZoom(nextZoom);
+    }
+  };
+
+  const handleBracketTouchEnd = () => {
+    setInitialDistance(null);
+  };
 
   // Google Auth Request Config for Mobile Native fallback
   const [request, response, promptAsync] = Google.useAuthRequest({
@@ -1146,14 +1178,21 @@ export default function App() {
                 <TouchableOpacity style={styles.zoomBtn} onPress={() => setBracketZoom(Math.min(1.5, bracketZoom + 0.1))}>
                   <Text style={styles.zoomBtnText}>+</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.zoomResetBtn} onPress={() => setBracketZoom(1.0)}>
+                <TouchableOpacity style={styles.zoomResetBtn} onPress={() => setBracketZoom(0.5)}>
                   <Text style={styles.zoomResetText}>Reset</Text>
                 </TouchableOpacity>
               </View>
             </View>
 
             <ScrollView horizontal={true} style={styles.bracketHorizontalScroll} contentContainerStyle={styles.bracketHorizontalScrollContent}>
-              <View style={[styles.bracketScaleContainer, { transform: [{ scale: bracketZoom }] }]}>
+              <View 
+                style={[styles.bracketScaleContainer, { transform: [{ scale: bracketZoom }] }]}
+                onStartShouldSetResponder={(e) => e.nativeEvent.touches.length === 2}
+                onMoveShouldSetResponder={(e) => e.nativeEvent.touches.length === 2}
+                onResponderGrant={handleBracketTouchStart}
+                onResponderMove={handleBracketTouchMove}
+                onResponderRelease={handleBracketTouchEnd}
+              >
                 {['r32', 'r16', 'qf', 'sf', 'final'].map((stage) => {
                   if (stage === 'final') {
                     const finalMatch = matches.find(m => m.stage === 'final') || {
