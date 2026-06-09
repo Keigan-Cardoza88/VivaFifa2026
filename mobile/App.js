@@ -550,8 +550,12 @@ export default function App() {
         throw new Error('Match not found.');
       }
       const isLocked = new Date().getTime() >= (latestMatch.bettingLockTimeIST ? latestMatch.bettingLockTimeIST.seconds * 1000 : 0);
+      const isTooEarly = new Date().getTime() < (latestMatch.kickoffTimeIST ? (latestMatch.kickoffTimeIST.seconds * 1000) - (3 * 24 * 60 * 60 * 1000) : 0);
       if (isLocked || latestMatch.status !== 'upcoming') {
         throw new Error('This match has been locked or completed. You cannot place or edit predictions anymore.');
+      }
+      if (isTooEarly) {
+        throw new Error('Voting is restricted for matches that are more than 3 days in the future.');
       }
 
       const betId = `${currentUser.uid}_${selectedMatch.matchId}`;
@@ -587,6 +591,7 @@ export default function App() {
   const renderMatchCard = (match) => {
     const bet = myBets[match.matchId];
     const isLocked = new Date().getTime() >= (match.bettingLockTimeIST ? match.bettingLockTimeIST.seconds * 1000 : 0);
+    const isTooEarly = new Date().getTime() < (match.kickoffTimeIST ? (match.kickoffTimeIST.seconds * 1000) - (3 * 24 * 60 * 60 * 1000) : 0);
     return (
       <View style={[styles.matchCard, styles.glassCard]} key={match.id}>
         <View style={styles.matchHeaderRow}>
@@ -610,10 +615,14 @@ export default function App() {
           ) : (
             <Text style={styles.noBetPlacedText}>No bet submitted</Text>
           )}
-          {!isLocked && match.status === 'upcoming' ? (
+          {!isLocked && !isTooEarly && match.status === 'upcoming' ? (
             <TouchableOpacity style={styles.btnAction} onPress={() => handleOpenBet(match)}>
               <Text style={styles.btnActionText}>{bet ? 'Edit Bet' : 'Bet Now'}</Text>
             </TouchableOpacity>
+          ) : isTooEarly && match.status === 'upcoming' ? (
+            <View style={[styles.lockedBadge, { backgroundColor: '#3a3f58' }]}>
+              <Text style={styles.lockedText}>TOO EARLY</Text>
+            </View>
           ) : (
             <View style={styles.lockedBadge}>
               <Text style={styles.lockedText}>LOCKED</Text>

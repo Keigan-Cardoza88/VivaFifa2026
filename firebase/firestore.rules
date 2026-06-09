@@ -40,6 +40,7 @@ service cloud.firestore {
           resourceData.userId == request.auth.uid &&
           !resourceData.isDefault &&
           request.time < get(/databases/$(database)/documents/matches/$(matchId)).data.kickoffTimeIST &&
+          request.time >= get(/databases/$(database)/documents/matches/$(matchId)).data.kickoffTimeIST - duration.value(3, 'd') &&
           get(/databases/$(database)/documents/matches/$(matchId)).data.status in ['upcoming', 'betting_open'] &&
           (
             // If team A wins, goal A > goal B

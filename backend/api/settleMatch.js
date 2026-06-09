@@ -398,6 +398,11 @@ async function rebuildLeaderboard() {
     const userId = userDoc.id;
     const userData = userDoc.data();
 
+    // Skip pending users from showing on the leaderboard
+    if (userData.role === 'pending') {
+      continue;
+    }
+
     // Fetch all bets placed by this user
     const betsSnapshot = await db.collection('bets').where('userId', '==', userId).get();
     const userBets = {};
