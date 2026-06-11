@@ -854,18 +854,23 @@ export default function App() {
 
     const teamStake = stageStakes.team || 50;
     const goalStake = stageStakes.goal || 50;
+
+    // Winners / losers counts according to backend settlement fields
     const teamWinners = bets.filter(b => b.teamBetResult === 'won' || b.teamBetResult === 'draw_win').length;
     const teamLosers = bets.filter(b => b.teamBetResult === 'lost').length;
-    const teamForfeits = bets.filter(b => b.teamBetResult === 'forfeited').length;
+    const forfeitCount = bets.filter(b => b.isDefault).length; // defaults represent forfeits written by backend
     const placedBets = bets.filter(b => !b.isDefault).length;
     const goalWinners = bets.filter(b => b.goalBetResult === 'won').length;
 
+    // Backend behavior:
+    // - Team winner share = (teamLosers*teamStake + forfeitCount*teamStake) / teamWinners
+    // - Goal pool = (placedBets*goalStake + forfeitCount*goalStake), split among goalWinners
     const teamSharePerWinner = teamWinners > 0
-      ? ((teamLosers + teamForfeits) * teamStake) / teamWinners
+      ? ((teamLosers * teamStake) + (forfeitCount * teamStake)) / teamWinners
       : 0;
 
     const goalSharePerWinner = goalWinners > 0
-      ? ((placedBets + teamForfeits) * goalStake) / goalWinners
+      ? ((placedBets * goalStake) + (forfeitCount * goalStake)) / goalWinners
       : 0;
 
     return {
