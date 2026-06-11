@@ -191,8 +191,7 @@ module.exports = async (req, res) => {
         teamWinners.forEach((bet) => {
           const updatePayload = {
             teamBetResult: winner === 'draw' ? 'draw_win' : 'won',
-            amountWon: teamStake + sharePerWinner,
-            amountLost: bet.amountLost || 0  // They won team, so no team loss (only potential goal loss)
+            amountWon: teamStake + sharePerWinner
           };
           transaction.update(bet.ref, updatePayload);
           Object.assign(bet, updatePayload);
@@ -201,7 +200,7 @@ module.exports = async (req, res) => {
         teamLosers.forEach((bet) => {
           const updatePayload = {
             teamBetResult: 'lost',
-            amountLost: (bet.amountLost || 0) + teamStake  // Add team stake to any existing loss
+            amountLost: teamStake
           };
           transaction.update(bet.ref, updatePayload);
           Object.assign(bet, updatePayload);
@@ -218,7 +217,7 @@ module.exports = async (req, res) => {
         teamLosers.forEach((bet) => {
           const updatePayload = {
             teamBetResult: 'lost',
-            amountLost: (bet.amountLost || 0) + teamStake  // Add team stake to any existing loss
+            amountLost: teamStake
           };
           transaction.update(bet.ref, updatePayload);
           Object.assign(bet, updatePayload);
@@ -251,8 +250,7 @@ module.exports = async (req, res) => {
           const existingWon = bet.amountWon || 0;
           const updatePayload = {
             goalBetResult: 'won',
-            amountWon: existingWon + sharePerWinner,
-            amountLost: bet.amountLost || 0  // They won goal, so no goal loss (keep team loss if any)
+            amountWon: existingWon + sharePerWinner
           };
           transaction.update(bet.ref, updatePayload);
           Object.assign(bet, updatePayload);
@@ -262,7 +260,7 @@ module.exports = async (req, res) => {
           const existingLost = bet.amountLost || 0;
           const updatePayload = {
             goalBetResult: 'lost',
-            amountLost: existingLost + goalStake  // Add goal stake to existing loss
+            amountLost: existingLost + goalStake
           };
           transaction.update(bet.ref, updatePayload);
           Object.assign(bet, updatePayload);
@@ -279,8 +277,7 @@ module.exports = async (req, res) => {
           const existingWon = bet.amountWon || 0;
           const updatePayload = {
             goalBetResult: 'refunded',
-            amountWon: existingWon + goalStake,
-            amountLost: bet.amountLost || 0  // Goal refunded, so no goal loss (keep team loss if any)
+            amountWon: existingWon + goalStake
           };
           transaction.update(bet.ref, updatePayload);
           Object.assign(bet, updatePayload);
@@ -433,14 +430,15 @@ async function rebuildLeaderboard() {
 
       const stage = match.stage;
       const stageStakes = settings.stakes[stage] || { team: 50, goal: 50 };
+      const teamStake = stageStakes.team;
+      const goalStake = stageStakes.goal;
 
       totalPredictions += 2; // Team + Goal predictions
+      totalLost += teamStake + goalStake; // Always add the user's total stake contribution
 
       const bet = userBets[matchId];
       if (bet) {
-        // Use actual amountWon and amountLost from the bet (only count what was actually lost)
         totalWon += bet.amountWon || 0;
-        totalLost += bet.amountLost || 0;
 
         if (bet.teamBetResult === 'won' || bet.teamBetResult === 'draw_win') {
           correctPredictions += 1;
