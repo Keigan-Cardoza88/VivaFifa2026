@@ -939,18 +939,18 @@ export default function App() {
               <View style={[styles.statWidget, styles.glassCard, { borderLeftColor: '#10b981' }]}>
                 <Text style={styles.statWidgetLabel}>Gross Profit</Text>
                 <Text style={[styles.statWidgetValue, { color: '#00e676' }]}>
-                  ₹{grossProfit}
+                  ₹{Number(grossProfit).toFixed(2)}
                 </Text>
               </View>
               <View style={[styles.statWidget, styles.glassCard, { borderLeftColor: '#ffd700' }]}>
                 <Text style={styles.statWidgetLabel}>Net Profit</Text>
                 <Text style={[styles.statWidgetValue, { color: netProfit >= 0 ? '#00e676' : '#ff3d71' }]}>
-                  ₹{netProfit}
+                  ₹{Number(netProfit).toFixed(2)}
                 </Text>
               </View>
               <View style={[styles.statWidget, styles.glassCard, { borderLeftColor: '#74acdf' }]}>
                 <Text style={styles.statWidgetLabel}>Accuracy</Text>
-                <Text style={styles.statWidgetValue}>{accuracy}%</Text>
+                <Text style={styles.statWidgetValue}>{Number(accuracy).toFixed(2)}%</Text>
               </View>
               <View style={[styles.statWidget, styles.glassCard, { borderLeftColor: '#ff2d37' }]}>
                 <Text style={styles.statWidgetLabel}>Leaderboard</Text>
@@ -965,7 +965,7 @@ export default function App() {
                 {renderProfitChart()}
                 <View style={styles.chartFooter}>
                   <Text style={styles.chartFooterText}>Start</Text>
-                  <Text style={styles.chartFooterText}>Current: ₹{netProfit}</Text>
+                  <Text style={styles.chartFooterText}>Current: ₹{Number(netProfit).toFixed(2)}</Text>
                 </View>
               </View>
 
@@ -974,7 +974,7 @@ export default function App() {
                 <View style={styles.ringContainer}>
                   {renderAccuracyRing()}
                   <View style={styles.ringLabelContainer}>
-                    <Text style={styles.ringPercentText}>{accuracy}%</Text>
+                    <Text style={styles.ringPercentText}>{Number(accuracy).toFixed(2)}%</Text>
                     <Text style={styles.ringSubText}>Correct</Text>
                   </View>
                 </View>
@@ -1035,13 +1035,13 @@ export default function App() {
 
                         <View style={styles.consensusLabelsRow}>
                           <Text style={[styles.consensusLabelText, { color: '#5489be' }]}>
-                            {match.teamA}: {countA} ({pctA}%)
+                            {match.teamA}: {countA} ({Number(pctA).toFixed(2)}%)
                           </Text>
                           <Text style={[styles.consensusLabelText, { color: '#82776a' }]}>
-                            Draw: {countD} ({pctD}%)
+                            Draw: {countD} ({Number(pctD).toFixed(2)}%)
                           </Text>
                           <Text style={[styles.consensusLabelText, { color: '#b45309' }]}>
-                            {match.teamB}: {countB} ({pctB}%)
+                            {match.teamB}: {countB} ({Number(pctB).toFixed(2)}%)
                           </Text>
                         </View>
 
@@ -1149,11 +1149,11 @@ export default function App() {
                     <Text style={[styles.tableCell, { flex: 3, fontWeight: '700' }]}>{player.userName}</Text>
                     {leaderboardType === 'money' ? (
                       <Text style={[styles.tableCell, { flex: 2, textAlign: 'right', fontWeight: '800', color: player.netProfit >= 0 ? '#00e676' : '#ff3d71' }]}>
-                        ₹{player.netProfit}
+                        ₹{Number(player.netProfit).toFixed(2)}
                       </Text>
                     ) : (
                       <Text style={[styles.tableCell, { flex: 2, textAlign: 'right', fontWeight: '800', color: '#ffd700' }]}>
-                        {player.accuracyPercent}%
+                        {Number(player.accuracyPercent).toFixed(2)}%
                       </Text>
                     )}
                   </View>
@@ -1310,7 +1310,7 @@ export default function App() {
                         <View style={{ alignItems: 'flex-end' }}>
                           <Text style={{ fontSize: 11, color: '#94a3b8' }}>Net Profit</Text>
                           <Text style={[styles.payoutText, isPostponed ? { color: '#94a3b8' } : (userNet >= 0 ? { color: '#00e676' } : { color: '#ff3d71' })]}>
-                            {isPostponed ? '' : (userNet >= 0 ? '+' : '')}₹{userNet}
+                            {isPostponed ? '' : (userNet >= 0 ? '+' : '')}₹{Number(userNet).toFixed(2)}
                           </Text>
                         </View>
                       </View>
@@ -1345,7 +1345,7 @@ export default function App() {
                                       {b.goalsTeamA < 0 ? 'N/A' : `${b.goalsTeamA} - ${b.goalsTeamB}`}
                                     </Text>
                                     <Text style={[styles.expandedBetsCell, { flex: 1.3, textAlign: 'right', fontWeight: '800', color: isPostponed ? '#94a3b8' : (net >= 0 ? '#00e676' : '#ff3d71') }]}>
-                                      {isPostponed ? '' : (net >= 0 ? '+' : '')}₹{net}
+                                      {isPostponed ? '' : (net >= 0 ? '+' : '')}₹{Number(net).toFixed(2)}
                                     </Text>
                                   </View>
                                 );
@@ -1373,7 +1373,7 @@ export default function App() {
                 <TouchableOpacity style={styles.zoomBtn} onPress={() => setBracketZoom(Math.max(0.5, bracketZoom - 0.1))}>
                   <Text style={styles.zoomBtnText}>-</Text>
                 </TouchableOpacity>
-                <Text style={styles.zoomText}>{Math.round(bracketZoom * 100)}%</Text>
+                <Text style={styles.zoomText}>{Number(Math.round(bracketZoom * 100)).toFixed(2)}%</Text>
                 <TouchableOpacity style={styles.zoomBtn} onPress={() => setBracketZoom(Math.min(1.5, bracketZoom + 0.1))}>
                   <Text style={styles.zoomBtnText}>+</Text>
                 </TouchableOpacity>
@@ -1582,7 +1582,7 @@ export default function App() {
                     </View>
                     <View style={styles.avgRatingWidget}>
                       <Text style={styles.avgRatingLabel}>AVG RATING</Text>
-                      <Text style={styles.avgRatingVal}>{squadAvg}</Text>
+                      <Text style={styles.avgRatingVal}>{Number(squadAvg).toFixed(2)}</Text>
                     </View>
                   </View>
 
@@ -1606,8 +1606,8 @@ export default function App() {
                   {teamsViewMode === 'roster' && (
                     <View style={{ marginTop: 12 }}>
                       <View style={styles.statsSummaryBar}>
-                        <Text style={styles.statsSummaryText}>Avg 2026 Rating: <Text style={{fontWeight:'800',color:'#b45309'}}>{squadAvg}</Text></Text>
-                        <Text style={styles.statsSummaryText}>Avg Peak Rating: <Text style={{fontWeight:'800',color:'#27773f'}}>{peakAvg}</Text></Text>
+                        <Text style={styles.statsSummaryText}>Avg 2026 Rating: <Text style={{fontWeight:'800',color:'#b45309'}}>{Number(squadAvg).toFixed(2)}</Text></Text>
+                        <Text style={styles.statsSummaryText}>Avg Peak Rating: <Text style={{fontWeight:'800',color:'#27773f'}}>{Number(peakAvg).toFixed(2)}</Text></Text>
                       </View>
                       
                       {['GK', 'DF', 'MF', 'FW'].map(pos => {
@@ -1626,13 +1626,13 @@ export default function App() {
                                 </View>
                                 <View style={styles.playerRatingsCol}>
                                   <View style={styles.ratingBarContainer}>
-                                    <Text style={styles.ratingSubLabel}>Peak {p.peak}</Text>
+                                    <Text style={styles.ratingSubLabel}>Peak {Number(p.peak).toFixed(2)}</Text>
                                     <View style={styles.ratingTrack}>
                                       <View style={[styles.ratingBar, { width: `${(p.peak / 100) * 100}%`, backgroundColor: '#4caf50' }]} />
                                     </View>
                                   </View>
                                   <View style={styles.ratingBarContainer}>
-                                    <Text style={styles.ratingSubLabel}>Current {p.current}</Text>
+                                    <Text style={styles.ratingSubLabel}>Current {Number(p.current).toFixed(2)}</Text>
                                     <View style={styles.ratingTrack}>
                                       <View style={[styles.ratingBar, { width: `${(p.current / 100) * 100}%`, backgroundColor: '#b45309' }]} />
                                     </View>
@@ -1668,7 +1668,7 @@ export default function App() {
                             ]}
                           >
                             <View style={styles.pitchPlayerCircle}>
-                              <Text style={styles.pitchPlayerCircleVal}>{p.current}</Text>
+                              <Text style={styles.pitchPlayerCircleVal}>{Number(p.current).toFixed(2)}</Text>
                             </View>
                             <Text style={styles.pitchPlayerName} numberOfLines={1}>
                               {p.name.split(' ').pop()}
@@ -1686,7 +1686,7 @@ export default function App() {
                         {substitutes.map(p => (
                           <View key={p.name} style={styles.subCard}>
                             <Text style={styles.subName} numberOfLines={1}>{p.name}</Text>
-                            <Text style={styles.subMeta}>{p.pos} • Rating {p.current}</Text>
+                            <Text style={styles.subMeta}>{p.pos} • Rating {Number(p.current).toFixed(2)}</Text>
                           </View>
                         ))}
                       </View>
