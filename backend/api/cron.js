@@ -72,6 +72,9 @@ module.exports = async (req, res) => {
 
     // 3. Execute Actions based on time
     if (is7PM) {
+      // 1) Auto-open matches that are 2 days away (open betting window)
+      await openMatchesTwoDaysBefore();
+      // 2) Send 7PM reminders
       await send7PMReminders(lockingMatches);
       return res.status(200).json({ message: '7:00 PM IST general reminders sent.' });
     }
@@ -123,6 +126,53 @@ function getMatchCutoffTime(kickoffDate) {
   const cutoff = new Date(istKickoff);
   cutoff.setUTCHours(20, 0, 0, 0);
   return new Date(cutoff.getTime() - istOffset);
+}
+
+// Auto-open matches whose kickoff date is exactly 2 days from today (IST)
+async function openMatchesTwoDaysBefore() {
+  try {
+    const istOffset = 5.5 * 60 * 60 * 1000;
+    const now = new Date();
+    const istNow = new Date(now.getTime() + istOffset);
+
+    const targetStart = new Date(istNow);
+    targetStart.setUTCDate(istNow.getUTCDate() + 2);
+    targetStart.setUTCHours(0, 0, 0, 0);
+
+    const targetEnd = new Date(istNow);
+    targetEnd.setUTCDate(istNow.getUTCDate() + 2);
+    targetEnd.setUTCHours(23, 59, 59, 999);
+
+    // iterate all matches and open those in betting_closed that kick off on the target day
+    const allMatchesSnapshot = await db.collection('matches').get();
+    const batch = db.batch();
+    let updates = 0;
+
+    allMatchesSnapshot.forEach((doc) => {
+      const m = doc.data();
+      if (!m.kickoffTimeIST) return;
+      const kickoff = m.kickoffTimeIST.toDate();
+      const kickoffIST = new Date(kickoff.getTime() + istOffset);
+
+      if (kickoffIST >= targetStart && kickoffIST <= targetEnd) {
+        // only open matches that are currently closed (or explicitly set by admin)
+        if (m.status === 'betting_closed') {
+          const ref = db.collection('matches').doc(doc.id);
+          batch.update(ref, { status: 'upcoming' });
+          updates++;
+        }
+      }
+    });
+
+    if (updates > 0) {
+      await batch.commit();
+      console.log(`Auto-opened ${updates} matches (2 days before kickoff)`);
+    } else {
+      console.log('No matches to auto-open for the 2-day window');
+    }
+  } catch (err) {
+    console.error('Error in openMatchesTwoDaysBefore:', err);
+  }
 }
 
 // 7:00 PM general reminder: "Betting closes in 1 hour!"

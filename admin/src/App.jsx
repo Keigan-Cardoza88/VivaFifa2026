@@ -586,6 +586,34 @@ function App() {
     }
   };
 
+  // Q2. Open individual match betting window
+  const handleOpenMatch = async (matchId) => {
+    if (!window.confirm(`Open betting for Match ${matchId}?`)) return;
+    setActionLoading(true);
+    try {
+      await updateDoc(doc(db, 'matches', String(matchId)), { status: 'upcoming' });
+      setStatusMessage({ type: 'success', text: `Match ${matchId} betting opened.` });
+    } catch (err) {
+      setStatusMessage({ type: 'error', text: `Failed to open match: ${err.message}` });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Q3. Close individual match betting window
+  const handleCloseMatch = async (matchId) => {
+    if (!window.confirm(`Close betting for Match ${matchId}? This will forfeit unplaced bets when scheduler runs.`)) return;
+    setActionLoading(true);
+    try {
+      await updateDoc(doc(db, 'matches', String(matchId)), { status: 'betting_closed' });
+      setStatusMessage({ type: 'success', text: `Match ${matchId} betting closed.` });
+    } catch (err) {
+      setStatusMessage({ type: 'error', text: `Failed to close match: ${err.message}` });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   // O. Save Edited Match Fixture
   const handleSaveEditMatch = async (e) => {
     e.preventDefault();
@@ -1153,6 +1181,20 @@ function App() {
                                 onClick={() => handleViewBets(match.matchId)}>
                           {viewingMatchBets === match.matchId ? 'Hide Bets' : 'View Bets'}
                         </button>
+
+                        {/* Per-match open/close betting control */}
+                        {match.status === 'betting_closed' ? (
+                          <button className="btn" style={{ flex: 1, padding: '4px 8px', fontSize: '0.7rem', backgroundColor: 'var(--win-green)', border: 'none', color: '#fff', borderRadius: '4px', cursor: 'pointer' }}
+                                  onClick={() => handleOpenMatch(match.matchId)}>
+                            Open Bets
+                          </button>
+                        ) : (
+                          <button className="btn" style={{ flex: 1, padding: '4px 8px', fontSize: '0.7rem', backgroundColor: 'var(--loss-red)', border: 'none', color: '#fff', borderRadius: '4px', cursor: 'pointer' }}
+                                  onClick={() => handleCloseMatch(match.matchId)}>
+                            Close Bets
+                          </button>
+                        )}
+
                         <button className="btn btn-secondary" style={{ flex: 1, padding: '4px 8px', fontSize: '0.7rem' }}
                                 onClick={() => {
                                   setEditingMatch(match);
