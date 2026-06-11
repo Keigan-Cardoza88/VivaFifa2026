@@ -1361,12 +1361,25 @@ export default function App() {
                                 <Text style={[styles.expandedBetsHeadCell, { flex: 2.2 }]}>Player</Text>
                                 <Text style={[styles.expandedBetsHeadCell, { flex: 2 }]}>Prediction</Text>
                                 <Text style={[styles.expandedBetsHeadCell, { flex: 1.5, textAlign: 'center' }]}>Goals</Text>
+                                <Text style={[styles.expandedBetsHeadCell, { flex: 1.1, textAlign: 'right' }]}>Team</Text>
+                                <Text style={[styles.expandedBetsHeadCell, { flex: 1.1, textAlign: 'right' }]}>Goal</Text>
                                 <Text style={[styles.expandedBetsHeadCell, { flex: 1.3, textAlign: 'right' }]}>Net</Text>
                               </View>
                               {expandedMatchBets.map((b) => {
                                 const u = allUsers[b.userId] || { name: 'Player' };
                                 const gross = b.amountWon || 0;
                                 const net = isPostponed ? 0 : (gross - totalStake);
+                                const matchPayouts = computeMatchBetPayouts(expandedMatchBets, match);
+                                const teamNet = isPostponed ? 0 : (
+                                  (b.teamBetResult === 'won' || b.teamBetResult === 'draw_win')
+                                    ? (matchPayouts.teamSharePerWinner - matchPayouts.teamStake)
+                                    : (b.teamBetResult === 'refunded' ? 0 : -matchPayouts.teamStake)
+                                );
+                                const goalNet = isPostponed ? 0 : (
+                                  (b.goalBetResult === 'won')
+                                    ? (matchPayouts.goalSharePerWinner - matchPayouts.goalStake)
+                                    : (b.goalBetResult === 'refunded' ? 0 : -matchPayouts.goalStake)
+                                );
                                 return (
                                   <View style={styles.expandedBetsRow} key={b.betId}>
                                     <Text style={[styles.expandedBetsCell, { flex: 2.2, fontWeight: '700' }]} numberOfLines={1}>
@@ -1377,6 +1390,12 @@ export default function App() {
                                     </Text>
                                     <Text style={[styles.expandedBetsCell, { flex: 1.5, textAlign: 'center', fontWeight: '800', color: '#ffd700' }]}>
                                       {b.goalsTeamA < 0 ? 'N/A' : `${b.goalsTeamA} - ${b.goalsTeamB}`}
+                                    </Text>
+                                    <Text style={[styles.expandedBetsCell, { flex: 1.1, textAlign: 'right', fontWeight: '800', color: teamNet >= 0 ? '#00e676' : '#ff3d71' }]}>
+                                      {teamNet >= 0 ? '+' : ''}₹{Number(teamNet).toFixed(2)}
+                                    </Text>
+                                    <Text style={[styles.expandedBetsCell, { flex: 1.1, textAlign: 'right', fontWeight: '800', color: goalNet >= 0 ? '#00e676' : '#ff3d71' }]}>
+                                      {goalNet >= 0 ? '+' : ''}₹{Number(goalNet).toFixed(2)}
                                     </Text>
                                     <Text style={[styles.expandedBetsCell, { flex: 1.3, textAlign: 'right', fontWeight: '800', color: isPostponed ? '#94a3b8' : (net >= 0 ? '#00e676' : '#ff3d71') }]}>
                                       {isPostponed ? '' : (net >= 0 ? '+' : '')}₹{Number(net).toFixed(2)}
