@@ -1372,12 +1372,12 @@ export default function App() {
                                 const matchPayouts = computeMatchBetPayouts(expandedMatchBets, match);
                                 const teamNet = isPostponed ? 0 : (
                                   (b.teamBetResult === 'won' || b.teamBetResult === 'draw_win')
-                                    ? (matchPayouts.teamSharePerWinner - matchPayouts.teamStake)
+                                    ? matchPayouts.teamSharePerWinner
                                     : (b.teamBetResult === 'refunded' ? 0 : -matchPayouts.teamStake)
                                 );
                                 const goalNet = isPostponed ? 0 : (
                                   (b.goalBetResult === 'won')
-                                    ? (matchPayouts.goalSharePerWinner - matchPayouts.goalStake)
+                                    ? matchPayouts.goalSharePerWinner
                                     : (b.goalBetResult === 'refunded' ? 0 : -matchPayouts.goalStake)
                                 );
                                 return (
