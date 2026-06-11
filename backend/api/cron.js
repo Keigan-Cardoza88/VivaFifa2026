@@ -58,8 +58,13 @@ module.exports = async (req, res) => {
     matchesSnapshot.forEach((doc) => {
       const match = doc.data();
       match.id = doc.id;
-      const cutoffTime = getMatchCutoffTime(match.kickoffTimeIST.toDate());
-      
+      if (!match.kickoffTimeIST) return;
+
+      // Use explicit betting lock timestamp if available, otherwise compute fallback cutoff.
+      const cutoffTime = match.bettingLockTimeIST
+        ? match.bettingLockTimeIST.toDate()
+        : getMatchCutoffTime(match.kickoffTimeIST.toDate());
+
       // If cutoffTime falls within today's range
       if (cutoffTime >= todayStart && cutoffTime <= todayEnd) {
         lockingMatches.push(match);

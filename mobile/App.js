@@ -205,6 +205,7 @@ export default function App() {
   // New state for user names mapping, group consensus, and history bet expander
   const [allUsers, setAllUsers] = useState({});
   const [firstMatchBets, setFirstMatchBets] = useState([]);
+  const [openMatchesBets, setOpenMatchesBets] = useState({});
   const [expandedMatchId, setExpandedMatchId] = useState(null);
   const [historySort, setHistorySort] = useState('latest');
   const [bracketZoom, setBracketZoom] = useState(0.5);
@@ -420,20 +421,51 @@ export default function App() {
   }, [currentUser, userProfile]);
 
   const firstUpcomingMatch = matches.find(m => m.status === 'upcoming');
+  const openUpcomingMatches = matches.filter(m => m.status === 'upcoming');
 
+  // Subscribe to bets for the first upcoming match (legacy single-card support)
   useEffect(() => {
-    if (!currentUser || !userProfile || !firstUpcomingMatch?.id) {
+    if (!currentUser || !userProfile || !(firstUpcomingMatch?.matchId || firstUpcomingMatch?.id)) {
       setFirstMatchBets([]);
       return;
     }
-    const q = query(collection(db, 'bets'), where('matchId', '==', firstUpcomingMatch.id));
+    const key = firstUpcomingMatch.matchId || firstUpcomingMatch.id;
+    const q = query(collection(db, 'bets'), where('matchId', '==', key));
     const unsub = onSnapshot(q, (snap) => {
       const list = [];
       snap.forEach(doc => list.push(doc.data()));
       setFirstMatchBets(list);
     });
     return () => unsub();
-  }, [currentUser, userProfile, firstUpcomingMatch?.id]);
+  }, [currentUser, userProfile, firstUpcomingMatch?.matchId, firstUpcomingMatch?.id]);
+
+  // Subscribe to bets for all currently open upcoming matches (up to 10 due to Firestore 'in' limitation)
+  useEffect(() => {
+    if (!currentUser || !userProfile || openUpcomingMatches.length === 0) {
+      setOpenMatchesBets({});
+      return;
+    }
+
+    const ids = openUpcomingMatches.slice(0, 10).map(m => m.matchId || m.id);
+    if (ids.length === 0) {
+      setOpenMatchesBets({});
+      return;
+    }
+
+    const q = query(collection(db, 'bets'), where('matchId', 'in', ids));
+    const unsub = onSnapshot(q, (snap) => {
+      const map = {};
+      snap.forEach(doc => {
+        const data = doc.data();
+        const mid = data.matchId;
+        if (!map[mid]) map[mid] = [];
+        map[mid].push(data);
+      });
+      setOpenMatchesBets(map);
+    });
+
+    return () => unsub();
+  }, [currentUser, userProfile, JSON.stringify(openUpcomingMatches.map(m => m.matchId || m.id))]);
 
   useEffect(() => {
     if (!currentUser || !userProfile || !expandedMatchId) {
@@ -949,89 +981,86 @@ export default function App() {
               </View>
             </View>
 
-            {/* GROUP CONSENSUS CARD (Earliest sequence match) */}
-            {firstUpcomingMatch && (
-              <View style={[styles.mainConsensusCard, styles.glassCard]}>
-                <View style={styles.consensusHeader}>
-                  <Text style={styles.consensusHeaderLabel}>🔥 NEXT MATCH CONSENSUS</Text>
-                  <View style={styles.liveBadge}><Text style={styles.liveBadgeText}>OPEN</Text></View>
-                </View>
-
-                <View style={styles.consensusTeamsRow}>
-                  <View style={styles.consensusTeamContainer}>
-                    <Text style={styles.consensusTeamFlag}>{getTeamFlag(firstUpcomingMatch.teamA)}</Text>
-                    <Text style={styles.consensusTeamName}>{firstUpcomingMatch.teamA}</Text>
-                  </View>
-                  <Text style={styles.consensusVs}>VS</Text>
-                  <View style={styles.consensusTeamContainer}>
-                    <Text style={styles.consensusTeamName}>{firstUpcomingMatch.teamB}</Text>
-                    <Text style={styles.consensusTeamFlag}>{getTeamFlag(firstUpcomingMatch.teamB)}</Text>
-                  </View>
-                </View>
-
-                <View style={styles.consensusStatsRow}>
-                  <Text style={styles.consensusStatLabel}>Group Predictions Distribution (Anonymous):</Text>
-                </View>
-
-                {(() => {
-                  const total = firstMatchBets.length;
-                  const countA = firstMatchBets.filter(b => b.teamPrediction === 'teamA').length;
-                  const countB = firstMatchBets.filter(b => b.teamPrediction === 'teamB').length;
-                  const countD = firstMatchBets.filter(b => b.teamPrediction === 'draw').length;
-
+            {/* GROUP CONSENSUS CARDS (Show all open matches for betting) */}
+            {openUpcomingMatches.length > 0 && (
+              <View>
+                {openUpcomingMatches.map((match) => {
+                  const bets = openMatchesBets[match.matchId || match.id] || (firstUpcomingMatch && (match.matchId === (firstUpcomingMatch.matchId || firstUpcomingMatch.id)) ? firstMatchBets : []);
+                  const total = bets.length;
+                  const countA = bets.filter(b => b.teamPrediction === 'teamA').length;
+                  const countB = bets.filter(b => b.teamPrediction === 'teamB').length;
+                  const countD = bets.filter(b => b.teamPrediction === 'draw').length;
                   const pctA = total > 0 ? Math.round((countA / total) * 100) : 0;
                   const pctB = total > 0 ? Math.round((countB / total) * 100) : 0;
                   const pctD = total > 0 ? Math.round((countD / total) * 100) : 0;
 
                   return (
-                    <View style={{ width: '100%', marginTop: 8 }}>
-                      <View style={styles.consensusBar}>
-                        {pctA > 0 && (
-                          <View style={[styles.consensusBarSegment, { width: `${pctA}%`, backgroundColor: '#5489be' }]} />
-                        )}
-                        {pctD > 0 && (
-                          <View style={[styles.consensusBarSegment, { width: `${pctD}%`, backgroundColor: '#82776a' }]} />
-                        )}
-                        {pctB > 0 && (
-                          <View style={[styles.consensusBarSegment, { width: `${pctB}%`, backgroundColor: '#b45309' }]} />
-                        )}
-                        {total === 0 && (
-                          <View style={[styles.consensusBarSegment, { width: '100%', backgroundColor: '#eae2d3' }]} />
-                        )}
+                    <View key={match.id} style={[styles.mainConsensusCard, styles.glassCard, { marginBottom: 12 }]}> 
+                      <View style={styles.consensusHeader}>
+                        <Text style={styles.consensusHeaderLabel}>🔥 MATCH CONSENSUS</Text>
+                        <View style={styles.liveBadge}><Text style={styles.liveBadgeText}>OPEN</Text></View>
                       </View>
 
-                      <View style={styles.consensusLabelsRow}>
-                        <Text style={[styles.consensusLabelText, { color: '#5489be' }]}>
-                          {firstUpcomingMatch.teamA}: {countA} ({pctA}%)
-                        </Text>
-                        <Text style={[styles.consensusLabelText, { color: '#82776a' }]}>
-                          Draw: {countD} ({pctD}%)
-                        </Text>
-                        <Text style={[styles.consensusLabelText, { color: '#b45309' }]}>
-                          {firstUpcomingMatch.teamB}: {countB} ({pctB}%)
-                        </Text>
+                      <View style={styles.consensusTeamsRow}>
+                        <View style={styles.consensusTeamContainer}>
+                          <Text style={styles.consensusTeamFlag}>{getTeamFlag(match.teamA)}</Text>
+                          <Text style={styles.consensusTeamName}>{match.teamA}</Text>
+                        </View>
+                        <Text style={styles.consensusVs}>VS</Text>
+                        <View style={styles.consensusTeamContainer}>
+                          <Text style={styles.consensusTeamName}>{match.teamB}</Text>
+                          <Text style={styles.consensusTeamFlag}>{getTeamFlag(match.teamB)}</Text>
+                        </View>
                       </View>
 
-                      <Text style={styles.consensusTotalLabel}>Total Bets Placed: {total}</Text>
+                      <View style={styles.consensusStatsRow}>
+                        <Text style={styles.consensusStatLabel}>Group Predictions Distribution (Anonymous):</Text>
+                      </View>
 
-                      <View style={{ marginTop: 16, alignItems: 'center' }}>
-                        {(() => {
-                          const bet = myBets[firstUpcomingMatch.matchId];
-                          return (
-                            <TouchableOpacity
-                              style={styles.consensusActionButton}
-                              onPress={() => handleOpenBet(firstUpcomingMatch)}
-                            >
-                              <Text style={styles.consensusActionText}>
-                                {bet ? '✏️ EDIT YOUR Prediction' : '🎯 PLACE Prediction NOW'}
-                              </Text>
-                            </TouchableOpacity>
-                          );
-                        })()}
+                      <View style={{ width: '100%', marginTop: 8 }}>
+                        <View style={styles.consensusBar}>
+                          {pctA > 0 && (
+                            <View style={[styles.consensusBarSegment, { width: `${pctA}%`, backgroundColor: '#5489be' }]} />
+                          )}
+                          {pctD > 0 && (
+                            <View style={[styles.consensusBarSegment, { width: `${pctD}%`, backgroundColor: '#82776a' }]} />
+                          )}
+                          {pctB > 0 && (
+                            <View style={[styles.consensusBarSegment, { width: `${pctB}%`, backgroundColor: '#b45309' }]} />
+                          )}
+                          {total === 0 && (
+                            <View style={[styles.consensusBarSegment, { width: '100%', backgroundColor: '#eae2d3' }]} />
+                          )}
+                        </View>
+
+                        <View style={styles.consensusLabelsRow}>
+                          <Text style={[styles.consensusLabelText, { color: '#5489be' }]}>
+                            {match.teamA}: {countA} ({pctA}%)
+                          </Text>
+                          <Text style={[styles.consensusLabelText, { color: '#82776a' }]}>
+                            Draw: {countD} ({pctD}%)
+                          </Text>
+                          <Text style={[styles.consensusLabelText, { color: '#b45309' }]}>
+                            {match.teamB}: {countB} ({pctB}%)
+                          </Text>
+                        </View>
+
+                        <Text style={styles.consensusTotalLabel}>Total Bets Placed: {total}</Text>
+
+                        <View style={{ marginTop: 12, alignItems: 'center' }}>
+                          <TouchableOpacity
+                            style={styles.consensusActionButton}
+                            onPress={() => handleOpenBet(match)}
+                          >
+                            <Text style={styles.consensusActionText}>
+                              {myBets[match.matchId] ? '✏️ EDIT YOUR Prediction' : '🎯 PLACE Prediction NOW'}
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
                       </View>
                     </View>
                   );
-                })()}
+                })}
               </View>
             )}
 
