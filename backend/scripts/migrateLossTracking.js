@@ -13,9 +13,29 @@
  */
 
 const admin = require('firebase-admin');
-const firebase = require('../utils/firebase');
 
-const db = firebase.db;
+let db;
+const emulatorHost = process.env.FIRESTORE_EMULATOR_HOST;
+if (emulatorHost) {
+  console.log(`Running migration against Firestore Emulator: ${emulatorHost}`);
+  admin.initializeApp({ projectId: 'fifa-warroom-app' });
+  db = admin.firestore();
+} else {
+  try {
+    const serviceAccount = require('../serviceAccountKey.json');
+    admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
+    db = admin.firestore();
+  } catch (err) {
+    console.log('serviceAccountKey.json not found or invalid. Falling back to Application Default Credentials with explicit projectId.');
+    try {
+      admin.initializeApp({ projectId: 'vivafifa2026' });
+      db = admin.firestore();
+    } catch (error) {
+      console.error('Failed to initialize Firebase Admin in migration script:', error);
+      process.exit(1);
+    }
+  }
+}
 
 async function migrateLossTracking() {
   try {
