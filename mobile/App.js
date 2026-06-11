@@ -106,11 +106,11 @@ const getTeamFlag = (teamName) => {
   const code = codes[teamName];
   if (!code) return null;
   return (
-    <Image 
-      source={{ uri: `https://flagcdn.com/w40/${code}.png` }} 
-      style={{ 
-        width: 20, 
-        height: 14, 
+    <Image
+      source={{ uri: `https://flagcdn.com/w40/${code}.png` }}
+      style={{
+        width: 20,
+        height: 14,
         marginRight: 6,
         borderRadius: 2,
         borderWidth: 0.5,
@@ -118,7 +118,7 @@ const getTeamFlag = (teamName) => {
         resizeMode: 'cover',
         display: Platform.OS === 'web' ? 'inline-block' : 'flex',
         verticalAlign: 'middle'
-      }} 
+      }}
     />
   );
 };
@@ -126,14 +126,14 @@ const getTeamFlag = (teamName) => {
 const isToday = (timestamp) => {
   if (!timestamp) return false;
   const matchDate = new Date(timestamp.seconds * 1000);
-  
+
   // Get date strings in Asia/Kolkata timezone (IST)
   const options = { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' };
   const formatter = new Intl.DateTimeFormat('en-CA', options); // returns YYYY-MM-DD
-  
+
   const matchIST = formatter.format(matchDate);
   const nowIST = formatter.format(new Date());
-  
+
   return matchIST === nowIST;
 };
 
@@ -154,7 +154,7 @@ const getStartingXI = (players) => {
   const dfs = players.filter(p => p.pos === 'DF').sort((a, b) => b.current - a.current);
   const mfs = players.filter(p => p.pos === 'MF').sort((a, b) => b.current - a.current);
   const fws = players.filter(p => p.pos === 'FW').sort((a, b) => b.current - a.current);
-  
+
   const starting = [];
   if (gks[0]) starting.push({ ...gks[0], role: 'GK', x: '50%', y: '82%' });
   if (dfs[0]) starting.push({ ...dfs[0], role: 'LB', x: '15%', y: '64%' });
@@ -1036,7 +1036,7 @@ export default function App() {
                   const pctD = total > 0 ? Math.round((countD / total) * 100) : 0;
 
                   return (
-                    <View key={match.id} style={[styles.mainConsensusCard, styles.glassCard, { marginBottom: 12 }]}> 
+                    <View key={match.id} style={[styles.mainConsensusCard, styles.glassCard, { marginBottom: 12 }]}>
                       <View style={styles.consensusHeader}>
                         <Text style={styles.consensusHeaderLabel}>🔥 MATCH CONSENSUS</Text>
                         <View style={styles.liveBadge}><Text style={styles.liveBadgeText}>OPEN</Text></View>
@@ -1206,30 +1206,30 @@ export default function App() {
         {activeTab === 'history' && (
           <View>
             <Text style={styles.sectionHeader}>Settled Matches</Text>
-            
+
             {/* Sort Chips Row */}
             <View style={styles.sortContainer}>
               <Text style={styles.sortLabel}>Sort By:</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.sortChipsScroll}>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={[styles.sortChip, historySort === 'latest' && styles.sortChipActive]}
                   onPress={() => setHistorySort('latest')}
                 >
                   <Text style={[styles.sortChipText, historySort === 'latest' && styles.sortChipTextActive]}>📅 Latest</Text>
                 </TouchableOpacity>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={[styles.sortChip, historySort === 'earliest' && styles.sortChipActive]}
                   onPress={() => setHistorySort('earliest')}
                 >
                   <Text style={[styles.sortChipText, historySort === 'earliest' && styles.sortChipTextActive]}>📅 Earliest</Text>
                 </TouchableOpacity>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={[styles.sortChip, (historySort === 'net-desc' || historySort === 'gross-desc') && styles.sortChipActive]}
                   onPress={() => setHistorySort('net-desc')}
                 >
                   <Text style={[styles.sortChipText, (historySort === 'net-desc' || historySort === 'gross-desc') && styles.sortChipTextActive]}>📈 Best Net</Text>
                 </TouchableOpacity>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={[styles.sortChip, (historySort === 'net-asc' || historySort === 'gross-asc') && styles.sortChipActive]}
                   onPress={() => setHistorySort('net-asc')}
                 >
@@ -1333,9 +1333,9 @@ export default function App() {
                                 <Text style={styles.badgeText}>Team: {bet.teamBetResult ? bet.teamBetResult.toUpperCase() : 'LOST'}</Text>
                               </View>
                               <View style={[
-                                styles.badge, 
-                                bet.goalBetResult === 'won' 
-                                  ? styles.badgeWin 
+                                styles.badge,
+                                bet.goalBetResult === 'won'
+                                  ? styles.badgeWin
                                   : (bet.goalBetResult === 'refunded' ? styles.badgeRefund : styles.badgeLoss)
                               ]}>
                                 <Text style={styles.badgeText}>Goal: {bet.goalBetResult ? bet.goalBetResult.toUpperCase() : 'LOST'}</Text>
@@ -1382,7 +1382,7 @@ export default function App() {
                                 );
                                 const goalNet = isPostponed ? 0 : (
                                   (b.goalBetResult === 'won')
-                                    ? matchPayouts.goalSharePerWinner
+                                    ? (matchPayouts.goalSharePerWinner - matchPayouts.goalStake)
                                     : (b.goalBetResult === 'refunded' ? 0 : -matchPayouts.goalStake)
                                 );
                                 return (
@@ -1425,7 +1425,7 @@ export default function App() {
           <View style={{ paddingBottom: 20 }}>
             <View style={styles.bracketHeaderRow}>
               <Text style={styles.sectionHeader}>Tournament Bracket</Text>
-              
+
               {/* Zoom Controls */}
               <View style={styles.zoomControls}>
                 <TouchableOpacity style={styles.zoomBtn} onPress={() => setBracketZoom(Math.max(0.5, bracketZoom - 0.1))}>
@@ -1442,7 +1442,7 @@ export default function App() {
             </View>
 
             <ScrollView horizontal={true} style={styles.bracketHorizontalScroll} contentContainerStyle={styles.bracketHorizontalScrollContent}>
-              <View 
+              <View
                 style={[styles.bracketScaleContainer, { transform: [{ scale: bracketZoom }] }]}
                 onStartShouldSetResponder={(e) => e.nativeEvent.touches.length === 2}
                 onMoveShouldSetResponder={(e) => e.nativeEvent.touches.length === 2}
@@ -1479,20 +1479,20 @@ export default function App() {
                             </Text>
                             {m.status === 'completed' && <Text style={styles.bracketScore}>{m.resultTeamAGoals}</Text>}
                           </View>
-                          
+
                           <View style={styles.bracketVsContainer}>
                             <View style={styles.bracketVsLine} />
                             <Text style={styles.bracketVsTextCard}>VS</Text>
                             <View style={styles.bracketVsLine} />
                           </View>
-                          
+
                           <View style={[styles.bracketTeamRow, m.status === 'completed' && m.winner === 'teamA' && styles.bracketTeamLost]}>
                             <Text style={styles.bracketTeamText} numberOfLines={1}>
                               {teamBFlag} {m.teamB}
                             </Text>
                             {m.status === 'completed' && <Text style={styles.bracketScore}>{m.resultTeamBGoals}</Text>}
                           </View>
-                          
+
                           {m.stage === 'third_place' && (
                             <View style={styles.thirdPlaceBadge}>
                               <Text style={styles.thirdPlaceBadgeText}>3rd Place Playoff</Text>
@@ -1551,13 +1551,13 @@ export default function App() {
                                 </Text>
                                 {m.status === 'completed' && <Text style={styles.bracketScore}>{m.resultTeamAGoals}</Text>}
                               </View>
-                              
+
                               <View style={styles.bracketVsContainer}>
                                 <View style={styles.bracketVsLine} />
                                 <Text style={styles.bracketVsTextCard}>VS</Text>
                                 <View style={styles.bracketVsLine} />
                               </View>
-                              
+
                               <View style={[styles.bracketTeamRow, m.status === 'completed' && m.winner === 'teamA' && styles.bracketTeamLost]}>
                                 <Text style={styles.bracketTeamText} numberOfLines={1}>
                                   {teamBFlag} {m.teamB}
@@ -1580,7 +1580,7 @@ export default function App() {
         {activeTab === 'teams' && (
           <View style={{ paddingBottom: 30 }}>
             <Text style={styles.sectionHeader}>Tournament Teams</Text>
-            
+
             {/* Group Selector */}
             <ScrollView horizontal={true} showsHorizontalScrollIndicator={false} style={styles.groupScroll} contentContainerStyle={{ gap: 8 }}>
               {['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'].map(g => (
@@ -1664,10 +1664,10 @@ export default function App() {
                   {teamsViewMode === 'roster' && (
                     <View style={{ marginTop: 12 }}>
                       <View style={styles.statsSummaryBar}>
-                        <Text style={styles.statsSummaryText}>Avg 2026 Rating: <Text style={{fontWeight:'800',color:'#b45309'}}>{Number(squadAvg).toFixed(2)}</Text></Text>
-                        <Text style={styles.statsSummaryText}>Avg Peak Rating: <Text style={{fontWeight:'800',color:'#27773f'}}>{Number(peakAvg).toFixed(2)}</Text></Text>
+                        <Text style={styles.statsSummaryText}>Avg 2026 Rating: <Text style={{ fontWeight: '800', color: '#b45309' }}>{Number(squadAvg).toFixed(2)}</Text></Text>
+                        <Text style={styles.statsSummaryText}>Avg Peak Rating: <Text style={{ fontWeight: '800', color: '#27773f' }}>{Number(peakAvg).toFixed(2)}</Text></Text>
                       </View>
-                      
+
                       {['GK', 'DF', 'MF', 'FW'].map(pos => {
                         const posPlayers = team.players.filter(p => p.pos === pos);
                         if (posPlayers.length === 0) return null;
@@ -1708,14 +1708,14 @@ export default function App() {
                   {teamsViewMode === 'pitch' && (
                     <View style={{ marginTop: 12 }}>
                       <Text style={styles.pitchIntroText}>Predicted Starting XI (4-4-2 based on current ratings):</Text>
-                      
+
                       {/* Football Pitch */}
                       <View style={styles.footballPitch}>
                         <View style={styles.pitchCenterCircle} />
                         <View style={styles.pitchCenterLine} />
                         <View style={styles.pitchPenaltyBoxTop} />
                         <View style={styles.pitchPenaltyBoxBottom} />
-                        
+
                         {/* Render nodes */}
                         {startingXI.map(p => (
                           <View
