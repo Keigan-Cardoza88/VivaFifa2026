@@ -840,6 +840,42 @@ export default function App() {
     return data;
   };
 
+  const computeMatchBetPayouts = (bets, match) => {
+    const stage = match.stage;
+    const stageStakes = settings?.stakes?.[stage] || {
+      group: { team: 50, goal: 50 },
+      r32: { team: 75, goal: 75 },
+      r16: { team: 100, goal: 100 },
+      qf: { team: 125, goal: 125 },
+      sf: { team: 150, goal: 150 },
+      third_place: { team: 150, goal: 150 },
+      final: { team: 200, goal: 200 }
+    }[stage] || { team: 50, goal: 50 };
+
+    const teamStake = stageStakes.team || 50;
+    const goalStake = stageStakes.goal || 50;
+    const teamWinners = bets.filter(b => b.teamBetResult === 'won' || b.teamBetResult === 'draw_win').length;
+    const teamLosers = bets.filter(b => b.teamBetResult === 'lost').length;
+    const teamForfeits = bets.filter(b => b.teamBetResult === 'forfeited').length;
+    const placedBets = bets.filter(b => !b.isDefault).length;
+    const goalWinners = bets.filter(b => b.goalBetResult === 'won').length;
+
+    const teamSharePerWinner = teamWinners > 0
+      ? ((teamLosers + teamForfeits) * teamStake) / teamWinners
+      : 0;
+
+    const goalSharePerWinner = goalWinners > 0
+      ? ((placedBets + teamForfeits) * goalStake) / goalWinners
+      : 0;
+
+    return {
+      teamStake,
+      goalStake,
+      teamSharePerWinner,
+      goalSharePerWinner
+    };
+  };
+
   const renderProfitChart = () => {
     const data = getProfitHistory();
     const width = 300;
@@ -1000,7 +1036,6 @@ export default function App() {
                         <Text style={styles.consensusHeaderLabel}>🔥 MATCH CONSENSUS</Text>
                         <View style={styles.liveBadge}><Text style={styles.liveBadgeText}>OPEN</Text></View>
                       </View>
-
                       <View style={styles.consensusTeamsRow}>
                         <View style={styles.consensusTeamContainer}>
                           <Text style={styles.consensusTeamFlag}>{getTeamFlag(match.teamA)}</Text>
@@ -1016,7 +1051,6 @@ export default function App() {
                       <View style={styles.consensusStatsRow}>
                         <Text style={styles.consensusStatLabel}>Group Predictions Distribution (Anonymous):</Text>
                       </View>
-
                       <View style={{ width: '100%', marginTop: 8 }}>
                         <View style={styles.consensusBar}>
                           {pctA > 0 && (
