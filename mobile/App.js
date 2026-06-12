@@ -2924,8 +2924,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   expandedBetsTableContainer: {
-    // Allows the container to expand dynamically to full width on desktop
-    width: '100%', 
+    // Allows the container to expand dynamically to full width on desktop 
     alignItems: 'stretch',
   },
   expandedBetsTable: {
