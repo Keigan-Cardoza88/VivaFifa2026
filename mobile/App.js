@@ -1365,7 +1365,7 @@ export default function App() {
                               horizontal setHorizontalScrollIndicator={false} 
                               contentContainerStyle={styles.bracketHorizontalScrollContent}>
                               {/* Apply a minimum width style directly to this wrapper table */}
-                              <View style={[styles.expandedBetsTable, { minWidth: 600 }]}>
+                              <View style={[styles.expandedBetsTable]}>
                                 <View style={styles.expandedBetsHeader}>
                                   <Text style={[styles.expandedBetsHeadCell, { flex: 2.2 }]}>Player</Text>
                                   <Text style={[styles.expandedBetsHeadCell, { flex: 2 }]}>Prediction</Text>
@@ -2924,11 +2924,17 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   expandedBetsTableContainer: {
-    ailgnItems: 'flex-start',
+    // Allows the container to expand dynamically to full width on desktop
+    width: '100%', 
+    alignItems: 'stretch',
   },
   expandedBetsTable: {
     borderWidth: 1,
     borderColor: 'rgba(62, 56, 48, 0.12)',
+    // This pair tells it: "Fill 100% of desktop, but never shrink below 650 on mobile"
+    width: '100%',
+    minWidth: 650,
+    flexDirection: 'column',
     borderRadius: 8,
     overflow: 'hidden',
     backgroundColor: '#faf7ee',
