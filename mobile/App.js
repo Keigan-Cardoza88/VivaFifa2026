@@ -1361,7 +1361,7 @@ export default function App() {
                           {expandedMatchBets.length === 0 ? (
                             <Text style={styles.expandedBetsEmpty}>Loading or no bets placed...</Text>
                           ) : (
-                            <scrollView horizontal setHorizontalScrollIndicator={false} contentContainerStyle={styles.expandedBetsContainer}>
+                            <scrollView horizontal setHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
                               <View style={styles.expandedBetsTable}>
                                 <View style={styles.expandedBetsHeader}>
                                   <Text style={[styles.expandedBetsHeadCell, { flex: 2.2 }]}>Player</Text>
