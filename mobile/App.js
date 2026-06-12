@@ -1361,15 +1361,16 @@ export default function App() {
                           {expandedMatchBets.length === 0 ? (
                             <Text style={styles.expandedBetsEmpty}>Loading or no bets placed...</Text>
                           ) : (
-                            <View style={styles.expandedBetsTable}>
-                              <View style={styles.expandedBetsHeader}>
-                                <Text style={[styles.expandedBetsHeadCell, { flex: 2.2 }]}>Player</Text>
-                                <Text style={[styles.expandedBetsHeadCell, { flex: 2 }]}>Prediction</Text>
-                                <Text style={[styles.expandedBetsHeadCell, { flex: 1.5, textAlign: 'center' }]}>Goals</Text>
-                                <Text style={[styles.expandedBetsHeadCell, { flex: 1.1, textAlign: 'right' }]}>Team</Text>
-                                <Text style={[styles.expandedBetsHeadCell, { flex: 1.1, textAlign: 'right' }]}>Goal</Text>
-                                <Text style={[styles.expandedBetsHeadCell, { flex: 1.3, textAlign: 'right' }]}>Net</Text>
-                              </View>
+                            <scrollView horizontal setHorizontalScrollIndicator={false} contentContainerStyle={styles.expandedBetsContainer}>
+                              <View style={styles.expandedBetsTable}>
+                                <View style={styles.expandedBetsHeader}>
+                                  <Text style={[styles.expandedBetsHeadCell, { flex: 2.2 }]}>Player</Text>
+                                  <Text style={[styles.expandedBetsHeadCell, { flex: 2 }]}>Prediction</Text>
+                                  <Text style={[styles.expandedBetsHeadCell, { flex: 1.5, textAlign: 'center' }]}>Goals</Text>
+                                  <Text style={[styles.expandedBetsHeadCell, { flex: 1.1, textAlign: 'right' }]}>Team</Text>
+                                  <Text style={[styles.expandedBetsHeadCell, { flex: 1.1, textAlign: 'right' }]}>Goal</Text>
+                                  <Text style={[styles.expandedBetsHeadCell, { flex: 1.3, textAlign: 'right' }]}>Net</Text>
+                                </View>
                               {expandedMatchBets.map((b) => {
                                 const u = allUsers[b.userId] || { name: 'Player' };
                                 const gross = b.amountWon || 0;
@@ -1409,6 +1410,7 @@ export default function App() {
                                 );
                               })}
                             </View>
+                            </scrollView>
                           )}
                         </View>
                       )}
