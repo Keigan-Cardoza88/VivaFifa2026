@@ -1361,8 +1361,11 @@ export default function App() {
                           {expandedMatchBets.length === 0 ? (
                             <Text style={styles.expandedBetsEmpty}>Loading or no bets placed...</Text>
                           ) : (
-                            <scrollView horizontal setHorizontalScrollIndicator={false} contentContainerStyle={styles.bracketHorizontalScrollContent}>
-                              <View style={styles.expandedBetsTable}>
+                            <ScrollView 
+                              horizontal setHorizontalScrollIndicator={false} 
+                              contentContainerStyle={styles.bracketHorizontalScrollContent}>
+                              {/* Apply a minimum width style directly to this wrapper table */}
+                              <View style={[styles.expandedBetsTable, { minWidth: 600 }]}>
                                 <View style={styles.expandedBetsHeader}>
                                   <Text style={[styles.expandedBetsHeadCell, { flex: 2.2 }]}>Player</Text>
                                   <Text style={[styles.expandedBetsHeadCell, { flex: 2 }]}>Prediction</Text>
@@ -1410,7 +1413,7 @@ export default function App() {
                                 );
                               })}
                             </View>
-                            </scrollView>
+                            </ScrollView>
                           )}
                         </View>
                       )}
@@ -1443,7 +1446,7 @@ export default function App() {
               </View>
             </View>
 
-            <ScrollView horizontal={true} style={styles.bracketHorizontalScroll} contentContainerStyle={styles.bracketHorizontalScrollContent}>
+            <ScrollView horizontal={true} style={styles.bracketHorizontalScroll} contentContainerStyle={styles.expandedBetsTableContainer}>
               <View
                 style={[styles.bracketScaleContainer, { transform: [{ scale: bracketZoom }] }]}
                 onStartShouldSetResponder={(e) => e.nativeEvent.touches.length === 2}
@@ -2920,6 +2923,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingVertical: 10,
   },
+  expandedBetsTableContainer: {
+    ailgnItems: 'flex-start',
+  },
   expandedBetsTable: {
     borderWidth: 1,
     borderColor: 'rgba(62, 56, 48, 0.12)',
@@ -2929,6 +2935,7 @@ const styles = StyleSheet.create({
   },
   expandedBetsHeader: {
     flexDirection: 'row',
+    width: '100%',
     backgroundColor: '#e6dcbf',
     paddingVertical: 8,
     paddingHorizontal: 12,
@@ -2943,6 +2950,7 @@ const styles = StyleSheet.create({
   },
   expandedBetsRow: {
     flexDirection: 'row',
+    width: '100%',
     paddingVertical: 10,
     paddingHorizontal: 12,
     borderBottomWidth: 0.8,
