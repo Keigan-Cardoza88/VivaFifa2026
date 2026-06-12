@@ -1362,8 +1362,9 @@ export default function App() {
                             <Text style={styles.expandedBetsEmpty}>Loading or no bets placed...</Text>
                           ) : (
                             <ScrollView 
-                              horizontal setHorizontalScrollIndicator={false} 
-                              contentContainerStyle={styles.bracketHorizontalScrollContent}>
+                              horizontal 
+                              showsHorizontalScrollIndicator={false} 
+                              contentContainerStyle={[styles.bracketHorizontalScrollContent, { minWidth: '100%', paddingRight: 0 }]}>
                               {/* Apply a minimum width style directly to this wrapper table */}
                               <View style={[styles.expandedBetsTable]}>
                                 <View style={styles.expandedBetsHeader}>
