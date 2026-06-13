@@ -188,6 +188,8 @@ module.exports = async (req, res) => {
           forfeitTeamPool += teamStake;
           forfeitGoalPool += goalStake;
         } else {
+          userBet.amountWon = 0;
+          userBet.amountLost = 0;
           placedBets.push(userBet);
         }
       });
@@ -274,7 +276,8 @@ module.exports = async (req, res) => {
           const existingWon = bet.amountWon || 0;
           const updatePayload = {
             goalBetResult: 'won',
-            amountWon: existingWon + sharePerWinner
+            amountWon: existingWon + sharePerWinner,
+            amountLost: 0
           };
           transaction.update(bet.ref, updatePayload);
           Object.assign(bet, updatePayload);
@@ -284,7 +287,8 @@ module.exports = async (req, res) => {
           const existingLost = bet.amountLost || 0;
           const updatePayload = {
             goalBetResult: 'lost',
-            amountLost: existingLost + goalStake
+            amountLost: existingLost + goalStake,
+            amountWon: bet.amountWon || 0
           };
           transaction.update(bet.ref, updatePayload);
           Object.assign(bet, updatePayload);
@@ -300,7 +304,8 @@ module.exports = async (req, res) => {
           const existingLost = bet.amountLost || 0;
           const updatePayload = {
             goalBetResult: 'lost',
-            amountLost: existingLost + goalStake
+            amountLost: existingLost + goalStake,
+            amountWon: bet.amountWon || 0
           };
           transaction.update(bet.ref, updatePayload);
           Object.assign(bet, updatePayload);
