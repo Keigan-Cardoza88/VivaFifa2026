@@ -56,7 +56,7 @@ service cloud.firestore {
 
     // User profiles rules
     match /users/{userId} {
-      allow read: if signedIn() && (isAdmin() || isUserDoc(userId));
+      allow read: if signedIn() && (isRegistered() || isUserDoc(userId));
       // Admins can create/update any profile.
       // Users can create their own pending join request profile if they don't already have one.
       allow create: if signedIn() && (isAdmin() || (isUserDoc(userId) && !exists(/databases/$(database)/documents/users/$(userId))));

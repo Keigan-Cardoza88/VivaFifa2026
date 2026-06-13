@@ -881,6 +881,21 @@ export default function App() {
     };
   };
 
+  const timestampMillis = (value) => {
+    if (!value) return null;
+    if (typeof value.toMillis === 'function') return value.toMillis();
+    if (typeof value.toDate === 'function') return value.toDate().getTime();
+    if (typeof value.seconds === 'number') return value.seconds * 1000;
+    return null;
+  };
+
+  const isUserEligibleForMatch = (user, match) => {
+    if (!user || !match?.kickoffTimeIST) return true;
+    const eligibleFrom = timestampMillis(user.approvedAt || user.joinedAt);
+    const kickoff = timestampMillis(match.kickoffTimeIST);
+    return !eligibleFrom || !kickoff || eligibleFrom <= kickoff;
+  };
+
   const renderProfitChart = () => {
     const data = getProfitHistory();
     const width = 300;
@@ -1295,6 +1310,9 @@ export default function App() {
                   final: { team: 200, goal: 200 }
                 }[stage] || { team: 50, goal: 50 };
                 const totalStake = isPostponed ? 0 : (stageStakes.team || 50) + (stageStakes.goal || 50);
+                const eligibleExpandedMatchBets = expandedMatchBets.filter(b =>
+                  isUserEligibleForMatch(allUsers[b.userId], match)
+                );
 
                 const toggleExpand = () => {
                   if (isExpanded) {
@@ -1358,7 +1376,7 @@ export default function App() {
                         <View style={styles.expandedBetsContainer}>
                           <View style={styles.expandedBetsDivider} />
                           <Text style={styles.expandedBetsTitle}>All Player Predictions</Text>
-                          {expandedMatchBets.length === 0 ? (
+                          {eligibleExpandedMatchBets.length === 0 ? (
                             <Text style={styles.expandedBetsEmpty}>Loading or no bets placed...</Text>
                           ) : (
                             <ScrollView 
@@ -1375,11 +1393,11 @@ export default function App() {
                                   <Text style={[styles.expandedBetsHeadCell, { flex: 1.1, textAlign: 'right' }]}>Goal</Text>
                                   <Text style={[styles.expandedBetsHeadCell, { flex: 1.3, textAlign: 'right' }]}>Net</Text>
                                 </View>
-                              {expandedMatchBets.map((b) => {
+                              {eligibleExpandedMatchBets.map((b) => {
                                 const u = allUsers[b.userId] || { name: 'Player' };
                                 const gross = b.amountWon || 0;
                                 const net = isPostponed ? 0 : (gross - totalStake);
-                                const matchPayouts = computeMatchBetPayouts(expandedMatchBets, match);
+                                const matchPayouts = computeMatchBetPayouts(eligibleExpandedMatchBets, match);
                                 const teamNet = isPostponed ? 0 : (
                                   (b.teamBetResult === 'won' || b.teamBetResult === 'draw_win')
                                     ? matchPayouts.teamSharePerWinner
@@ -3537,4 +3555,3 @@ const styles = StyleSheet.create({
     color: '#ffffff',
   }
 });
-

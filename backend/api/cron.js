@@ -101,6 +101,15 @@ module.exports = async (req, res) => {
   }
 };
 
+function getEligibilityTimestamp(user) {
+  return user.approvedAt || user.joinedAt || null;
+}
+
+function joinedAfterMatch(user, match) {
+  const eligibleFrom = getEligibilityTimestamp(user);
+  return eligibleFrom && eligibleFrom.toDate() > match.kickoffTimeIST.toDate();
+}
+
 // Helper: Calculate cutoff time based on weekend rules
 function getMatchCutoffTime(kickoffDate) {
   const istOffset = 5.5 * 60 * 60 * 1000;
@@ -277,8 +286,8 @@ async function lockMatchesAndCreateDefaults(matches) {
       const isAdminUser = ['cardoza.kian@gmail.com', 'cardoza.keigs@gmail.com', 'cardoza.joseph@gmail.com'].includes(user.email);
       if (user.role !== 'participant' && !isAdminUser) return;
 
-      // Late entry protection: if user joined AFTER kickoff time, they don't participate and don't forfeit
-      if (user.joinedAt && user.joinedAt.toDate() > match.kickoffTimeIST.toDate()) {
+      // Late entry protection: if user entered AFTER kickoff time, they don't participate and don't forfeit
+      if (joinedAfterMatch(user, match)) {
         return;
       }
 

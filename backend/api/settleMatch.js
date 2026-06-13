@@ -6,6 +6,15 @@ const ADMIN_EMAILS = [
   'cardoza.joseph@gmail.com'
 ];
 
+function getEligibilityTimestamp(user) {
+  return user.approvedAt || user.joinedAt || null;
+}
+
+function joinedAfterMatch(user, matchData) {
+  const eligibleFrom = getEligibilityTimestamp(user);
+  return eligibleFrom && eligibleFrom.toDate() > matchData.kickoffTimeIST.toDate();
+}
+
 module.exports = async (req, res) => {
   // Handle CORS
   const origin = req.headers.origin || '*';
@@ -134,7 +143,7 @@ module.exports = async (req, res) => {
       // A. Separate forfeits from placed bets, write forfeit docs
       participants.forEach((user) => {
         // Late entry check: If user joined AFTER kickoff time, skip entirely
-        if (user.joinedAt && user.joinedAt.toDate() > matchData.kickoffTimeIST.toDate()) {
+        if (joinedAfterMatch(user, matchData)) {
           return;
         }
 
@@ -266,18 +275,17 @@ module.exports = async (req, res) => {
           Object.assign(bet, updatePayload);
         });
       } else {
-        // No goal winners → refund goal stakes to all players who placed bets (forfeits are NOT refunded)
-        // Since we refund placed bets, only forfeit goal stakes go to the kitty!
-        if (forfeitGoalPool > 0) {
-          refereeKittyInflow += forfeitGoalPool * 0.5;
-          finalsKittyInflow += forfeitGoalPool * 0.5;
+        // No goal winners: all goal stakes go to the kitty split.
+        if (totalGoalPool > 0) {
+          refereeKittyInflow += totalGoalPool * 0.5;
+          finalsKittyInflow += totalGoalPool * 0.5;
         }
 
         goalLosers.forEach((bet) => {
-          const existingWon = bet.amountWon || 0;
+          const existingLost = bet.amountLost || 0;
           const updatePayload = {
-            goalBetResult: 'refunded',
-            amountWon: existingWon + goalStake
+            goalBetResult: 'lost',
+            amountLost: existingLost + goalStake
           };
           transaction.update(bet.ref, updatePayload);
           Object.assign(bet, updatePayload);
@@ -319,7 +327,7 @@ module.exports = async (req, res) => {
         winner,
         refereeKittyInflow,
         finalsKittyInflow,
-        bets: participants.map(user => {
+        bets: participants.filter(user => !joinedAfterMatch(user, matchData)).map(user => {
           const defaultBetId = `${user.uid}_${matchId}`;
           const bet = existingBets[user.uid] || {
             betId: defaultBetId,
@@ -420,7 +428,7 @@ async function rebuildLeaderboard() {
       const match = completedMatches[matchId];
       
       // Late entry protection: skip matches that started before they joined
-      if (userData.joinedAt && userData.joinedAt.toDate() > match.kickoffTimeIST.toDate()) {
+      if (joinedAfterMatch(userData, match)) {
         return;
       }
 

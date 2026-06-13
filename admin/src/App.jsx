@@ -588,6 +588,11 @@ function App() {
 
   // Q2. Open individual match betting window
   const handleOpenMatch = async (matchId) => {
+    const match = matches.find(m => String(m.matchId) === String(matchId) || String(m.id) === String(matchId));
+    if (match?.status === 'completed') {
+      setStatusMessage({ type: 'error', text: `Match ${matchId} is already completed and cannot be reopened.` });
+      return;
+    }
     if (!window.confirm(`Open betting for Match ${matchId}?`)) return;
     setActionLoading(true);
     try {
@@ -602,6 +607,11 @@ function App() {
 
   // Q3. Close individual match betting window
   const handleCloseMatch = async (matchId) => {
+    const match = matches.find(m => String(m.matchId) === String(matchId) || String(m.id) === String(matchId));
+    if (match?.status === 'completed') {
+      setStatusMessage({ type: 'error', text: `Match ${matchId} is already completed and cannot be closed.` });
+      return;
+    }
     if (!window.confirm(`Close betting for Match ${matchId}? This will forfeit unplaced bets when scheduler runs.`)) return;
     setActionLoading(true);
     try {
@@ -1183,16 +1193,18 @@ function App() {
                         </button>
 
                         {/* Per-match open/close betting control */}
-                        {match.status === 'betting_closed' ? (
-                          <button className="btn" style={{ flex: 1, padding: '4px 8px', fontSize: '0.7rem', backgroundColor: 'var(--win-green)', border: 'none', color: '#fff', borderRadius: '4px', cursor: 'pointer' }}
-                                  onClick={() => handleOpenMatch(match.matchId)}>
-                            Open Bets
-                          </button>
-                        ) : (
-                          <button className="btn" style={{ flex: 1, padding: '4px 8px', fontSize: '0.7rem', backgroundColor: 'var(--loss-red)', border: 'none', color: '#fff', borderRadius: '4px', cursor: 'pointer' }}
-                                  onClick={() => handleCloseMatch(match.matchId)}>
-                            Close Bets
-                          </button>
+                        {match.status !== 'completed' && (
+                          match.status === 'betting_closed' ? (
+                            <button className="btn" style={{ flex: 1, padding: '4px 8px', fontSize: '0.7rem', backgroundColor: 'var(--win-green)', border: 'none', color: '#fff', borderRadius: '4px', cursor: 'pointer' }}
+                                    onClick={() => handleOpenMatch(match.matchId)}>
+                              Open Bets
+                            </button>
+                          ) : (
+                            <button className="btn" style={{ flex: 1, padding: '4px 8px', fontSize: '0.7rem', backgroundColor: 'var(--loss-red)', border: 'none', color: '#fff', borderRadius: '4px', cursor: 'pointer' }}
+                                    onClick={() => handleCloseMatch(match.matchId)}>
+                              Close Bets
+                            </button>
+                          )
                         )}
 
                         <button className="btn btn-secondary" style={{ flex: 1, padding: '4px 8px', fontSize: '0.7rem' }}
