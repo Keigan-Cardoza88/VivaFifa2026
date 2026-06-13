@@ -402,13 +402,18 @@ export default function App() {
       console.error("Accuracy listener error:", err);
     });
 
-    const unsubUsers = onSnapshot(collection(db, 'users'), (snap) => {
-      const map = {};
-      snap.forEach(doc => {
-        map[doc.id] = doc.data();
+    let unsubUsers = () => {};
+    if (userProfile && userProfile.role !== 'pending') {
+      unsubUsers = onSnapshot(collection(db, 'users'), (snap) => {
+        const map = {};
+        snap.forEach(doc => {
+          map[doc.id] = doc.data();
+        });
+        setAllUsers(map);
+      }, (err) => {
+        console.error("Users listener error:", err);
       });
-      setAllUsers(map);
-    });
+    }
 
     return () => {
       unsubMatches();

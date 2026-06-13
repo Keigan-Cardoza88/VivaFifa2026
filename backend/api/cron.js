@@ -89,10 +89,12 @@ module.exports = async (req, res) => {
       return res.status(200).json({ message: '7:45 PM IST final warnings sent.' });
     }
 
+    /*
     if (is8PM) {
       await lockMatchesAndCreateDefaults(lockingMatches);
       return res.status(200).json({ message: '8:00 PM IST matches locked and default bets created.' });
     }
+    */
 
     return res.status(200).json({ message: 'Completed' });
   } catch (error) {
