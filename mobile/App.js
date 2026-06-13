@@ -620,8 +620,10 @@ export default function App() {
     }
   };
 
-  const netProfit = userProfile ? (leaderboardMoney.find(l => l.userId === currentUser.uid)?.netProfit || 0) : 0;
-  const grossProfit = Object.values(myBets).reduce((sum, b) => sum + (b.amountWon || 0), 0);
+  const myLeaderboardData = userProfile ? leaderboardMoney.find(l => l.userId === currentUser.uid) : null;
+  const netProfit = myLeaderboardData ? (myLeaderboardData.netProfit || 0) : 0;
+  const totalStaked = myLeaderboardData ? (myLeaderboardData.totalLost || 0) : 0;
+  const totalReturned = myLeaderboardData ? (myLeaderboardData.totalWon || 0) : 0;
   const accuracy = userProfile ? (leaderboardAccuracy.find(l => l.userId === currentUser.uid)?.accuracyPercent || 0) : 0;
   const rankMoney = leaderboardMoney.findIndex(l => l.userId === currentUser.uid) + 1;
 
@@ -997,10 +999,16 @@ export default function App() {
         {activeTab === 'home' && (
           <View>
             <View style={styles.statsCardGrid}>
+              <View style={[styles.statWidget, styles.glassCard, { borderLeftColor: '#74acdf' }]}>
+                <Text style={styles.statWidgetLabel}>Total Staked</Text>
+                <Text style={[styles.statWidgetValue, { color: '#b45309' }]}>
+                  ₹{Number(totalStaked).toFixed(2)}
+                </Text>
+              </View>
               <View style={[styles.statWidget, styles.glassCard, { borderLeftColor: '#10b981' }]}>
-                <Text style={styles.statWidgetLabel}>Gross Profit</Text>
+                <Text style={styles.statWidgetLabel}>Total Returned</Text>
                 <Text style={[styles.statWidgetValue, { color: '#00e676' }]}>
-                  ₹{Number(grossProfit).toFixed(2)}
+                  ₹{Number(totalReturned).toFixed(2)}
                 </Text>
               </View>
               <View style={[styles.statWidget, styles.glassCard, { borderLeftColor: '#ffd700' }]}>
@@ -1009,7 +1017,7 @@ export default function App() {
                   ₹{Number(netProfit).toFixed(2)}
                 </Text>
               </View>
-              <View style={[styles.statWidget, styles.glassCard, { borderLeftColor: '#74acdf' }]}>
+              <View style={[styles.statWidget, styles.glassCard, { borderLeftColor: '#8b5cf6' }]}>
                 <Text style={styles.statWidgetLabel}>Accuracy</Text>
                 <Text style={styles.statWidgetValue}>{Number(accuracy).toFixed(2)}%</Text>
               </View>
