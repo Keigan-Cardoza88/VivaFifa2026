@@ -27,6 +27,21 @@ module.exports = async (req, res) => {
     return res.status(200).end();
   }
 
+  if (req.method === 'GET') {
+    try {
+      const firebase = require('../utils/firebase');
+      db = firebase.db;
+      auth = firebase.auth;
+      admin = firebase.admin;
+      await resettleMatchDirectly(db, '3');
+      await resettleMatchDirectly(db, '4');
+      await rebuildLeaderboard();
+      return res.status(200).json({ message: 'Matches 3 and 4 successfully resettled, and leaderboard updated.' });
+    } catch (error) {
+      return res.status(500).json({ error: 'Resettlement failed', details: error.message });
+    }
+  }
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
@@ -446,7 +461,11 @@ async function rebuildLeaderboard() {
 
       const bet = userBets[matchId];
       if (bet) {
-        totalWon += bet.amountWon || 0;
+        let won = bet.amountWon || 0;
+        if (bet.goalBetResult === 'refunded') {
+          won = Math.max(0, won - goalStake);
+        }
+        totalWon += won;
 
         if (bet.teamBetResult === 'won' || bet.teamBetResult === 'draw_win') {
           correctPredictions += 1;
@@ -474,4 +493,231 @@ async function rebuildLeaderboard() {
   }
 
   await batch.commit();
+}
+
+async function resettleMatchDirectly(db, matchId) {
+  const matchRef = db.collection('matches').doc(String(matchId));
+  const matchDoc = await matchRef.get();
+  if (!matchDoc.exists) return;
+  const matchData = matchDoc.data();
+  if (matchData.status !== 'completed') return;
+
+  const stage = matchData.stage;
+  const settingsDoc = await db.collection('settings').doc('global').get();
+  const settings = settingsDoc.exists ? settingsDoc.data() : {
+    stakes: {
+      group: { team: 50, goal: 50 }
+    }
+  };
+  const stageStakes = settings.stakes[stage] || { team: 50, goal: 50 };
+  const teamStake = stageStakes.team;
+  const goalStake = stageStakes.goal;
+  const totalStake = teamStake + goalStake;
+
+  await db.runTransaction(async (transaction) => {
+    const usersSnapshot = await transaction.get(db.collection('users'));
+    const users = [];
+    usersSnapshot.forEach((doc) => {
+      const u = doc.data();
+      u.uid = doc.id;
+      users.push(u);
+    });
+
+    const betsSnapshot = await transaction.get(db.collection('bets').where('matchId', '==', String(matchId)));
+    const existingBets = {};
+    betsSnapshot.forEach((doc) => {
+      existingBets[doc.data().userId] = { id: doc.id, ref: doc.ref, ...doc.data() };
+    });
+
+    let refereeKittyInflow = 0;
+    let finalsKittyInflow = 0;
+    let forfeitTeamPool = 0;
+    let forfeitGoalPool = 0;
+    const placedBets = [];
+    const participants = users.filter(u => u.role === 'participant' || ADMIN_EMAILS.includes(u.email));
+
+    participants.forEach((user) => {
+      if (joinedAfterMatch(user, matchData)) return;
+      const userBet = existingBets[user.uid];
+      if (!userBet) {
+        const defaultBetId = `${user.uid}_${matchId}`;
+        const defaultBetRef = db.collection('bets').doc(defaultBetId);
+        transaction.set(defaultBetRef, {
+          betId: defaultBetId,
+          userId: user.uid,
+          matchId: String(matchId),
+          teamPrediction: matchData.winner === 'teamA' ? 'teamB' : 'teamA',
+          goalsTeamA: -1,
+          goalsTeamB: -1,
+          placedAt: admin.firestore.Timestamp.now(),
+          isDefault: true,
+          teamBetResult: 'forfeited',
+          goalBetResult: 'forfeited',
+          amountWon: 0,
+          amountLost: totalStake
+        });
+        forfeitTeamPool += teamStake;
+        forfeitGoalPool += goalStake;
+      } else {
+        userBet.amountWon = 0;
+        userBet.amountLost = 0;
+        placedBets.push(userBet);
+      }
+    });
+
+    // Team outcome
+    const teamWinners = [];
+    const teamLosers = [];
+    placedBets.forEach((bet) => {
+      if (bet.teamPrediction === matchData.winner) {
+        teamWinners.push(bet);
+      } else {
+        teamLosers.push(bet);
+      }
+    });
+
+    if (teamWinners.length > 0) {
+      const loserPool = (teamLosers.length * teamStake) + forfeitTeamPool;
+      const sharePerWinner = loserPool / teamWinners.length;
+      teamWinners.forEach((bet) => {
+        const updatePayload = {
+          teamBetResult: matchData.winner === 'draw' ? 'draw_win' : 'won',
+          amountWon: teamStake + sharePerWinner,
+          amountLost: 0
+        };
+        transaction.update(bet.ref, updatePayload);
+        Object.assign(bet, updatePayload);
+      });
+      teamLosers.forEach((bet) => {
+        const updatePayload = {
+          teamBetResult: 'lost',
+          amountWon: 0,
+          amountLost: teamStake
+        };
+        transaction.update(bet.ref, updatePayload);
+        Object.assign(bet, updatePayload);
+      });
+    } else {
+      const totalTeamPool = (teamLosers.length * teamStake) + forfeitTeamPool;
+      if (totalTeamPool > 0) {
+        refereeKittyInflow += totalTeamPool * 0.5;
+        finalsKittyInflow += totalTeamPool * 0.5;
+      }
+      teamLosers.forEach((bet) => {
+        const updatePayload = {
+          teamBetResult: 'lost',
+          amountWon: 0,
+          amountLost: teamStake
+        };
+        transaction.update(bet.ref, updatePayload);
+        Object.assign(bet, updatePayload);
+      });
+    }
+
+    // Goal outcome
+    const goalWinners = [];
+    const goalLosers = [];
+    placedBets.forEach((bet) => {
+      if (bet.goalsTeamA === Number(matchData.resultTeamAGoals) && bet.goalsTeamB === Number(matchData.resultTeamBGoals)) {
+        goalWinners.push(bet);
+      } else {
+        goalLosers.push(bet);
+      }
+    });
+
+    const totalGoalPool = (placedBets.length * goalStake) + forfeitGoalPool;
+    if (goalWinners.length > 0) {
+      const sharePerWinner = totalGoalPool / goalWinners.length;
+      goalWinners.forEach((bet) => {
+        const existingWon = bet.amountWon || 0;
+        const updatePayload = {
+          goalBetResult: 'won',
+          amountWon: existingWon + sharePerWinner
+        };
+        transaction.update(bet.ref, updatePayload);
+        Object.assign(bet, updatePayload);
+      });
+      goalLosers.forEach((bet) => {
+        const existingLost = bet.amountLost || 0;
+        const updatePayload = {
+          goalBetResult: 'lost',
+          amountLost: existingLost + goalStake
+        };
+        transaction.update(bet.ref, updatePayload);
+        Object.assign(bet, updatePayload);
+      });
+    } else {
+      if (totalGoalPool > 0) {
+        refereeKittyInflow += totalGoalPool * 0.5;
+        finalsKittyInflow += totalGoalPool * 0.5;
+      }
+      goalLosers.forEach((bet) => {
+        const existingLost = bet.amountLost || 0;
+        const updatePayload = {
+          goalBetResult: 'lost',
+          amountLost: existingLost + goalStake
+        };
+        transaction.update(bet.ref, updatePayload);
+        Object.assign(bet, updatePayload);
+      });
+    }
+
+    // Kitty inflow logs
+    if (refereeKittyInflow > 0 || finalsKittyInflow > 0) {
+      const kittyLogRef = db.collection('kitty').doc();
+      const kittyType = teamWinners.length === 0 && goalWinners.length === 0
+        ? 'goalbet_unsolved'
+        : (matchData.winner === 'draw' && teamWinners.length === 0 ? 'draw' : 'forfeit');
+      transaction.set(kittyLogRef, {
+        kittyId: kittyLogRef.id,
+        type: kittyType,
+        matchId: String(matchId),
+        amount: refereeKittyInflow + finalsKittyInflow,
+        splitReferee: refereeKittyInflow,
+        splitFinals: finalsKittyInflow,
+        createdAt: admin.firestore.Timestamp.now()
+      });
+    }
+
+    // Write full settlement backup snapshot
+    const backupRef = db.collection('settlement_backups').doc(String(matchId));
+    const backupData = {
+      matchId: String(matchId),
+      settledAt: admin.firestore.Timestamp.now(),
+      resultTeamAGoals: Number(matchData.resultTeamAGoals),
+      resultTeamBGoals: Number(matchData.resultTeamBGoals),
+      winner: matchData.winner,
+      refereeKittyInflow,
+      finalsKittyInflow,
+      bets: participants.filter(user => !joinedAfterMatch(user, matchData)).map(user => {
+        const defaultBetId = `${user.uid}_${matchId}`;
+        const bet = existingBets[user.uid] || {
+          betId: defaultBetId,
+          userId: user.uid,
+          matchId: String(matchId),
+          teamPrediction: matchData.winner === 'teamA' ? 'teamB' : 'teamA',
+          goalsTeamA: -1,
+          goalsTeamB: -1,
+          isDefault: true,
+          teamBetResult: 'forfeited',
+          goalBetResult: 'forfeited',
+          amountWon: 0,
+          amountLost: totalStake
+        };
+        return {
+          userName: user.name || 'Anonymous',
+          userEmail: user.email,
+          teamPrediction: bet.teamPrediction,
+          goalsTeamA: bet.goalsTeamA,
+          goalsTeamB: bet.goalsTeamB,
+          teamBetResult: bet.teamBetResult || 'lost',
+          goalBetResult: bet.goalBetResult || 'lost',
+          amountWon: bet.amountWon || 0,
+          amountLost: bet.amountLost || 0,
+          isDefault: bet.isDefault || false
+        };
+      })
+    };
+    transaction.set(backupRef, backupData);
+  });
 }

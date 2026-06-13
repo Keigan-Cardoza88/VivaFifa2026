@@ -1322,7 +1322,10 @@ export default function App() {
                   }
                 };
 
-                const userGross = bet ? (bet.amountWon || 0) : 0;
+                let userGross = bet ? (bet.amountWon || 0) : 0;
+                if (bet && bet.goalBetResult === 'refunded') {
+                  userGross = Math.max(0, userGross - (stageStakes.goal || 50));
+                }
                 const userNet = isPostponed ? 0 : (bet ? (userGross - totalStake) : -totalStake);
 
                 return (
@@ -1354,9 +1357,9 @@ export default function App() {
                                 styles.badge,
                                 bet.goalBetResult === 'won'
                                   ? styles.badgeWin
-                                  : (bet.goalBetResult === 'refunded' ? styles.badgeRefund : styles.badgeLoss)
+                                  : styles.badgeLoss
                               ]}>
-                                <Text style={styles.badgeText}>Goal: {bet.goalBetResult ? bet.goalBetResult.toUpperCase() : 'LOST'}</Text>
+                                <Text style={styles.badgeText}>Goal: {bet.goalBetResult && bet.goalBetResult !== 'refunded' ? bet.goalBetResult.toUpperCase() : 'LOST'}</Text>
                               </View>
                             </View>
                           </View>
@@ -1395,8 +1398,6 @@ export default function App() {
                                 </View>
                               {eligibleExpandedMatchBets.map((b) => {
                                 const u = allUsers[b.userId] || { name: 'Player' };
-                                const gross = b.amountWon || 0;
-                                const net = isPostponed ? 0 : (gross - totalStake);
                                 const matchPayouts = computeMatchBetPayouts(eligibleExpandedMatchBets, match);
                                 const teamNet = isPostponed ? 0 : (
                                   (b.teamBetResult === 'won' || b.teamBetResult === 'draw_win')
@@ -1406,8 +1407,9 @@ export default function App() {
                                 const goalNet = isPostponed ? 0 : (
                                   (b.goalBetResult === 'won')
                                     ? (matchPayouts.goalSharePerWinner - matchPayouts.goalStake)
-                                    : (b.goalBetResult === 'refunded' ? 0 : -matchPayouts.goalStake)
+                                    : -matchPayouts.goalStake
                                 );
+                                const net = isPostponed ? 0 : (teamNet + goalNet);
                                 return (
                                   <View style={styles.expandedBetsRow} key={b.betId}>
                                     <Text style={[styles.expandedBetsCell, { flex: 2.2, fontWeight: '700' }]} numberOfLines={1}>
