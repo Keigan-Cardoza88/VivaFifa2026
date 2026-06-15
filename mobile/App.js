@@ -426,7 +426,7 @@ export default function App() {
   }, [currentUser, userProfile]);
 
   const firstUpcomingMatch = matches.find(m => m.status === 'upcoming');
-  const openUpcomingMatches = matches.filter(m => m.status === 'upcoming');
+  const openUpcomingMatches = matches.filter(m => m.status === 'upcoming' || m.status === 'betting_closed');
 
   // Subscribe to bets for the first upcoming match (legacy single-card support)
   useEffect(() => {
@@ -631,6 +631,9 @@ export default function App() {
     const bet = myBets[match.matchId];
     const isLocked = new Date().getTime() >= (match.bettingLockTimeIST ? match.bettingLockTimeIST.seconds * 1000 : 0);
     const isTooEarly = new Date().getTime() < (match.kickoffTimeIST ? (match.kickoffTimeIST.seconds * 1000) - (3 * 24 * 60 * 60 * 1000) : 0);
+    const matchBets = openMatchesBets[match.matchId] || [];
+    const eligibleBets = matchBets.filter(b => isUserEligibleForMatch(allUsers[b.userId], match));
+
     return (
       <View style={[styles.matchCard, styles.glassCard]} key={match.id}>
         <View style={styles.matchHeaderRow}>
@@ -668,6 +671,44 @@ export default function App() {
             </View>
           )}
         </View>
+        {isLocked && (
+          <View style={styles.expandedBetsContainer}>
+            <View style={styles.expandedBetsDivider} />
+            <Text style={styles.expandedBetsTitle}>All Player Predictions</Text>
+            {eligibleBets.length === 0 ? (
+              <Text style={styles.expandedBetsEmpty}>No predictions placed</Text>
+            ) : (
+              <ScrollView 
+                horizontal 
+                showsHorizontalScrollIndicator={false} 
+                contentContainerStyle={{ minWidth: '100%' }}>
+                <View style={[styles.expandedBetsTable, { minWidth: 400 }]}>
+                  <View style={styles.expandedBetsHeader}>
+                    <Text style={[styles.expandedBetsHeadCell, { flex: 1 }]}>Player</Text>
+                    <Text style={[styles.expandedBetsHeadCell, { flex: 1 }]}>Prediction</Text>
+                    <Text style={[styles.expandedBetsHeadCell, { flex: 1, textAlign: 'center' }]}>Goals</Text>
+                  </View>
+                  {eligibleBets.map((b) => {
+                    const u = allUsers[b.userId] || { name: 'Player' };
+                    return (
+                      <View style={styles.expandedBetsRow} key={b.betId}>
+                        <Text style={[styles.expandedBetsCell, { flex: 1, fontWeight: '700' }]} numberOfLines={1}>
+                          {u.name}
+                        </Text>
+                        <Text style={[styles.expandedBetsCell, { flex: 1 }]}>
+                          {b.teamPrediction === 'teamA' ? getTeamFlag(match.teamA) : (b.teamPrediction === 'teamB' ? getTeamFlag(match.teamB) : 'Draw')} {b.teamPrediction === 'teamA' ? match.teamA : (b.teamPrediction === 'teamB' ? match.teamB : 'Draw')}
+                        </Text>
+                        <Text style={[styles.expandedBetsCell, { flex: 1, textAlign: 'center', fontWeight: '800', color: '#ffd700' }]}>
+                          {b.goalsTeamA < 0 ? 'N/A' : `${b.goalsTeamA} - ${b.goalsTeamB}`}
+                        </Text>
+                      </View>
+                    );
+                  })}
+                </View>
+              </ScrollView>
+            )}
+          </View>
+        )}
       </View>
     );
   };
@@ -804,7 +845,7 @@ export default function App() {
 
 
   // 3. MAIN DASHBOARD VIEW
-  const isPast7PM = new Date().getHours() >= 19;
+  const isPast9PM = new Date().getHours() >= 21;
 
   const getProfitHistory = () => {
     const settledBets = [];
@@ -868,17 +909,21 @@ export default function App() {
     const forfeitCount = bets.filter(b => b.isDefault).length; // defaults represent forfeits written by backend
     const placedBets = bets.filter(b => !b.isDefault).length;
     const goalWinners = bets.filter(b => b.goalBetResult === 'won').length;
+    const goalPartialWinners = bets.filter(b => b.goalBetResult === 'won_partial').length;
 
     // Backend behavior:
     // - Team winner share = (teamLosers*teamStake + forfeitCount*teamStake) / teamWinners
-    // - Goal pool = (placedBets*goalStake + forfeitCount*goalStake), split among goalWinners
+    // - Goal pool = (placedBets*goalStake + forfeitCount*goalStake)
     const teamSharePerWinner = teamWinners > 0
       ? ((teamLosers * teamStake) + (forfeitCount * teamStake)) / teamWinners
       : 0;
 
-    const goalSharePerWinner = goalWinners > 0
-      ? ((placedBets * goalStake) + (forfeitCount * goalStake)) / goalWinners
-      : 0;
+    let goalSharePerWinner = 0;
+    if (goalWinners > 0) {
+      goalSharePerWinner = ((placedBets * goalStake) + (forfeitCount * goalStake)) / goalWinners;
+    } else if (goalPartialWinners > 0) {
+      goalSharePerWinner = (((placedBets * goalStake) + (forfeitCount * goalStake)) * 0.5) / goalPartialWinners;
+    }
 
     return {
       teamStake,
@@ -981,9 +1026,9 @@ export default function App() {
         <Text style={styles.headerUser}>{currentUser.email}</Text>
       </View>
 
-      {isPast7PM && matches.some(m => m.status === 'upcoming' && !myBets[m.matchId]) && (
+      {isPast9PM && matches.some(m => m.status === 'upcoming' && !myBets[m.matchId]) && (
         <View style={styles.warningBanner}>
-          <Text style={styles.warningBannerText}>⚠️ Warning: You have unplaced bets for today! Cutoff is 8:00 PM IST.</Text>
+          <Text style={styles.warningBannerText}>⚠️ Warning: You have unplaced bets for today! Cutoff is 9:00 PM IST.</Text>
         </View>
       )}
 
@@ -1063,11 +1108,13 @@ export default function App() {
                   const pctB = total > 0 ? Math.round((countB / total) * 100) : 0;
                   const pctD = total > 0 ? Math.round((countD / total) * 100) : 0;
 
+                  const isLocked = new Date().getTime() >= (match.bettingLockTimeIST ? match.bettingLockTimeIST.seconds * 1000 : 0);
+
                   return (
                     <View key={match.id} style={[styles.mainConsensusCard, styles.glassCard, { marginBottom: 12 }]}>
                       <View style={styles.consensusHeader}>
                         <Text style={styles.consensusHeaderLabel}>🔥 MATCH CONSENSUS</Text>
-                        <View style={styles.liveBadge}><Text style={styles.liveBadgeText}>OPEN</Text></View>
+                        <View style={[styles.liveBadge, isLocked && { backgroundColor: 'rgba(239, 68, 68, 0.2)', borderColor: '#ef4444' }]}><Text style={[styles.liveBadgeText, isLocked && { color: '#ef4444' }]}>{isLocked ? 'LOCKED' : 'OPEN'}</Text></View>
                       </View>
                       <View style={styles.consensusTeamsRow}>
                         <View style={styles.consensusTeamContainer}>
@@ -1114,16 +1161,18 @@ export default function App() {
 
                         <Text style={styles.consensusTotalLabel}>Total Bets Placed: {total}</Text>
 
-                        <View style={{ marginTop: 12, alignItems: 'center' }}>
-                          <TouchableOpacity
-                            style={styles.consensusActionButton}
-                            onPress={() => handleOpenBet(match)}
-                          >
-                            <Text style={styles.consensusActionText}>
-                              {myBets[match.matchId] ? '✏️ EDIT YOUR Prediction' : '🎯 PLACE Prediction NOW'}
-                            </Text>
-                          </TouchableOpacity>
-                        </View>
+                        {!isLocked && (
+                          <View style={{ marginTop: 12, alignItems: 'center' }}>
+                            <TouchableOpacity
+                              style={styles.consensusActionButton}
+                              onPress={() => handleOpenBet(match)}
+                            >
+                              <Text style={styles.consensusActionText}>
+                                {myBets[match.matchId] ? '✏️ EDIT YOUR Prediction' : '🎯 PLACE Prediction NOW'}
+                              </Text>
+                            </TouchableOpacity>
+                          </View>
+                        )}
                       </View>
                     </View>
                   );
@@ -1368,7 +1417,7 @@ export default function App() {
                               </View>
                               <View style={[
                                 styles.badge,
-                                bet.goalBetResult === 'won'
+                                bet.goalBetResult === 'won' || bet.goalBetResult === 'won_partial'
                                   ? styles.badgeWin
                                   : styles.badgeLoss
                               ]}>
@@ -1418,9 +1467,9 @@ export default function App() {
                                     : (b.teamBetResult === 'refunded' ? 0 : -matchPayouts.teamStake)
                                 );
                                 const goalNet = isPostponed ? 0 : (
-                                  (b.goalBetResult === 'won')
+                                  (b.goalBetResult === 'won' || b.goalBetResult === 'won_partial')
                                     ? (matchPayouts.goalSharePerWinner - matchPayouts.goalStake)
-                                    : -matchPayouts.goalStake
+                                    : (b.goalBetResult === 'refunded' ? 0 : -matchPayouts.goalStake)
                                 );
                                 const net = isPostponed ? 0 : (teamNet + goalNet);
                                 return (

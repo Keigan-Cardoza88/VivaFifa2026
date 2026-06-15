@@ -145,6 +145,12 @@ module.exports = async (req, res) => {
         existingBets[doc.data().userId] = { id: doc.id, ref: doc.ref, ...doc.data() };
       });
 
+      // Delete old kitty logs to prevent duplicates on resettlement
+      const kittySnapshot = await transaction.get(db.collection('kitty').where('matchId', '==', String(matchId)));
+      kittySnapshot.forEach((doc) => {
+        transaction.delete(doc.ref);
+      });
+
       let refereeKittyInflow = 0;
       let finalsKittyInflow = 0;
 
@@ -294,22 +300,67 @@ module.exports = async (req, res) => {
           Object.assign(bet, updatePayload);
         });
       } else {
-        // No goal winners: all goal stakes go to the kitty split.
-        if (totalGoalPool > 0) {
-          refereeKittyInflow += totalGoalPool * 0.5;
-          finalsKittyInflow += totalGoalPool * 0.5;
-        }
+        // No exact goal winners: check for partial winners
+        const partialWinners = [];
+        const nonPartialLosers = [];
 
-        goalLosers.forEach((bet) => {
-          const existingLost = bet.amountLost || 0;
-          const updatePayload = {
-            goalBetResult: 'lost',
-            amountLost: existingLost + goalStake,
-            amountWon: bet.amountWon || 0
-          };
-          transaction.update(bet.ref, updatePayload);
-          Object.assign(bet, updatePayload);
+        placedBets.forEach((bet) => {
+          if (bet.goalsTeamA === Number(resultTeamAGoals) || bet.goalsTeamB === Number(resultTeamBGoals)) {
+            partialWinners.push(bet);
+          } else {
+            nonPartialLosers.push(bet);
+          }
         });
+
+        if (partialWinners.length > 0) {
+          // New Rule: 50% goes to Referee & Kitty, 50% shared among Partial Winners
+          const kittyGoalShare = totalGoalPool * 0.5;
+          const sharePerPartialWinner = (totalGoalPool * 0.5) / partialWinners.length;
+
+          if (kittyGoalShare > 0) {
+            refereeKittyInflow += kittyGoalShare * 0.5;
+            finalsKittyInflow += kittyGoalShare * 0.5;
+          }
+
+          partialWinners.forEach((bet) => {
+            const existingWon = bet.amountWon || 0;
+            const updatePayload = {
+              goalBetResult: 'won_partial',
+              amountWon: existingWon + sharePerPartialWinner,
+              amountLost: 0
+            };
+            transaction.update(bet.ref, updatePayload);
+            Object.assign(bet, updatePayload);
+          });
+
+          nonPartialLosers.forEach((bet) => {
+            const existingLost = bet.amountLost || 0;
+            const updatePayload = {
+              goalBetResult: 'lost',
+              amountLost: existingLost + goalStake,
+              amountWon: bet.amountWon || 0
+            };
+            transaction.update(bet.ref, updatePayload);
+            Object.assign(bet, updatePayload);
+          });
+        } else {
+          // No exact or partial winners: all goal stakes go to the kitty split.
+          if (totalGoalPool > 0) {
+            refereeKittyInflow += totalGoalPool * 0.5;
+            finalsKittyInflow += totalGoalPool * 0.5;
+          }
+
+          goalLosers.forEach((bet) => {
+            const existingLost = bet.amountLost || 0;
+            const updatePayload = {
+              goalBetResult: 'lost',
+              amountLost: existingLost + goalStake,
+              amountWon: bet.amountWon || 0
+            };
+            transaction.update(bet.ref, updatePayload);
+            Object.assign(bet, updatePayload);
+          });
+        }
       }
 
       // D. Write Kitty Logs if there was inflow
@@ -532,6 +583,12 @@ async function resettleMatchDirectly(db, matchId) {
     const existingBets = {};
     betsSnapshot.forEach((doc) => {
       existingBets[doc.data().userId] = { id: doc.id, ref: doc.ref, ...doc.data() };
+    });
+
+    // Delete old kitty logs to prevent duplicates on resettlement
+    const kittySnapshot = await transaction.get(db.collection('kitty').where('matchId', '==', String(matchId)));
+    kittySnapshot.forEach((doc) => {
+      transaction.delete(doc.ref);
     });
 
     let refereeKittyInflow = 0;

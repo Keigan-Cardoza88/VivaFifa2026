@@ -59,7 +59,7 @@ function generateMatches() {
     // Betting lock is 8:00 PM IST on the day BEFORE the kickoff
     const lockDate = new Date(kickoffIST);
     lockDate.setDate(lockDate.getDate() - 1);
-    lockDate.setHours(20, 0, 0, 0);
+    lockDate.setHours(21, 0, 0, 0);
 
     matches.push({
       matchId: String(matchId++),
