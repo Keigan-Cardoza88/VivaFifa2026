@@ -587,7 +587,7 @@ export default function App() {
       if (!latestMatch) {
         throw new Error('Match not found.');
       }
-      const isLocked = new Date().getTime() >= (latestMatch.bettingLockTimeIST ? latestMatch.bettingLockTimeIST.seconds * 1000 : 0);
+      const isLocked = latestMatch.status !== 'upcoming';
       const isTooEarly = new Date().getTime() < (latestMatch.kickoffTimeIST ? (latestMatch.kickoffTimeIST.seconds * 1000) - (3 * 24 * 60 * 60 * 1000) : 0);
       if (isLocked || latestMatch.status !== 'upcoming') {
         throw new Error('This match has been locked or completed. You cannot place or edit predictions anymore.');
@@ -630,7 +630,7 @@ export default function App() {
 
   const renderMatchCard = (match) => {
     const bet = myBets[match.matchId];
-    const isLocked = new Date().getTime() >= (match.bettingLockTimeIST ? match.bettingLockTimeIST.seconds * 1000 : 0) || match.status === 'betting_closed';
+    const isLocked = match.status !== 'upcoming';
     const isTooEarly = new Date().getTime() < (match.kickoffTimeIST ? (match.kickoffTimeIST.seconds * 1000) - (3 * 24 * 60 * 60 * 1000) : 0);
     const matchBets = openMatchesBets[match.matchId] || [];
     const eligibleBets = matchBets.filter(b => isUserEligibleForMatch(allUsers[b.userId], match));
@@ -1109,7 +1109,7 @@ export default function App() {
                   const pctB = total > 0 ? Math.round((countB / total) * 100) : 0;
                   const pctD = total > 0 ? Math.round((countD / total) * 100) : 0;
 
-                  const isLocked = new Date().getTime() >= (match.bettingLockTimeIST ? match.bettingLockTimeIST.seconds * 1000 : 0);
+                  const isLocked = match.status !== 'upcoming';
 
                   return (
                     <View key={match.id} style={[styles.mainConsensusCard, styles.glassCard, { marginBottom: 12 }]}>
