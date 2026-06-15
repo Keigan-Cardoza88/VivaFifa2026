@@ -426,7 +426,8 @@ export default function App() {
   }, [currentUser, userProfile]);
 
   const firstUpcomingMatch = matches.find(m => m.status === 'upcoming');
-  const openUpcomingMatches = matches.filter(m => m.status === 'upcoming' || m.status === 'betting_closed');
+  const openUpcomingMatches = matches.filter(m => m.status === 'upcoming');
+  const activeMatchesForBets = matches.filter(m => m.status === 'upcoming' || m.status === 'betting_closed');
 
   // Subscribe to bets for the first upcoming match (legacy single-card support)
   useEffect(() => {
@@ -444,14 +445,14 @@ export default function App() {
     return () => unsub();
   }, [currentUser, userProfile, firstUpcomingMatch?.matchId, firstUpcomingMatch?.id]);
 
-  // Subscribe to bets for all currently open upcoming matches (up to 10 due to Firestore 'in' limitation)
+  // Subscribe to bets for all currently open/closed upcoming matches (up to 10 due to Firestore 'in' limitation)
   useEffect(() => {
-    if (!currentUser || !userProfile || openUpcomingMatches.length === 0) {
+    if (!currentUser || !userProfile || activeMatchesForBets.length === 0) {
       setOpenMatchesBets({});
       return;
     }
 
-    const ids = openUpcomingMatches.slice(0, 10).map(m => m.matchId || m.id);
+    const ids = activeMatchesForBets.slice(0, 10).map(m => m.matchId || m.id);
     if (ids.length === 0) {
       setOpenMatchesBets({});
       return;
@@ -470,7 +471,7 @@ export default function App() {
     });
 
     return () => unsub();
-  }, [currentUser, userProfile, JSON.stringify(openUpcomingMatches.map(m => m.matchId || m.id))]);
+  }, [currentUser, userProfile, JSON.stringify(activeMatchesForBets.map(m => m.matchId || m.id))]);
 
   useEffect(() => {
     if (!currentUser || !userProfile || !expandedMatchId) {
@@ -629,7 +630,7 @@ export default function App() {
 
   const renderMatchCard = (match) => {
     const bet = myBets[match.matchId];
-    const isLocked = new Date().getTime() >= (match.bettingLockTimeIST ? match.bettingLockTimeIST.seconds * 1000 : 0);
+    const isLocked = new Date().getTime() >= (match.bettingLockTimeIST ? match.bettingLockTimeIST.seconds * 1000 : 0) || match.status === 'betting_closed';
     const isTooEarly = new Date().getTime() < (match.kickoffTimeIST ? (match.kickoffTimeIST.seconds * 1000) - (3 * 24 * 60 * 60 * 1000) : 0);
     const matchBets = openMatchesBets[match.matchId] || [];
     const eligibleBets = matchBets.filter(b => isUserEligibleForMatch(allUsers[b.userId], match));
