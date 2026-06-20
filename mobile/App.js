@@ -1467,10 +1467,12 @@ export default function App() {
                                     ? matchPayouts.teamSharePerWinner
                                     : (b.teamBetResult === 'refunded' ? 0 : -matchPayouts.teamStake)
                                 );
+                                const gotOneSideCorrect = !b.isDefault && (b.goalsTeamA === Number(match.resultTeamAGoals) || b.goalsTeamB === Number(match.resultTeamBGoals));
+                                const refereeBonus = (gotOneSideCorrect && !isPostponed) ? 25 : 0;
                                 const goalNet = isPostponed ? 0 : (
-                                  (b.goalBetResult === 'won' || b.goalBetResult === 'won_partial')
+                                  ((b.goalBetResult === 'won' || b.goalBetResult === 'won_partial')
                                     ? (matchPayouts.goalSharePerWinner - matchPayouts.goalStake)
-                                    : (b.goalBetResult === 'refunded' ? 0 : -matchPayouts.goalStake)
+                                    : (b.goalBetResult === 'refunded' ? 0 : -matchPayouts.goalStake)) + refereeBonus
                                 );
                                 const net = isPostponed ? 0 : (teamNet + goalNet);
                                 return (

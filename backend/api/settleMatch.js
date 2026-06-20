@@ -363,8 +363,24 @@ module.exports = async (req, res) => {
         }
       }
 
-      // D. Write Kitty Logs if there was inflow
-      if (refereeKittyInflow > 0 || finalsKittyInflow > 0) {
+      // D. Apply Referee Bonus: Transfer ₹25 from referee kitty to any player with >=1 side correct
+      let totalBonusPayout = 0;
+      placedBets.forEach((bet) => {
+        const gotOneSideCorrect = (bet.goalsTeamA === Number(resultTeamAGoals) || bet.goalsTeamB === Number(resultTeamBGoals));
+        if (gotOneSideCorrect) {
+          totalBonusPayout += 25;
+          const currentWon = bet.amountWon || 0;
+          const updatePayload = {
+            amountWon: currentWon + 25
+          };
+          transaction.update(bet.ref, updatePayload);
+          Object.assign(bet, updatePayload);
+        }
+      });
+      refereeKittyInflow -= totalBonusPayout;
+
+      // E. Write Kitty Logs if there was inflow/outflow
+      if (refereeKittyInflow !== 0 || finalsKittyInflow !== 0) {
         const kittyLogRef = db.collection('kitty').doc();
         const kittyType = teamWinners.length === 0 && goalWinners.length === 0
           ? 'goalbet_unsolved'
