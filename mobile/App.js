@@ -1449,16 +1449,16 @@ export default function App() {
                               horizontal 
                               showsHorizontalScrollIndicator={false} 
                               contentContainerStyle={[styles.bracketHorizontalScrollContent, { minWidth: '100%', paddingRight: 0 }]}>
-                              {/* Apply a minimum width style directly to this wrapper table */}
-                              <View style={[styles.expandedBetsTable]}>
-                                <View style={styles.expandedBetsHeader}>
-                                  <Text style={[styles.expandedBetsHeadCell, { flex: 2.2 }]}>Player</Text>
-                                  <Text style={[styles.expandedBetsHeadCell, { flex: 2 }]}>Prediction</Text>
-                                  <Text style={[styles.expandedBetsHeadCell, { flex: 1.5, textAlign: 'center' }]}>Goals</Text>
-                                  <Text style={[styles.expandedBetsHeadCell, { flex: 1.1, textAlign: 'right' }]}>Team</Text>
-                                  <Text style={[styles.expandedBetsHeadCell, { flex: 1.1, textAlign: 'right' }]}>Goal</Text>
-                                  <Text style={[styles.expandedBetsHeadCell, { flex: 1.3, textAlign: 'right' }]}>Net</Text>
-                                </View>
+                              <View style={[styles.expandedBetsTable, { minWidth: 720 }]}>
+                                  <View style={styles.expandedBetsHeader}>
+                                    <Text style={[styles.expandedBetsHeadCell, { flex: 2.2 }]}>Player</Text>
+                                    <Text style={[styles.expandedBetsHeadCell, { flex: 2 }]}>Prediction</Text>
+                                    <Text style={[styles.expandedBetsHeadCell, { flex: 1.5, textAlign: 'center' }]}>Goals</Text>
+                                    <Text style={[styles.expandedBetsHeadCell, { flex: 1.1, textAlign: 'right' }]}>Team</Text>
+                                    <Text style={[styles.expandedBetsHeadCell, { flex: 1.1, textAlign: 'right' }]}>Goal</Text>
+                                    <Text style={[styles.expandedBetsHeadCell, { flex: 1.5, textAlign: 'right' }]}>Ref Bonus</Text>
+                                    <Text style={[styles.expandedBetsHeadCell, { flex: 1.3, textAlign: 'right' }]}>Net</Text>
+                                  </View>
                               {eligibleExpandedMatchBets.map((b) => {
                                 const u = allUsers[b.userId] || { name: 'Player' };
                                 const matchPayouts = computeMatchBetPayouts(eligibleExpandedMatchBets, match);
@@ -1470,11 +1470,11 @@ export default function App() {
                                 const gotOneSideCorrect = !b.isDefault && (b.goalsTeamA === Number(match.resultTeamAGoals) || b.goalsTeamB === Number(match.resultTeamBGoals));
                                 const refereeBonus = (gotOneSideCorrect && !isPostponed) ? 25 : 0;
                                 const goalNet = isPostponed ? 0 : (
-                                  ((b.goalBetResult === 'won' || b.goalBetResult === 'won_partial')
+                                  (b.goalBetResult === 'won' || b.goalBetResult === 'won_partial')
                                     ? (matchPayouts.goalSharePerWinner - matchPayouts.goalStake)
-                                    : (b.goalBetResult === 'refunded' ? 0 : -matchPayouts.goalStake)) + refereeBonus
+                                    : (b.goalBetResult === 'refunded' ? 0 : -matchPayouts.goalStake)
                                 );
-                                const net = isPostponed ? 0 : (teamNet + goalNet);
+                                const net = isPostponed ? 0 : (teamNet + goalNet + refereeBonus);
                                 return (
                                   <View style={styles.expandedBetsRow} key={b.betId}>
                                     <Text style={[styles.expandedBetsCell, { flex: 2.2, fontWeight: '700' }]} numberOfLines={1}>
@@ -1491,6 +1491,9 @@ export default function App() {
                                     </Text>
                                     <Text style={[styles.expandedBetsCell, { flex: 1.1, textAlign: 'right', fontWeight: '800', color: goalNet >= 0 ? '#00e676' : '#ff3d71' }]}>
                                       {goalNet >= 0 ? '+' : ''}₹{Number(goalNet).toFixed(2)}
+                                    </Text>
+                                    <Text style={[styles.expandedBetsCell, { flex: 1.5, textAlign: 'right', fontWeight: '800', color: refereeBonus > 0 ? '#00e676' : '#82776a' }]}>
+                                      {refereeBonus > 0 ? '+25' : '+0'}
                                     </Text>
                                     <Text style={[styles.expandedBetsCell, { flex: 1.3, textAlign: 'right', fontWeight: '800', color: isPostponed ? '#94a3b8' : (net >= 0 ? '#00e676' : '#ff3d71') }]}>
                                       {isPostponed ? '' : (net >= 0 ? '+' : '')}₹{Number(net).toFixed(2)}
