@@ -854,6 +854,7 @@ export default function App() {
       const bet = myBets[m.matchId];
       if (bet && (bet.amountWon !== undefined || bet.amountLost !== undefined)) {
         if (m.status === 'postponed') return;
+        const stage = m.stage;
         const stageStakes = settings?.stakes?.[stage] || {
           group: { team: 100, goal: 50 },
           r32: { team: 75, goal: 75 },
@@ -1329,6 +1330,7 @@ export default function App() {
                   const betItem = myBets[matchItem.matchId];
                   const isMatchPostponed = matchItem.status === 'postponed';
                   if (isMatchPostponed) return 0;
+                  const itemStage = matchItem.stage;
                   const itemStakes = settings?.stakes?.[itemStage] || {
                     group: { team: 100, goal: 50 },
                     r32: { team: 75, goal: 75 },
