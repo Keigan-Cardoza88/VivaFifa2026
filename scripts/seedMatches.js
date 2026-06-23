@@ -31,7 +31,7 @@ const db = admin.firestore();
 
 const DEFAULT_SETTINGS = {
   stakes: {
-    group: { team: 50, goal: 50 },
+    group: { team: 100, goal: 50 },
     r32: { team: 75, goal: 75 },
     r16: { team: 100, goal: 100 },
     qf: { team: 125, goal: 125 },

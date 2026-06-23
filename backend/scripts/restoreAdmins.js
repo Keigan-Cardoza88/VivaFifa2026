@@ -48,7 +48,7 @@ async function rebuildLeaderboard() {
   const settingsDoc = await db.collection('settings').doc('global').get();
   const settings = settingsDoc.exists ? settingsDoc.data() : {
     stakes: {
-      group: { team: 50, goal: 50 },
+      group: { team: 100, goal: 50 },
       r32: { team: 75, goal: 75 },
       r16: { team: 100, goal: 100 },
       qf: { team: 125, goal: 125 },

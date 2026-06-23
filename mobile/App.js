@@ -854,17 +854,16 @@ export default function App() {
       const bet = myBets[m.matchId];
       if (bet && (bet.amountWon !== undefined || bet.amountLost !== undefined)) {
         if (m.status === 'postponed') return;
-        const stage = m.stage;
         const stageStakes = settings?.stakes?.[stage] || {
-          group: { team: 50, goal: 50 },
+          group: { team: 100, goal: 50 },
           r32: { team: 75, goal: 75 },
           r16: { team: 100, goal: 100 },
           qf: { team: 125, goal: 125 },
           sf: { team: 150, goal: 150 },
           third_place: { team: 150, goal: 150 },
           final: { team: 200, goal: 200 }
-        }[stage] || { team: 50, goal: 50 };
-        const totalStake = (stageStakes.team || 50) + (stageStakes.goal || 50);
+        }[stage] || { team: 100, goal: 50 };
+        const totalStake = (stageStakes.team || 100) + (stageStakes.goal || 50);
 
         settledBets.push({
           matchId: m.matchId,
@@ -892,16 +891,16 @@ export default function App() {
   const computeMatchBetPayouts = (bets, match) => {
     const stage = match.stage;
     const stageStakes = settings?.stakes?.[stage] || {
-      group: { team: 50, goal: 50 },
+      group: { team: 100, goal: 50 },
       r32: { team: 75, goal: 75 },
       r16: { team: 100, goal: 100 },
       qf: { team: 125, goal: 125 },
       sf: { team: 150, goal: 150 },
       third_place: { team: 150, goal: 150 },
       final: { team: 200, goal: 200 }
-    }[stage] || { team: 50, goal: 50 };
+    }[stage] || { team: 100, goal: 50 };
 
-    const teamStake = stageStakes.team || 50;
+    const teamStake = stageStakes.team || 100;
     const goalStake = stageStakes.goal || 50;
 
     // Winners / losers counts according to backend settlement fields
@@ -1330,17 +1329,16 @@ export default function App() {
                   const betItem = myBets[matchItem.matchId];
                   const isMatchPostponed = matchItem.status === 'postponed';
                   if (isMatchPostponed) return 0;
-                  const itemStage = matchItem.stage;
                   const itemStakes = settings?.stakes?.[itemStage] || {
-                    group: { team: 50, goal: 50 },
+                    group: { team: 100, goal: 50 },
                     r32: { team: 75, goal: 75 },
                     r16: { team: 100, goal: 100 },
                     qf: { team: 125, goal: 125 },
                     sf: { team: 150, goal: 150 },
                     third_place: { team: 150, goal: 150 },
                     final: { team: 200, goal: 200 }
-                  }[itemStage] || { team: 50, goal: 50 };
-                  const itemTotalStake = (itemStakes.team || 50) + (itemStakes.goal || 50);
+                  }[itemStage] || { team: 100, goal: 50 };
+                  const itemTotalStake = (itemStakes.team || 100) + (itemStakes.goal || 50);
                   const gross = betItem ? (betItem.amountWon || 0) : 0;
                   return betItem ? (gross - itemTotalStake) : -itemTotalStake;
                 };
@@ -1364,15 +1362,15 @@ export default function App() {
 
                 const stage = match.stage;
                 const stageStakes = settings?.stakes?.[stage] || {
-                  group: { team: 50, goal: 50 },
+                  group: { team: 100, goal: 50 },
                   r32: { team: 75, goal: 75 },
                   r16: { team: 100, goal: 100 },
                   qf: { team: 125, goal: 125 },
                   sf: { team: 150, goal: 150 },
                   third_place: { team: 150, goal: 150 },
                   final: { team: 200, goal: 200 }
-                }[stage] || { team: 50, goal: 50 };
-                const totalStake = isPostponed ? 0 : (stageStakes.team || 50) + (stageStakes.goal || 50);
+                }[stage] || { team: 100, goal: 50 };
+                const totalStake = isPostponed ? 0 : (stageStakes.team || 100) + (stageStakes.goal || 50);
                 const eligibleExpandedMatchBets = expandedMatchBets.filter(b =>
                   isUserEligibleForMatch(allUsers[b.userId], match)
                 );
