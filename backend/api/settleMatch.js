@@ -93,7 +93,10 @@ module.exports = async (req, res) => {
       }
     };
 
-    const stageStakes = settings.stakes[stage] || { team: 50, goal: 50 };
+    let stageStakes = settings.stakes[stage] || { team: 50, goal: 50 };
+    if (stage === 'group' && Number(matchId) < 45) {
+      stageStakes = { team: 50, goal: 50 };
+    }
     const teamStake = stageStakes.team;
     const goalStake = stageStakes.goal;
     const totalStake = teamStake + goalStake;
@@ -524,7 +527,10 @@ async function rebuildLeaderboard() {
       }
 
       const stage = match.stage;
-      const stageStakes = settings.stakes[stage] || { team: 50, goal: 50 };
+      let stageStakes = settings.stakes[stage] || { team: 50, goal: 50 };
+      if (stage === 'group' && Number(matchId) < 45) {
+        stageStakes = { team: 50, goal: 50 };
+      }
       const teamStake = stageStakes.team;
       const goalStake = stageStakes.goal;
 
@@ -581,7 +587,10 @@ async function resettleMatchDirectly(db, matchId) {
       group: { team: 100, goal: 50 }
     }
   };
-  const stageStakes = settings.stakes[stage] || { team: 100, goal: 50 };
+  let stageStakes = settings.stakes[stage] || { team: 100, goal: 50 };
+  if (stage === 'group' && Number(matchId) < 45) {
+    stageStakes = { team: 50, goal: 50 };
+  }
   const teamStake = stageStakes.team;
   const goalStake = stageStakes.goal;
   const totalStake = teamStake + goalStake;

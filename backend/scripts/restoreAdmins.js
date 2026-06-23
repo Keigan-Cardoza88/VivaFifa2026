@@ -92,7 +92,10 @@ async function rebuildLeaderboard() {
       }
 
       const stage = match.stage;
-      const stageStakes = settings.stakes[stage] || { team: 50, goal: 50 };
+      let stageStakes = settings.stakes[stage] || { team: 50, goal: 50 };
+      if (stage === 'group' && Number(matchId) < 45) {
+        stageStakes = { team: 50, goal: 50 };
+      }
       const teamStake = stageStakes.team;
       const goalStake = stageStakes.goal;
 
