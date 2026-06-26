@@ -39,8 +39,8 @@
   --bg-color: #171513;       /* Vintage ink / very dark brown-black */
   --card-bg: #22201d;        /* Warm charcoal/wood grain dark */
   --card-border: #5c5346;    /* Muted retro solid border */
-  --text-main: #ebdcb9;      /* Warm aged paper text */
-  --text-sub: #a89b88;       /* Aged sepia secondary text */
+  --text-main: #ffffff;      /* Pure white main text */
+  --text-sub: #cbd5e1;       /* High contrast secondary text */
 
   --sidebar-bg: #1f1c19;     /* Deep vintage leather / charcoal */
   --menu-hover: #2f2b26;
