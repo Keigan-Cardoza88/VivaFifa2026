@@ -390,8 +390,8 @@ module.exports = async (req, res) => {
       } else {
         // New rule (Match ID >= 45):
         // Over existing rules, referee will give:
-        // - ₹200 for winning team bet
-        // - ₹200 for winning goal bets fully both sides correct, or ₹100 if only 1 side correct
+        // - ₹300 for winning team bet
+        // - ₹300 for winning goal bets fully both sides correct, or ₹150 if only 1 side correct
         let totalRequiredBonus = 0;
         const playerBonusDetails = [];
 
@@ -402,12 +402,12 @@ module.exports = async (req, res) => {
           const goalsBCorrect = (bet.goalsTeamB === Number(resultTeamBGoals));
 
           if (teamWon) {
-            bonus += 200;
+            bonus += 300;
           }
           if (goalsACorrect && goalsBCorrect) {
-            bonus += 200;
+            bonus += 300;
           } else if (goalsACorrect || goalsBCorrect) {
-            bonus += 100;
+            bonus += 150;
           }
 
           if (bonus > 0) {

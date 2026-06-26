@@ -744,7 +744,7 @@ export default function App() {
               disabled={Platform.OS !== 'web' && !request}
               onPress={handleGoogleSignIn}
             >
-              <Text style={styles.btnText}>Sign in with Google</Text>
+              <Text style={styles.btnPrimaryText}>Sign in with Google</Text>
             </TouchableOpacity>
           </View>
 
@@ -1982,7 +1982,7 @@ export default function App() {
 
               <View style={styles.modalBtnRow}>
                 <TouchableOpacity style={styles.btnPrimary} onPress={handleValidateBet}>
-                  <Text style={styles.btnText}>Submit Bet</Text>
+                  <Text style={styles.btnPrimaryText}>Submit Bet</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.btnSecondary} onPress={() => setBetModalVisible(false)}>
                   <Text style={styles.btnSecondaryText}>Cancel</Text>
@@ -2218,6 +2218,11 @@ const getStyles = (isDarkMode) => {
     },
     btnText: {
       color: 'white',
+      fontSize: 15,
+      fontWeight: '800',
+    },
+    btnPrimaryText: {
+      color: isDarkMode ? '#000000' : 'white',
       fontSize: 15,
       fontWeight: '800',
     },
@@ -2477,7 +2482,7 @@ const getStyles = (isDarkMode) => {
       shadowRadius: 4,
     },
     btnActionText: {
-      color: 'white',
+      color: isDarkMode ? '#000000' : 'white',
       fontWeight: '700',
       fontSize: 12
     },
@@ -3018,7 +3023,7 @@ const getStyles = (isDarkMode) => {
       shadowRadius: 6,
     },
     consensusActionText: {
-      color: '#ffffff',
+      color: isDarkMode ? '#000000' : '#ffffff',
       fontSize: 13,
       fontWeight: '800',
     },
@@ -3114,7 +3119,7 @@ const getStyles = (isDarkMode) => {
       alignItems: 'center',
     },
     zoomBtnText: {
-      color: '#ffffff',
+      color: isDarkMode ? '#000000' : '#ffffff',
       fontSize: 14,
       fontWeight: '800',
     },
@@ -3270,7 +3275,7 @@ const getStyles = (isDarkMode) => {
       color: colors.textMain,
     },
     groupBtnTextActive: {
-      color: '#ffffff',
+      color: isDarkMode ? '#000000' : '#ffffff',
     },
     teamSelectorGrid: {
       flexDirection: 'row',
@@ -3656,7 +3661,7 @@ const getStyles = (isDarkMode) => {
       color: colors.textSub,
     },
     sortChipTextActive: {
-      color: '#ffffff',
+      color: isDarkMode ? '#000000' : '#ffffff',
     }
   });
 };
