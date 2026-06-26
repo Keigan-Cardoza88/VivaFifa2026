@@ -130,6 +130,19 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState(null);
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    return localStorage.getItem('admin_theme') === 'dark';
+  });
+
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('admin_theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('admin_theme', 'light');
+    }
+  }, [isDarkMode]);
 
   // Real-time collections
   const [matches, setMatches] = useState([]);
@@ -836,6 +849,26 @@ function App() {
         <div className="sidebar-brand">
           <span className="sidebar-title">VivaFifa2026</span>
           <span className="sidebar-subtitle">Referee Control</span>
+          <button 
+            onClick={() => setIsDarkMode(!isDarkMode)} 
+            style={{
+              marginTop: '12px',
+              padding: '6px 12px',
+              backgroundColor: 'var(--btn-bg)',
+              color: 'var(--text-main)',
+              border: '1px solid var(--card-border)',
+              borderRadius: '6px',
+              fontSize: '0.8rem',
+              fontWeight: '600',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              transition: 'background-color 0.2s'
+            }}
+          >
+            {isDarkMode ? '☀️ Light' : '🌙 Dark'}
+          </button>
         </div>
 
         <ul className="sidebar-menu">

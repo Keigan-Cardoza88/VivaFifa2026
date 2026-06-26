@@ -171,6 +171,8 @@ const getStartingXI = (players) => {
 };
 
 export default function App() {
+  const [isDarkMode, setIsDarkMode] = useState(true);
+  const styles = getStyles(isDarkMode);
   const [currentUser, setCurrentUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -1030,7 +1032,21 @@ export default function App() {
       <StatusBar barStyle="light-content" />
       <View style={styles.header}>
         <Text style={styles.headerTitle}>VIVAFIFA2026</Text>
-        <Text style={styles.headerUser}>{currentUser.email}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+          <Text style={styles.headerUser}>{currentUser.email}</Text>
+          <TouchableOpacity 
+            onPress={() => setIsDarkMode(!isDarkMode)} 
+            style={{ 
+              padding: 6, 
+              backgroundColor: isDarkMode ? '#1d2024' : '#faf7ee', 
+              borderRadius: 6, 
+              borderWidth: 1, 
+              borderColor: isDarkMode ? 'rgba(255,183,125,0.15)' : 'rgba(62,56,48,0.15)' 
+            }}
+          >
+            <Text style={{ fontSize: 13 }}>{isDarkMode ? '☀️' : '🌙'}</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {isPast9PM && matches.some(m => m.status === 'upcoming' && !myBets[m.matchId]) && (
@@ -2010,1630 +2026,1648 @@ export default function App() {
   );
 }
 
-const styles = StyleSheet.create({
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#f1ebd9',
-  },
-  loadingText: {
-    color: '#82776a',
-    marginTop: 14,
-    fontSize: 16,
-    fontWeight: '600'
-  },
-  appContainer: {
-    flex: 1,
-    backgroundColor: '#f1ebd9',
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight || 24 : 0,
-    width: '100%',
-  },
-  header: {
-    height: 60,
-    borderBottomWidth: 1.5,
-    borderBottomColor: 'rgba(62, 56, 48, 0.12)',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    backgroundColor: '#e8dfc7'
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#b45309',
-    letterSpacing: 1
-  },
-  headerUser: {
-    fontSize: 12,
-    color: '#82776a'
-  },
-  mainScroll: {
-    flex: 1,
-    paddingHorizontal: 16,
-    paddingTop: 16,
-  },
-  loginContainer: {
-    padding: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#f1ebd9',
-    minHeight: '100%',
-    width: '100%',
-    flex: 1,
-  },
-  loginLogo: {
-    fontSize: 32,
-    fontWeight: '900',
-    color: '#b45309',
-    letterSpacing: 2,
-    marginTop: 20
-  },
-  loginSubtitle: {
-    color: '#82776a',
-    fontSize: 14,
-    marginBottom: 40,
-    textTransform: 'uppercase',
-    letterSpacing: 1.5
-  },
-  card: {
-    backgroundColor: 'rgba(250, 247, 238, 0.85)',
-    borderColor: 'rgba(62, 56, 48, 0.12)',
-    borderWidth: 1,
-    borderRadius: 16,
-    padding: 24,
-    width: '100%',
-    marginBottom: 20,
-    shadowColor: '#3e3830',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-  },
-  glassCard: {
-    backgroundColor: 'rgba(250, 247, 238, 0.85)',
-    borderColor: 'rgba(62, 56, 48, 0.15)',
-    borderWidth: 1,
-    backdropFilter: 'blur(10px)', // For web compatibility
-  },
-  cardHeader: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#302b25',
-    marginBottom: 16,
-    textTransform: 'uppercase',
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(62, 56, 48, 0.12)',
-    paddingBottom: 8,
-    textAlign: 'center'
-  },
-  input: {
-    backgroundColor: '#faf7ee',
-    borderWidth: 1.5,
-    borderColor: 'rgba(62, 56, 48, 0.15)',
-    color: '#302b25',
-    borderRadius: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 15,
-    marginBottom: 14,
-  },
-  paymentSelect: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-    gap: 8
-  },
-  paymentLabel: {
-    color: '#82776a',
-    fontSize: 13
-  },
-  paymentBtn: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    backgroundColor: '#e6dcbf',
-    borderRadius: 6,
-  },
-  paymentActive: {
-    backgroundColor: '#b45309',
-    borderWidth: 1,
-    borderColor: '#d97706'
-  },
-  paymentBtnText: {
-    color: '#302b25',
-    fontSize: 12,
-    fontWeight: '700'
-  },
-  btnPrimary: {
-    backgroundColor: '#b45309',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '100%'
-  },
-  btnSuccess: {
-    backgroundColor: '#27773f',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '100%'
-  },
-  btnSecondary: {
-    backgroundColor: '#e6dcbf',
-    paddingVertical: 10,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(62, 56, 48, 0.15)',
-    marginTop: 10,
-    width: '100%'
-  },
-  btnSecondaryText: {
-    color: '#302b25',
-    fontWeight: '700'
-  },
-  btnText: {
-    color: 'white',
-    fontSize: 15,
-    fontWeight: '800',
-  },
-  errorText: {
-    color: '#b92028',
-    fontWeight: '600',
-    marginTop: 12,
-    textAlign: 'center'
-  },
-  warningBanner: {
-    backgroundColor: '#b9202814',
-    borderColor: '#b92028',
-    borderWidth: 1,
-    padding: 10,
-    alignItems: 'center'
-  },
-  warningBannerText: {
-    color: '#b92028',
-    fontSize: 12,
-    fontWeight: '700'
-  },
-  paymentBanner: {
-    backgroundColor: '#d9770614',
-    borderColor: '#d97706',
-    borderWidth: 1,
-    padding: 10,
-    alignItems: 'center'
-  },
-  paymentBannerText: {
-    color: '#d97706',
-    fontSize: 12,
-    fontWeight: '700'
-  },
-  statsCardGrid: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 20,
-    flexWrap: 'wrap'
-  },
-  statWidget: {
-    flex: 1,
-    minWidth: 90,
-    backgroundColor: 'rgba(250, 247, 238, 0.85)',
-    borderColor: 'rgba(62, 56, 48, 0.12)',
-    borderWidth: 1.5,
-    borderLeftWidth: 4,
-    borderRadius: 12,
-    padding: 14,
-    shadowColor: '#3e3830',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-  },
-  statWidgetLabel: {
-    fontSize: 10,
-    color: '#82776a',
-    fontWeight: '800',
-    textTransform: 'uppercase',
-    letterSpacing: 0.8
-  },
-  statWidgetValue: {
-    fontSize: 20,
-    fontWeight: '800',
-    marginTop: 6,
-    color: '#302b25'
-  },
-  analyticsSection: {
-    flexDirection: 'column',
-    gap: 16,
-    marginBottom: 24,
-    width: '100%',
-  },
-  chartCard: {
-    width: '100%',
-    backgroundColor: 'rgba(250, 247, 238, 0.85)',
-    borderColor: 'rgba(62, 56, 48, 0.12)',
-    borderWidth: 1.5,
-    borderRadius: 12,
-    padding: 16,
-    shadowColor: '#3e3830',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-  },
-  ringCard: {
-    width: '100%',
-    backgroundColor: 'rgba(250, 247, 238, 0.85)',
-    borderColor: 'rgba(62, 56, 48, 0.12)',
-    borderWidth: 1.5,
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#3e3830',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-  },
-  chartTitle: {
-    fontSize: 11,
-    color: '#82776a',
-    fontWeight: '800',
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-    marginBottom: 14,
-  },
-  chartFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 10,
-  },
-  chartFooterText: {
-    color: '#82776a',
-    fontSize: 10,
-    fontWeight: '600',
-  },
-  ringContainer: {
-    position: 'relative',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  ringLabelContainer: {
-    position: 'absolute',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  ringPercentText: {
-    fontSize: 15,
-    color: '#b45309',
-    fontWeight: '900',
-  },
-  ringSubText: {
-    fontSize: 8,
-    color: '#82776a',
-    textTransform: 'uppercase',
-    fontWeight: '700',
-  },
-  sectionHeader: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: '#302b25',
-    marginBottom: 14,
-    textTransform: 'uppercase',
-    letterSpacing: 1.2
-  },
-  matchCard: {
-    backgroundColor: 'rgba(250, 247, 238, 0.85)',
-    borderColor: 'rgba(62, 56, 48, 0.12)',
-    borderWidth: 1.5,
-    borderRadius: 14,
-    padding: 18,
-    marginBottom: 16,
-    shadowColor: '#3e3830',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-  },
-  matchHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 12
-  },
-  matchStage: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#b45309',
-    letterSpacing: 0.5
-  },
-  matchTime: {
-    fontSize: 11,
-    color: '#82776a',
-    fontWeight: '600'
-  },
-  matchTeamsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 14,
-    gap: 12
-  },
-  matchTeamText: {
-    color: '#302b25',
-    fontSize: 15,
-    fontWeight: '700',
-    flex: 1,
-    textAlign: 'center'
-  },
-  matchVS: {
-    color: '#b45309',
-    backgroundColor: '#e6dcbf',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    fontWeight: '900',
-    fontSize: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(62, 56, 48, 0.15)',
-    overflow: 'hidden',
-  },
-  scoreText: {
-    color: '#b45309',
-    fontWeight: '800',
-    fontSize: 16,
-    marginHorizontal: 10
-  },
-  matchFooterRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderTopWidth: 1.5,
-    borderTopColor: 'rgba(62, 56, 48, 0.12)',
-    paddingTop: 14,
-    marginTop: 8
-  },
-  betPlacedBadge: {
-    backgroundColor: '#27773f14',
-    borderColor: '#27773f',
-    borderWidth: 1,
-    borderRadius: 6,
-    paddingVertical: 5,
-    paddingHorizontal: 10
-  },
-  betPlacedText: {
-    color: '#27773f',
-    fontSize: 11,
-    fontWeight: '700'
-  },
-  noBetPlacedText: {
-    color: '#b92028',
-    fontSize: 11,
-    fontWeight: '700'
-  },
-  lockedBadge: {
-    backgroundColor: '#e6dcbf',
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: 'rgba(62, 56, 48, 0.15)'
-  },
-  lockedText: {
-    color: '#82776a',
-    fontSize: 10,
-    fontWeight: '800'
-  },
-  btnAction: {
-    backgroundColor: '#b45309',
-    paddingVertical: 6,
-    paddingHorizontal: 14,
-    borderRadius: 6,
-    shadowColor: '#b45309',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-  },
-  btnActionText: {
-    color: 'white',
-    fontWeight: '700',
-    fontSize: 12
-  },
-  toggleRow: {
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: 18
-  },
-  toggleBtn: {
-    flex: 1,
-    paddingVertical: 12,
-    backgroundColor: '#e6dcbf',
-    borderColor: 'rgba(62, 56, 48, 0.12)',
-    borderWidth: 1.5,
-    borderRadius: 10,
-    alignItems: 'center',
-    shadowColor: '#3e3830',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-  },
-  toggleActive: {
-    backgroundColor: '#b45309',
-    borderColor: '#d97706'
-  },
-  toggleText: {
-    color: '#302b25',
-    fontWeight: '700',
-    fontSize: 13
-  },
-  tableCard: {
-    backgroundColor: 'rgba(250, 247, 238, 0.85)',
-    borderColor: 'rgba(62, 56, 48, 0.12)',
-    borderWidth: 1,
-    borderRadius: 14,
-    paddingVertical: 8,
-    shadowColor: '#3e3830',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-    backdropFilter: 'blur(10px)',
-  },
-  tableHeaderRow: {
-    flexDirection: 'row',
-    paddingHorizontal: 18,
-    paddingVertical: 12,
-    borderBottomWidth: 1.5,
-    borderBottomColor: 'rgba(62, 56, 48, 0.12)'
-  },
-  tableHeadCell: {
-    color: '#82776a',
-    fontSize: 11,
-    fontWeight: '800',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5
-  },
-  tableDataRow: {
-    flexDirection: 'row',
-    paddingHorizontal: 18,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(62, 56, 48, 0.08)',
-    alignItems: 'center'
-  },
-  meRow: {
-    backgroundColor: '#b4530914',
-    borderWidth: 1.5,
-    borderColor: '#b45309',
-  },
-  tableCell: {
-    color: '#302b25',
-    fontSize: 14
-  },
-  historyCard: {
-    backgroundColor: 'rgba(250, 247, 238, 0.85)',
-    borderColor: 'rgba(62, 56, 48, 0.12)',
-    borderWidth: 1,
-    borderRadius: 14,
-    padding: 18,
-    marginBottom: 16,
-    shadowColor: '#3e3830',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    backdropFilter: 'blur(10px)',
-  },
-  historyBetRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
-    borderTopWidth: 1.5,
-    borderTopColor: 'rgba(62, 56, 48, 0.12)',
-    paddingTop: 14,
-    marginTop: 8
-  },
-  historyBetTitle: {
-    fontSize: 10,
-    color: '#82776a',
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5
-  },
-  historyBetValue: {
-    fontSize: 13,
-    color: '#302b25',
-    fontWeight: '700',
-    marginTop: 4
-  },
-  historyNoBet: {
-    color: '#b92028',
-    fontWeight: '700',
-    fontSize: 12
-  },
-  payoutText: {
-    fontSize: 20,
-    fontWeight: '900',
-    marginTop: 2
-  },
-  badge: {
-    paddingVertical: 3,
-    paddingHorizontal: 8,
-    borderRadius: 6,
-  },
-  badgeWin: {
-    backgroundColor: '#27773f14',
-    borderColor: '#27773f',
-    borderWidth: 0.8
-  },
-  badgeLoss: {
-    backgroundColor: '#b9202814',
-    borderColor: '#b92028',
-    borderWidth: 0.8
-  },
-  badgeRefund: {
-    backgroundColor: '#94a3b820',
-    borderColor: '#94a3b8',
-    borderWidth: 0.8
-  },
-  badgeText: {
-    fontSize: 9,
-    fontWeight: '800',
-    color: '#302b25',
-    textTransform: 'uppercase'
-  },
-  bracketStageCard: {
-    backgroundColor: 'rgba(250, 247, 238, 0.85)',
-    borderColor: 'rgba(62, 56, 48, 0.12)',
-    borderWidth: 1,
-    borderRadius: 14,
-    padding: 18,
-    marginBottom: 16,
-    shadowColor: '#3e3830',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    backdropFilter: 'blur(10px)',
-  },
-  bracketStageTitle: {
-    color: '#b45309',
-    fontWeight: '800',
-    fontSize: 13,
-    marginBottom: 12,
-    borderBottomWidth: 1.5,
-    borderBottomColor: 'rgba(62, 56, 48, 0.12)',
-    paddingBottom: 8,
-    textTransform: 'uppercase',
-    letterSpacing: 0.8
-  },
-  bracketMatchRow: {
-    flexDirection: 'row',
-    paddingVertical: 8,
-    alignItems: 'center',
-    gap: 8
-  },
-  bracketTeamLeft: {
-    color: '#302b25',
-    fontWeight: '700',
-    fontSize: 13,
-    flex: 1,
-    textAlign: 'left'
-  },
-  bracketTeamRight: {
-    color: '#302b25',
-    fontWeight: '700',
-    fontSize: 13,
-    textAlign: 'right'
-  },
-  bracketRightContainer: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-    gap: 8
-  },
-  bracketVs: {
-    color: '#82776a',
-    fontSize: 11,
-    width: 24,
-    textAlign: 'center'
-  },
-  bracketWinner: {
-    color: '#27773f',
-    fontWeight: '800',
-    fontSize: 12
-  },
-  profileCard: {
-    backgroundColor: 'rgba(250, 247, 238, 0.85)',
-    borderColor: 'rgba(62, 56, 48, 0.12)',
-    borderWidth: 1.5,
-    borderRadius: 14,
-    padding: 24,
-    alignItems: 'center',
-    shadowColor: '#3e3830',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-  },
-  profileName: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: '#302b25'
-  },
-  profileEmail: {
-    color: '#82776a',
-    fontSize: 14,
-    marginTop: 4
-  },
-  profileDivider: {
-    height: 1.5,
-    backgroundColor: 'rgba(62, 56, 48, 0.12)',
-    width: '100%',
-    marginVertical: 20
-  },
-  profileRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-    marginBottom: 14
-  },
-  profileLabel: {
-    color: '#82776a',
-    fontSize: 14,
-    fontWeight: '600'
-  },
-  profileValue: {
-    color: '#302b25',
-    fontWeight: '700',
-    fontSize: 14
-  },
-  footerTabBar: {
-    height: 56,
-    borderTopWidth: 1.5,
-    borderTopColor: 'rgba(62, 56, 48, 0.12)',
-    flexDirection: 'row',
-    backgroundColor: '#e8dfc7',
-    paddingBottom: 0,
-  },
-  tabItem: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 8,
-  },
-  tabActive: {
-    borderTopWidth: 3,
-    borderTopColor: '#b45309',
-    backgroundColor: '#faf7ee'
-  },
-  tabText: {
-    color: '#82776a',
-    fontSize: 11,
-    fontWeight: '700'
-  },
-  modalOverlay: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(62, 56, 48, 0.4)',
-    padding: 20
-  },
-  modalContent: {
-    backgroundColor: '#f1ebd9',
-    borderColor: '#b45309',
-    borderWidth: 2,
-    borderRadius: 16,
-    padding: 24,
-    width: '100%',
-    maxWidth: 360,
-    shadowColor: '#3e3830',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.12,
-    shadowRadius: 15,
-  },
-  confirmContent: {
-    backgroundColor: '#f1ebd9',
-    borderColor: '#b92028',
-    borderWidth: 2,
-    borderRadius: 16,
-    padding: 24,
-    width: '100%',
-    maxWidth: 340,
-    shadowColor: '#3e3830',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.12,
-    shadowRadius: 15,
-  },
-  modalHeader: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#302b25',
-    textAlign: 'center',
-    textTransform: 'uppercase',
-    letterSpacing: 0.8
-  },
-  confirmHeader: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#b92028',
-    textAlign: 'center',
-    textTransform: 'uppercase',
-    letterSpacing: 0.8
-  },
-  modalSubHeader: {
-    color: '#82776a',
-    textAlign: 'center',
-    fontSize: 13,
-    marginBottom: 20
-  },
-  confirmWarning: {
-    color: '#d97706',
-    fontSize: 12,
-    fontWeight: '700',
-    textAlign: 'center',
-    marginVertical: 12,
-    lineHeight: 18
-  },
-  confirmDetails: {
-    backgroundColor: '#faf7ee',
-    padding: 16,
-    borderRadius: 10,
-    marginVertical: 14,
-    gap: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(62, 56, 48, 0.15)'
-  },
-  confirmText: {
-    color: '#302b25',
-    fontSize: 14
-  },
-  inputLabel: {
-    color: '#82776a',
-    fontSize: 12,
-    fontWeight: '700',
-    marginBottom: 8,
-    marginTop: 14,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5
-  },
-  teamSelectRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  teamSelectBtn: {
-    flex: 1,
-    paddingVertical: 10,
-    backgroundColor: '#e6dcbf',
-    borderRadius: 8,
-    alignItems: 'center',
-    borderWidth: 1.5,
-    borderColor: 'rgba(62, 56, 48, 0.15)'
-  },
-  teamSelectActive: {
-    backgroundColor: '#b45309',
-    borderColor: '#d97706'
-  },
-  teamSelectText: {
-    color: '#302b25',
-    fontSize: 12,
-    fontWeight: '800',
-    textAlign: 'center'
-  },
-  scoreInputRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 12,
-    marginVertical: 12
-  },
-  scoreInput: {
-    backgroundColor: '#faf7ee',
-    borderWidth: 2,
-    borderColor: 'rgba(62, 56, 48, 0.15)',
-    color: '#302b25',
-    fontSize: 24,
-    fontWeight: '800',
-    width: 65,
-    height: 55,
-    textAlign: 'center',
-    borderRadius: 10
-  },
-  scoreDivider: {
-    color: '#302b25',
-    fontSize: 24,
-    fontWeight: '800',
-    marginTop: 20
-  },
-  modalError: {
-    color: '#b92028',
-    fontSize: 12,
-    fontWeight: '700',
-    marginTop: 12,
-    textAlign: 'center'
-  },
-  modalBtnRow: {
-    flexDirection: 'column',
-    gap: 10,
-    marginTop: 20
-  },
-  // Ambient Glows
-  ambientGlow1: {
-    position: 'absolute',
-    top: -120,
-    left: -120,
-    width: 350,
-    height: 350,
-    borderRadius: 175,
-    backgroundColor: 'rgba(180, 83, 9, 0.1)',
-    filter: 'blur(80px)',
-    pointerEvents: 'none',
-  },
-  ambientGlow2: {
-    position: 'absolute',
-    bottom: 80,
-    right: -150,
-    width: 450,
-    height: 450,
-    borderRadius: 225,
-    backgroundColor: 'rgba(217, 119, 6, 0.05)',
-    filter: 'blur(100px)',
-    pointerEvents: 'none',
-  },
-  // Highlight Consensus Card
-  mainConsensusCard: {
-    padding: 20,
-    borderRadius: 16,
-    marginBottom: 24,
-    shadowColor: '#3e3830',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-  },
-  consensusHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  consensusHeaderLabel: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: '#b45309',
-    letterSpacing: 1.2,
-  },
-  liveBadge: {
-    backgroundColor: '#00c85320',
-    borderColor: '#00c853',
-    borderWidth: 1.2,
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-  },
-  liveBadgeText: {
-    color: '#00c853',
-    fontSize: 9,
-    fontWeight: '900',
-  },
-  consensusTeamsRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 20,
-    gap: 14,
-  },
-  consensusTeamContainer: {
-    flex: 1,
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 6,
-  },
-  consensusTeamFlag: {
-    fontSize: 24,
-  },
-  consensusTeamName: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#302b25',
-  },
-  consensusVs: {
-    fontSize: 11,
-    fontWeight: '900',
-    color: '#b45309',
-    backgroundColor: '#e6dcbf',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: 'rgba(62, 56, 48, 0.15)',
-    overflow: 'hidden',
-  },
-  consensusStatsRow: {
-    marginBottom: 8,
-  },
-  consensusStatLabel: {
-    fontSize: 12,
-    color: '#82776a',
-    fontWeight: '700',
-  },
-  consensusBar: {
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: '#e6dcbf',
-    flexDirection: 'row',
-    overflow: 'hidden',
-    width: '100%',
-    borderWidth: 1,
-    borderColor: 'rgba(62, 56, 48, 0.15)',
-  },
-  consensusBarSegment: {
-    height: '100%',
-  },
-  consensusLabelsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 8,
-  },
-  consensusLabelText: {
-    fontSize: 11,
-    fontWeight: '800',
-  },
-  consensusTotalLabel: {
-    fontSize: 10,
-    color: '#82776a',
-    textAlign: 'center',
-    marginTop: 10,
-    fontWeight: '600',
-  },
-  consensusActionButton: {
-    backgroundColor: '#b45309',
-    paddingVertical: 10,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#d97706',
-    shadowColor: '#b45309',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-  },
-  consensusActionText: {
-    color: '#ffffff',
-    fontSize: 13,
-    fontWeight: '800',
-  },
-  // Expanded Bets Table Styles
-  expandedBetsContainer: {
-    marginTop: 16,
-    width: '100%',
-  },
-  expandedBetsDivider: {
-    height: 1.5,
-    backgroundColor: 'rgba(62, 56, 48, 0.12)',
-    marginBottom: 12,
-  },
-  expandedBetsTitle: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: '#b45309',
-    marginBottom: 10,
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-  },
-  expandedBetsEmpty: {
-    fontSize: 12,
-    color: '#82776a',
-    textAlign: 'center',
-    paddingVertical: 10,
-  },
-  expandedBetsTableContainer: {
-    // Allows the container to expand dynamically to full width on desktop 
-    alignItems: 'stretch',
-  },
-  expandedBetsTable: {
-    borderWidth: 1,
-    borderColor: 'rgba(62, 56, 48, 0.12)',
-    // This pair tells it: "Fill 100% of desktop, but never shrink below 650 on mobile"
-    width: '100%',
-    minWidth: 650,
-    flexDirection: 'column',
-    borderRadius: 8,
-    overflow: 'hidden',
-    backgroundColor: '#faf7ee',
-  },
-  expandedBetsHeader: {
-    flexDirection: 'row',
-    width: '100%',
-    backgroundColor: '#e6dcbf',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(62, 56, 48, 0.12)',
-  },
-  expandedBetsHeadCell: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#82776a',
-    textTransform: 'uppercase',
-  },
-  expandedBetsRow: {
-    flexDirection: 'row',
-    width: '100%',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderBottomWidth: 0.8,
-    borderBottomColor: 'rgba(62, 56, 48, 0.08)',
-    alignItems: 'center',
-  },
-  expandedBetsCell: {
-    fontSize: 12,
-    color: '#302b25',
-  },
-  // Bracket Zoom & Flowchart Styles
-  bracketHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  zoomControls: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(230, 220, 191, 0.8)',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(62, 56, 48, 0.15)',
-    paddingHorizontal: 6,
-    paddingVertical: 4,
-    gap: 8,
-  },
-  zoomBtn: {
-    backgroundColor: '#b45309',
-    width: 24,
-    height: 24,
-    borderRadius: 6,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  zoomBtnText: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '800',
-  },
-  zoomText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#302b25',
-    minWidth: 32,
-    textAlign: 'center',
-  },
-  zoomResetBtn: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    backgroundColor: '#faf7ee',
-    borderRadius: 4,
-    borderWidth: 1,
-    borderColor: 'rgba(62, 56, 48, 0.15)',
-  },
-  zoomResetText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#82776a',
-  },
-  bracketHorizontalScroll: {
-    flexDirection: 'row',
-    width: '100%',
-    marginTop: 10,
-    backgroundColor: 'rgba(232, 223, 199, 0.3)',
-    borderRadius: 14,
-    paddingVertical: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(62, 56, 48, 0.08)',
-  },
-  bracketHorizontalScrollContent: {
-    paddingRight: 50,
-  },
-  bracketScaleContainer: {
-    flexDirection: 'row',
-    height: 1450,
-    transformOrigin: 'top left',
-    paddingHorizontal: 15,
-  },
-  bracketColumn: {
-    width: 230,
-    marginRight: 24,
-    height: '100%',
-  },
-  bracketColumnTitle: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: '#b45309',
-    textTransform: 'uppercase',
-    textAlign: 'center',
-    letterSpacing: 0.8,
-    marginBottom: 16,
-    backgroundColor: '#e6dcbf',
-    paddingVertical: 6,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(62, 56, 48, 0.12)',
-  },
-  bracketColumnMatches: {
-    flex: 1,
-    justifyContent: 'space-around',
-    paddingVertical: 10,
-  },
-  bracketMatchCard: {
-    width: '100%',
-    padding: 10,
-    borderRadius: 10,
-    shadowColor: '#3e3830',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    position: 'relative',
-  },
-  bracketTeamRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 4,
-  },
-  bracketTeamLost: {
-    opacity: 0.5,
-  },
-  bracketTeamText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#302b25',
-    flex: 1,
-  },
-  bracketScore: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: '#b45309',
-    marginLeft: 6,
-  },
-  bracketVsContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginVertical: 2,
-    gap: 8,
-  },
-  bracketVsLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: 'rgba(62, 56, 48, 0.1)',
-  },
-  bracketVsTextCard: {
-    fontSize: 9,
-    fontWeight: '800',
-    color: '#82776a',
-    letterSpacing: 0.5,
-  },
-  thirdPlaceBadge: {
-    position: 'absolute',
-    bottom: -8,
-    right: 8,
-    backgroundColor: '#74acdf',
-    borderRadius: 4,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-  },
-  thirdPlaceBadgeText: {
-    color: '#ffffff',
-    fontSize: 8,
-    fontWeight: '800',
-    textTransform: 'uppercase',
-  },
+const getStyles = (isDarkMode) => {
+  const colors = {
+    bg: isDarkMode ? '#111417' : '#f1ebd9',
+    headerBg: isDarkMode ? '#1d2024' : '#e8dfc7',
+    headerBorder: isDarkMode ? 'rgba(255, 183, 125, 0.12)' : 'rgba(62, 56, 48, 0.12)',
+    cardBg: isDarkMode ? 'rgba(30, 34, 45, 0.7)' : 'rgba(250, 247, 238, 0.85)',
+    cardBorder: isDarkMode ? 'rgba(255, 183, 125, 0.12)' : 'rgba(62, 56, 48, 0.12)',
+    textMain: isDarkMode ? '#e1e2e8' : '#302b25',
+    textSub: isDarkMode ? '#a38c7c' : '#82776a',
+    inputBg: isDarkMode ? '#1d2024' : '#faf7ee',
+    inputBorder: isDarkMode ? 'rgba(255, 183, 125, 0.15)' : 'rgba(62, 56, 48, 0.15)',
+    primary: isDarkMode ? '#ffb77d' : '#b45309',
+    primaryBorder: isDarkMode ? '#ffb77d' : '#d97706',
+    btnSecondaryBg: isDarkMode ? '#1d2024' : '#e6dcbf',
+    shadowColor: isDarkMode ? '#000000' : '#3e3830',
+    navBg: isDarkMode ? '#1d2024' : '#e8dfc7',
+    navBorder: isDarkMode ? 'rgba(255, 183, 125, 0.12)' : 'rgba(62, 56, 48, 0.15)',
+  };
 
-  // Teams Selector Tab Styles
-  groupScroll: {
-    marginBottom: 12,
-  },
-  groupBtn: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    backgroundColor: '#e6dcbf',
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(62, 56, 48, 0.15)',
-  },
-  groupBtnActive: {
-    backgroundColor: '#b45309',
-    borderColor: '#d97706',
-  },
-  groupBtnText: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: '#302b25',
-  },
-  groupBtnTextActive: {
-    color: '#ffffff',
-  },
-  teamSelectorGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 16,
-    justifyContent: 'space-between',
-  },
-  teamGridBtn: {
-    width: '48%',
-    backgroundColor: 'rgba(230, 220, 191, 0.6)',
-    borderWidth: 1,
-    borderColor: 'rgba(62, 56, 48, 0.12)',
-    borderRadius: 10,
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  teamGridBtnActive: {
-    backgroundColor: '#faf7ee',
-    borderColor: '#b45309',
-    borderWidth: 1.5,
-  },
-  teamGridFlag: {
-    fontSize: 16,
-  },
-  teamGridName: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#82776a',
-    flex: 1,
-  },
-  teamGridNameActive: {
-    color: '#b45309',
-    fontWeight: '800',
-  },
-  teamDetailsCard: {
-    padding: 16,
-    borderRadius: 14,
-    shadowColor: '#3e3830',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-  },
-  teamDetailsHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderBottomWidth: 1.5,
-    borderBottomColor: 'rgba(62, 56, 48, 0.12)',
-    paddingBottom: 12,
-    marginBottom: 12,
-  },
-  teamDetailsTitle: {
-    fontSize: 20,
-    fontWeight: '900',
-    color: '#302b25',
-  },
-  teamDetailsSub: {
-    fontSize: 11,
-    color: '#82776a',
-    fontWeight: '600',
-  },
-  avgRatingWidget: {
-    backgroundColor: '#b4530914',
-    borderWidth: 1,
-    borderColor: '#b4530930',
-    borderRadius: 8,
-    padding: 6,
-    alignItems: 'center',
-  },
-  avgRatingLabel: {
-    fontSize: 8,
-    color: '#82776a',
-    fontWeight: '800',
-  },
-  avgRatingVal: {
-    fontSize: 18,
-    fontWeight: '900',
-    color: '#b45309',
-  },
-  viewModeToggleRow: {
-    flexDirection: 'row',
-    backgroundColor: '#e6dcbf',
-    borderRadius: 8,
-    padding: 3,
-    marginBottom: 14,
-  },
-  viewModeBtn: {
-    flex: 1,
-    paddingVertical: 8,
-    alignItems: 'center',
-    borderRadius: 6,
-  },
-  viewModeBtnActive: {
-    backgroundColor: '#faf7ee',
-    shadowColor: '#3e3830',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-  },
-  viewModeText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#82776a',
-  },
-  viewModeTextActive: {
-    color: '#b45309',
-    fontWeight: '800',
-  },
-  statsSummaryBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    backgroundColor: '#faf7ee',
-    borderRadius: 8,
-    paddingVertical: 8,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(62, 56, 48, 0.1)',
-  },
-  statsSummaryText: {
-    fontSize: 11,
-    color: '#82776a',
-    fontWeight: '600',
-  },
-  posSection: {
-    marginBottom: 16,
-  },
-  posSectionTitle: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: '#302b25',
-    textTransform: 'uppercase',
-    marginBottom: 10,
-    backgroundColor: '#e6dcbf60',
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderRadius: 6,
-    overflow: 'hidden',
-  },
-  playerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 8,
-    borderBottomWidth: 0.8,
-    borderBottomColor: 'rgba(62, 56, 48, 0.06)',
-  },
-  playerInfoCol: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  playerName: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#302b25',
-  },
-  playerPositionBadge: {
-    fontSize: 9,
-    fontWeight: '800',
-    backgroundColor: 'rgba(62, 56, 48, 0.1)',
-    color: '#82776a',
-    paddingHorizontal: 5,
-    paddingVertical: 2,
-    borderRadius: 4,
-    overflow: 'hidden',
-  },
-  playerRatingsCol: {
-    flexDirection: 'row',
-    gap: 12,
-    minWidth: 140,
-  },
-  ratingBarContainer: {
-    flex: 1,
-  },
-  ratingSubLabel: {
-    fontSize: 8,
-    color: '#82776a',
-    fontWeight: '700',
-    marginBottom: 2,
-  },
-  ratingTrack: {
-    height: 4,
-    backgroundColor: 'rgba(62, 56, 48, 0.1)',
-    borderRadius: 2,
-    overflow: 'hidden',
-  },
-  ratingBar: {
-    height: '100%',
-    borderRadius: 2,
-  },
-
-  // Football Pitch Styles
-  pitchIntroText: {
-    fontSize: 12,
-    color: '#82776a',
-    fontWeight: '600',
-    marginBottom: 12,
-    textAlign: 'center',
-  },
-  footballPitch: {
-    height: 340,
-    width: '100%',
-    backgroundColor: '#1b4d22',
-    backgroundImage: 'linear-gradient(180deg, #1b4d22 0%, #2e7d32 100%)',
-    borderRadius: 14,
-    borderWidth: 3,
-    borderColor: '#ffffff50',
-    position: 'relative',
-    overflow: 'hidden',
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-  },
-  pitchCenterCircle: {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    borderWidth: 2,
-    borderColor: '#ffffff30',
-    marginTop: -40,
-    marginLeft: -40,
-  },
-  pitchCenterLine: {
-    position: 'absolute',
-    top: '50%',
-    left: 0,
-    right: 0,
-    height: 2,
-    backgroundColor: '#ffffff30',
-  },
-  pitchPenaltyBoxTop: {
-    position: 'absolute',
-    top: 0,
-    left: '50%',
-    width: 140,
-    height: 60,
-    borderWidth: 2,
-    borderColor: '#ffffff30',
-    borderTopWidth: 0,
-    marginLeft: -70,
-  },
-  pitchPenaltyBoxBottom: {
-    position: 'absolute',
-    bottom: 0,
-    left: '50%',
-    width: 140,
-    height: 60,
-    borderWidth: 2,
-    borderColor: '#ffffff30',
-    borderBottomWidth: 0,
-    marginLeft: -70,
-  },
-  pitchPlayerNode: {
-    position: 'absolute',
-    width: 62,
-    marginLeft: -31,
-    alignItems: 'center',
-    zIndex: 10,
-  },
-  pitchPlayerCircle: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    backgroundColor: '#ffffff',
-    borderWidth: 2.5,
-    borderColor: '#b45309',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 2,
-  },
-  pitchPlayerCircleVal: {
-    fontSize: 10,
-    fontWeight: '900',
-    color: '#302b25',
-  },
-  pitchPlayerName: {
-    color: '#ffffff',
-    fontSize: 9,
-    fontWeight: '800',
-    marginTop: 2,
-    textAlign: 'center',
-    textShadowColor: 'rgba(0, 0, 0, 0.8)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
-  },
-  pitchPlayerNodeText: {
-    color: '#ffffff',
-    fontSize: 9,
-    fontWeight: '800',
-    marginTop: 2,
-    textAlign: 'center',
-  },
-  pitchPlayerRole: {
-    color: '#ffd700',
-    fontSize: 7,
-    fontWeight: '900',
-    textTransform: 'uppercase',
-    textShadowColor: 'rgba(0, 0, 0, 0.8)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
-  },
-  substitutesHeader: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#302b25',
-    textTransform: 'uppercase',
-    marginTop: 20,
-    marginBottom: 10,
-    borderBottomWidth: 1.5,
-    borderBottomColor: 'rgba(62, 56, 48, 0.12)',
-    paddingBottom: 4,
-  },
-  substitutesGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  subCard: {
-    width: '48%',
-    backgroundColor: 'rgba(62, 56, 48, 0.05)',
-    borderRadius: 8,
-    padding: 8,
-    borderWidth: 0.8,
-    borderColor: 'rgba(62, 56, 48, 0.08)',
-  },
-  subName: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#302b25',
-  },
-  subMeta: {
-    fontSize: 9,
-    color: '#82776a',
-    marginTop: 2,
-    fontWeight: '600',
-  },
-  sortContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-    paddingHorizontal: 4,
-  },
-  sortLabel: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: '#82776a',
-    marginRight: 8,
-    textTransform: 'uppercase',
-  },
-  sortChipsScroll: {
-    gap: 8,
-    alignItems: 'center',
-  },
-  sortChip: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 20,
-    backgroundColor: 'rgba(62, 56, 48, 0.05)',
-    borderWidth: 1,
-    borderColor: 'rgba(62, 56, 48, 0.1)',
-  },
-  sortChipActive: {
-    backgroundColor: '#b45309',
-    borderColor: '#b45309',
-  },
-  sortChipText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#82776a',
-  },
-  sortChipTextActive: {
-    color: '#ffffff',
-  }
-});
+  return StyleSheet.create({
+    loadingContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: colors.bg,
+    },
+    loadingText: {
+      color: colors.textSub,
+      marginTop: 14,
+      fontSize: 16,
+      fontWeight: '600'
+    },
+    appContainer: {
+      flex: 1,
+      backgroundColor: colors.bg,
+      paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight || 24 : 0,
+      width: '100%',
+    },
+    header: {
+      height: 60,
+      borderBottomWidth: 1.5,
+      borderBottomColor: colors.headerBorder,
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: 20,
+      backgroundColor: colors.headerBg
+    },
+    headerTitle: {
+      fontSize: 18,
+      fontWeight: '800',
+      color: colors.primary,
+      letterSpacing: 1
+    },
+    headerUser: {
+      fontSize: 12,
+      color: colors.textSub
+    },
+    mainScroll: {
+      flex: 1,
+      paddingHorizontal: 16,
+      paddingTop: 16,
+    },
+    loginContainer: {
+      padding: 24,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: colors.bg,
+      minHeight: '100%',
+      width: '100%',
+      flex: 1,
+    },
+    loginLogo: {
+      fontSize: 32,
+      fontWeight: '900',
+      color: colors.primary,
+      letterSpacing: 2,
+      marginTop: 20
+    },
+    loginSubtitle: {
+      color: colors.textSub,
+      fontSize: 14,
+      marginBottom: 40,
+      textTransform: 'uppercase',
+      letterSpacing: 1.5
+    },
+    card: {
+      backgroundColor: colors.cardBg,
+      borderColor: colors.cardBorder,
+      borderWidth: 1,
+      borderRadius: 16,
+      padding: 24,
+      width: '100%',
+      marginBottom: 20,
+      shadowColor: colors.shadowColor,
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.1,
+      shadowRadius: 10,
+    },
+    glassCard: {
+      backgroundColor: colors.cardBg,
+      borderColor: colors.cardBorder,
+      borderWidth: 1,
+      backdropFilter: 'blur(10px)',
+    },
+    cardHeader: {
+      fontSize: 16,
+      fontWeight: '800',
+      color: colors.textMain,
+      marginBottom: 16,
+      textTransform: 'uppercase',
+      borderBottomWidth: 1,
+      borderBottomColor: colors.cardBorder,
+      paddingBottom: 8,
+      textAlign: 'center'
+    },
+    input: {
+      backgroundColor: colors.inputBg,
+      borderWidth: 1.5,
+      borderColor: colors.inputBorder,
+      color: colors.textMain,
+      borderRadius: 8,
+      paddingHorizontal: 14,
+      paddingVertical: 12,
+      fontSize: 15,
+      marginBottom: 14,
+    },
+    paymentSelect: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 16,
+      gap: 8
+    },
+    paymentLabel: {
+      color: colors.textSub,
+      fontSize: 13
+    },
+    paymentBtn: {
+      paddingVertical: 6,
+      paddingHorizontal: 12,
+      backgroundColor: colors.btnSecondaryBg,
+      borderRadius: 6,
+    },
+    paymentActive: {
+      backgroundColor: colors.primary,
+      borderWidth: 1,
+      borderColor: colors.primaryBorder
+    },
+    paymentBtnText: {
+      color: colors.textMain,
+      fontSize: 12,
+      fontWeight: '700'
+    },
+    btnPrimary: {
+      backgroundColor: colors.primary,
+      paddingVertical: 12,
+      paddingHorizontal: 20,
+      borderRadius: 8,
+      alignItems: 'center',
+      justifyContent: 'center',
+      width: '100%'
+    },
+    btnSuccess: {
+      backgroundColor: '#27773f',
+      paddingVertical: 12,
+      paddingHorizontal: 20,
+      borderRadius: 8,
+      alignItems: 'center',
+      justifyContent: 'center',
+      width: '100%'
+    },
+    btnSecondary: {
+      backgroundColor: colors.btnSecondaryBg,
+      paddingVertical: 10,
+      borderRadius: 8,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+      marginTop: 10,
+      width: '100%'
+    },
+    btnSecondaryText: {
+      color: colors.textMain,
+      fontWeight: '700'
+    },
+    btnText: {
+      color: 'white',
+      fontSize: 15,
+      fontWeight: '800',
+    },
+    errorText: {
+      color: '#b92028',
+      fontWeight: '600',
+      marginTop: 12,
+      textAlign: 'center'
+    },
+    warningBanner: {
+      backgroundColor: '#b9202814',
+      borderColor: '#b92028',
+      borderWidth: 1,
+      padding: 10,
+      alignItems: 'center'
+    },
+    warningBannerText: {
+      color: '#b92028',
+      fontSize: 12,
+      fontWeight: '700'
+    },
+    paymentBanner: {
+      backgroundColor: '#d9770614',
+      borderColor: '#d97706',
+      borderWidth: 1,
+      padding: 10,
+      alignItems: 'center'
+    },
+    paymentBannerText: {
+      color: '#d97706',
+      fontSize: 12,
+      fontWeight: '700'
+    },
+    statsCardGrid: {
+      flexDirection: 'row',
+      gap: 12,
+      marginBottom: 20,
+      flexWrap: 'wrap'
+    },
+    statWidget: {
+      flex: 1,
+      minWidth: 90,
+      backgroundColor: colors.cardBg,
+      borderColor: colors.cardBorder,
+      borderWidth: 1.5,
+      borderLeftWidth: 4,
+      borderRadius: 12,
+      padding: 14,
+      shadowColor: colors.shadowColor,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.08,
+      shadowRadius: 6,
+    },
+    statWidgetLabel: {
+      fontSize: 10,
+      color: colors.textSub,
+      fontWeight: '800',
+      textTransform: 'uppercase',
+      letterSpacing: 0.8
+    },
+    statWidgetValue: {
+      fontSize: 20,
+      fontWeight: '800',
+      marginTop: 6,
+      color: colors.textMain
+    },
+    analyticsSection: {
+      flexDirection: 'column',
+      gap: 16,
+      marginBottom: 24,
+      width: '100%',
+    },
+    chartCard: {
+      width: '100%',
+      backgroundColor: colors.cardBg,
+      borderColor: colors.cardBorder,
+      borderWidth: 1.5,
+      borderRadius: 12,
+      padding: 16,
+      shadowColor: colors.shadowColor,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.08,
+      shadowRadius: 8,
+    },
+    ringCard: {
+      width: '100%',
+      backgroundColor: colors.cardBg,
+      borderColor: colors.cardBorder,
+      borderWidth: 1.5,
+      borderRadius: 12,
+      padding: 16,
+      alignItems: 'center',
+      justifyContent: 'center',
+      shadowColor: colors.shadowColor,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.08,
+      shadowRadius: 8,
+    },
+    chartTitle: {
+      fontSize: 11,
+      color: colors.textSub,
+      fontWeight: '800',
+      textTransform: 'uppercase',
+      letterSpacing: 0.8,
+      marginBottom: 14,
+    },
+    chartFooter: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginTop: 10,
+    },
+    chartFooterText: {
+      color: colors.textSub,
+      fontSize: 10,
+      fontWeight: '600',
+    },
+    ringContainer: {
+      position: 'relative',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    ringLabelContainer: {
+      position: 'absolute',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    ringPercentText: {
+      fontSize: 15,
+      color: colors.primary,
+      fontWeight: '900',
+    },
+    ringSubText: {
+      fontSize: 8,
+      color: colors.textSub,
+      textTransform: 'uppercase',
+      fontWeight: '700',
+    },
+    sectionHeader: {
+      fontSize: 15,
+      fontWeight: '800',
+      color: colors.textMain,
+      marginBottom: 14,
+      textTransform: 'uppercase',
+      letterSpacing: 1.2
+    },
+    matchCard: {
+      backgroundColor: colors.cardBg,
+      borderColor: colors.cardBorder,
+      borderWidth: 1.5,
+      borderRadius: 14,
+      padding: 18,
+      marginBottom: 16,
+      shadowColor: colors.shadowColor,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.08,
+      shadowRadius: 6,
+    },
+    matchHeaderRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginBottom: 12
+    },
+    matchStage: {
+      fontSize: 10,
+      fontWeight: '800',
+      color: colors.primary,
+      letterSpacing: 0.5
+    },
+    matchTime: {
+      fontSize: 11,
+      color: colors.textSub,
+      fontWeight: '600'
+    },
+    matchTeamsContainer: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingVertical: 14,
+      gap: 12
+    },
+    matchTeamText: {
+      color: colors.textMain,
+      fontSize: 15,
+      fontWeight: '700',
+      flex: 1,
+      textAlign: 'center'
+    },
+    matchVS: {
+      color: colors.primary,
+      backgroundColor: colors.btnSecondaryBg,
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: 6,
+      fontWeight: '900',
+      fontSize: 10,
+      borderWidth: 1,
+      borderColor: colors.inputBorder,
+      overflow: 'hidden',
+    },
+    scoreText: {
+      color: colors.primary,
+      fontWeight: '800',
+      fontSize: 16,
+      marginHorizontal: 10
+    },
+    matchFooterRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      borderTopWidth: 1.5,
+      borderTopColor: colors.cardBorder,
+      paddingTop: 14,
+      marginTop: 8
+    },
+    betPlacedBadge: {
+      backgroundColor: '#27773f14',
+      borderColor: '#27773f',
+      borderWidth: 1,
+      borderRadius: 6,
+      paddingVertical: 5,
+      paddingHorizontal: 10
+    },
+    betPlacedText: {
+      color: '#27773f',
+      fontSize: 11,
+      fontWeight: '700'
+    },
+    noBetPlacedText: {
+      color: '#b92028',
+      fontSize: 11,
+      fontWeight: '700'
+    },
+    lockedBadge: {
+      backgroundColor: colors.btnSecondaryBg,
+      paddingVertical: 5,
+      paddingHorizontal: 10,
+      borderRadius: 6,
+      borderWidth: 1,
+      borderColor: colors.inputBorder
+    },
+    lockedText: {
+      color: colors.textSub,
+      fontSize: 10,
+      fontWeight: '800'
+    },
+    btnAction: {
+      backgroundColor: colors.primary,
+      paddingVertical: 6,
+      paddingHorizontal: 14,
+      borderRadius: 6,
+      shadowColor: colors.primary,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.2,
+      shadowRadius: 4,
+    },
+    btnActionText: {
+      color: 'white',
+      fontWeight: '700',
+      fontSize: 12
+    },
+    toggleRow: {
+      flexDirection: 'row',
+      gap: 10,
+      marginBottom: 18
+    },
+    toggleBtn: {
+      flex: 1,
+      paddingVertical: 12,
+      backgroundColor: colors.btnSecondaryBg,
+      borderColor: colors.cardBorder,
+      borderWidth: 1.5,
+      borderRadius: 10,
+      alignItems: 'center',
+      shadowColor: colors.shadowColor,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.08,
+      shadowRadius: 4,
+    },
+    toggleActive: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primaryBorder
+    },
+    toggleText: {
+      color: colors.textMain,
+      fontWeight: '700',
+      fontSize: 13
+    },
+    tableCard: {
+      backgroundColor: colors.cardBg,
+      borderColor: colors.cardBorder,
+      borderWidth: 1,
+      borderRadius: 14,
+      paddingVertical: 8,
+      shadowColor: colors.shadowColor,
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.08,
+      shadowRadius: 10,
+      backdropFilter: 'blur(10px)',
+    },
+    tableHeaderRow: {
+      flexDirection: 'row',
+      paddingHorizontal: 18,
+      paddingVertical: 12,
+      borderBottomWidth: 1.5,
+      borderBottomColor: colors.cardBorder
+    },
+    tableHeadCell: {
+      color: colors.textSub,
+      fontSize: 11,
+      fontWeight: '800',
+      textTransform: 'uppercase',
+      letterSpacing: 0.5
+    },
+    tableDataRow: {
+      flexDirection: 'row',
+      paddingHorizontal: 18,
+      paddingVertical: 14,
+      borderBottomWidth: 1,
+      borderBottomColor: 'rgba(62, 56, 48, 0.08)',
+      alignItems: 'center'
+    },
+    meRow: {
+      backgroundColor: isDarkMode ? 'rgba(255, 183, 125, 0.12)' : '#b4530914',
+      borderWidth: 1.5,
+      borderColor: colors.primary,
+    },
+    tableCell: {
+      color: colors.textMain,
+      fontSize: 14
+    },
+    historyCard: {
+      backgroundColor: colors.cardBg,
+      borderColor: colors.cardBorder,
+      borderWidth: 1,
+      borderRadius: 14,
+      padding: 18,
+      marginBottom: 16,
+      shadowColor: colors.shadowColor,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.08,
+      shadowRadius: 6,
+      backdropFilter: 'blur(10px)',
+    },
+    historyBetRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'flex-end',
+      borderTopWidth: 1.5,
+      borderTopColor: colors.cardBorder,
+      paddingTop: 14,
+      marginTop: 8
+    },
+    historyBetTitle: {
+      fontSize: 10,
+      color: colors.textSub,
+      fontWeight: '700',
+      textTransform: 'uppercase',
+      letterSpacing: 0.5
+    },
+    historyBetValue: {
+      fontSize: 13,
+      color: colors.textMain,
+      fontWeight: '700',
+      marginTop: 4
+    },
+    historyNoBet: {
+      color: '#b92028',
+      fontWeight: '700',
+      fontSize: 12
+    },
+    payoutText: {
+      fontSize: 20,
+      fontWeight: '900',
+      marginTop: 2
+    },
+    badge: {
+      paddingVertical: 3,
+      paddingHorizontal: 8,
+      borderRadius: 6,
+    },
+    badgeWin: {
+      backgroundColor: '#27773f14',
+      borderColor: '#27773f',
+      borderWidth: 0.8
+    },
+    badgeLoss: {
+      backgroundColor: '#b9202814',
+      borderColor: '#b92028',
+      borderWidth: 0.8
+    },
+    badgeRefund: {
+      backgroundColor: '#94a3b820',
+      borderColor: '#94a3b8',
+      borderWidth: 0.8
+    },
+    badgeText: {
+      fontSize: 9,
+      fontWeight: '800',
+      color: colors.textMain,
+      textTransform: 'uppercase'
+    },
+    bracketStageCard: {
+      backgroundColor: colors.cardBg,
+      borderColor: colors.cardBorder,
+      borderWidth: 1,
+      borderRadius: 14,
+      padding: 18,
+      marginBottom: 16,
+      shadowColor: colors.shadowColor,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.08,
+      shadowRadius: 6,
+      backdropFilter: 'blur(10px)',
+    },
+    bracketStageTitle: {
+      color: colors.primary,
+      fontWeight: '800',
+      fontSize: 13,
+      marginBottom: 12,
+      borderBottomWidth: 1.5,
+      borderBottomColor: colors.cardBorder,
+      paddingBottom: 8,
+      textTransform: 'uppercase',
+      letterSpacing: 0.8
+    },
+    bracketMatchRow: {
+      flexDirection: 'row',
+      paddingVertical: 8,
+      alignItems: 'center',
+      gap: 8
+    },
+    bracketTeamLeft: {
+      color: colors.textMain,
+      fontWeight: '700',
+      fontSize: 13,
+      flex: 1,
+      textAlign: 'left'
+    },
+    bracketTeamRight: {
+      color: colors.textMain,
+      fontWeight: '700',
+      fontSize: 13,
+      textAlign: 'right'
+    },
+    bracketRightContainer: {
+      flex: 1,
+      flexDirection: 'row',
+      justifyContent: 'flex-end',
+      alignItems: 'center',
+      gap: 8
+    },
+    bracketVs: {
+      color: colors.textSub,
+      fontSize: 11,
+      width: 24,
+      textAlign: 'center'
+    },
+    bracketWinner: {
+      color: '#27773f',
+      fontWeight: '800',
+      fontSize: 12
+    },
+    profileCard: {
+      backgroundColor: colors.cardBg,
+      borderColor: colors.cardBorder,
+      borderWidth: 1.5,
+      borderRadius: 14,
+      padding: 24,
+      alignItems: 'center',
+      shadowColor: colors.shadowColor,
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.08,
+      shadowRadius: 10,
+    },
+    profileName: {
+      fontSize: 22,
+      fontWeight: '800',
+      color: colors.textMain
+    },
+    profileEmail: {
+      color: colors.textSub,
+      fontSize: 14,
+      marginTop: 4
+    },
+    profileDivider: {
+      height: 1.5,
+      backgroundColor: colors.cardBorder,
+      width: '100%',
+      marginVertical: 20
+    },
+    profileRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      width: '100%',
+      marginBottom: 14
+    },
+    profileLabel: {
+      color: colors.textSub,
+      fontSize: 14,
+      fontWeight: '600'
+    },
+    profileValue: {
+      color: colors.textMain,
+      fontWeight: '700',
+      fontSize: 14
+    },
+    footerTabBar: {
+      height: 56,
+      borderTopWidth: 1.5,
+      borderTopColor: colors.cardBorder,
+      flexDirection: 'row',
+      backgroundColor: colors.navBg,
+      paddingBottom: 0,
+    },
+    tabItem: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingVertical: 8,
+    },
+    tabActive: {
+      borderTopWidth: 3,
+      borderTopColor: colors.primary,
+      backgroundColor: colors.inputBg
+    },
+    tabText: {
+      color: colors.textSub,
+      fontSize: 11,
+      fontWeight: '700'
+    },
+    modalOverlay: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: 'rgba(0,0,0,0.6)',
+      padding: 20
+    },
+    modalContent: {
+      backgroundColor: colors.bg,
+      borderColor: colors.primary,
+      borderWidth: 2,
+      borderRadius: 16,
+      padding: 24,
+      width: '100%',
+      maxWidth: 360,
+      shadowColor: colors.shadowColor,
+      shadowOffset: { width: 0, height: 10 },
+      shadowOpacity: 0.12,
+      shadowRadius: 15,
+    },
+    confirmContent: {
+      backgroundColor: colors.bg,
+      borderColor: '#b92028',
+      borderWidth: 2,
+      borderRadius: 16,
+      padding: 24,
+      width: '100%',
+      maxWidth: 340,
+      shadowColor: colors.shadowColor,
+      shadowOffset: { width: 0, height: 10 },
+      shadowOpacity: 0.12,
+      shadowRadius: 15,
+    },
+    modalHeader: {
+      fontSize: 18,
+      fontWeight: '800',
+      color: colors.textMain,
+      textAlign: 'center',
+      textTransform: 'uppercase',
+      letterSpacing: 0.8
+    },
+    confirmHeader: {
+      fontSize: 18,
+      fontWeight: '800',
+      color: '#b92028',
+      textAlign: 'center',
+      textTransform: 'uppercase',
+      letterSpacing: 0.8
+    },
+    modalSubHeader: {
+      color: colors.textSub,
+      textAlign: 'center',
+      fontSize: 13,
+      marginBottom: 20
+    },
+    confirmWarning: {
+      color: '#d97706',
+      fontSize: 12,
+      fontWeight: '700',
+      textAlign: 'center',
+      marginVertical: 12,
+      lineHeight: 18
+    },
+    confirmDetails: {
+      backgroundColor: colors.inputBg,
+      padding: 16,
+      borderRadius: 10,
+      marginVertical: 14,
+      gap: 8,
+      borderWidth: 1,
+      borderColor: colors.cardBorder
+    },
+    confirmText: {
+      color: colors.textMain,
+      fontSize: 14
+    },
+    inputLabel: {
+      color: colors.textSub,
+      fontSize: 12,
+      fontWeight: '700',
+      marginBottom: 8,
+      marginTop: 14,
+      textTransform: 'uppercase',
+      letterSpacing: 0.5
+    },
+    teamSelectRow: {
+      flexDirection: 'row',
+      gap: 8,
+    },
+    teamSelectBtn: {
+      flex: 1,
+      paddingVertical: 10,
+      backgroundColor: colors.btnSecondaryBg,
+      borderRadius: 8,
+      alignItems: 'center',
+      borderWidth: 1.5,
+      borderColor: colors.inputBorder
+    },
+    teamSelectActive: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primaryBorder
+    },
+    teamSelectText: {
+      color: colors.textMain,
+      fontSize: 12,
+      fontWeight: '800',
+      textAlign: 'center'
+    },
+    scoreInputRow: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
+      gap: 12,
+      marginVertical: 12
+    },
+    scoreInput: {
+      backgroundColor: colors.inputBg,
+      borderWidth: 2,
+      borderColor: colors.inputBorder,
+      color: colors.textMain,
+      fontSize: 24,
+      fontWeight: '800',
+      width: 65,
+      height: 55,
+      textAlign: 'center',
+      borderRadius: 10
+    },
+    scoreDivider: {
+      color: colors.textMain,
+      fontSize: 24,
+      fontWeight: '800',
+      marginTop: 20
+    },
+    modalError: {
+      color: '#b92028',
+      fontSize: 12,
+      fontWeight: '700',
+      marginTop: 12,
+      textAlign: 'center'
+    },
+    modalBtnRow: {
+      flexDirection: 'column',
+      gap: 10,
+      marginTop: 20
+    },
+    ambientGlow1: {
+      position: 'absolute',
+      top: -120,
+      left: -120,
+      width: 350,
+      height: 350,
+      borderRadius: 175,
+      backgroundColor: isDarkMode ? 'rgba(255, 183, 125, 0.08)' : 'rgba(180, 83, 9, 0.1)',
+      filter: 'blur(80px)',
+      pointerEvents: 'none',
+    },
+    ambientGlow2: {
+      position: 'absolute',
+      bottom: 80,
+      right: -150,
+      width: 450,
+      height: 450,
+      borderRadius: 225,
+      backgroundColor: isDarkMode ? 'rgba(78, 222, 163, 0.04)' : 'rgba(217, 119, 6, 0.05)',
+      filter: 'blur(100px)',
+      pointerEvents: 'none',
+    },
+    mainConsensusCard: {
+      padding: 20,
+      borderRadius: 16,
+      marginBottom: 24,
+      shadowColor: colors.shadowColor,
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.1,
+      shadowRadius: 12,
+      backgroundColor: colors.cardBg,
+      borderColor: colors.cardBorder,
+      borderWidth: 1.5,
+    },
+    consensusHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 16,
+    },
+    consensusHeaderLabel: {
+      fontSize: 11,
+      fontWeight: '800',
+      color: colors.primary,
+      letterSpacing: 1.2,
+    },
+    liveBadge: {
+      backgroundColor: '#00c85320',
+      borderColor: '#00c853',
+      borderWidth: 1.2,
+      borderRadius: 6,
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+    },
+    liveBadgeText: {
+      color: '#00c853',
+      fontSize: 9,
+      fontWeight: '900',
+    },
+    consensusTeamsRow: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: 20,
+      gap: 14,
+    },
+    consensusTeamContainer: {
+      flex: 1,
+      alignItems: 'center',
+      flexDirection: 'row',
+      justifyContent: 'center',
+      gap: 6,
+    },
+    consensusTeamFlag: {
+      fontSize: 24,
+    },
+    consensusTeamName: {
+      fontSize: 16,
+      fontWeight: '800',
+      color: colors.textMain,
+    },
+    consensusVs: {
+      color: colors.primary,
+      backgroundColor: colors.btnSecondaryBg,
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: 6,
+      borderWidth: 1,
+      borderColor: colors.inputBorder,
+      overflow: 'hidden',
+    },
+    consensusStatsRow: {
+      marginBottom: 8,
+    },
+    consensusStatLabel: {
+      fontSize: 12,
+      color: colors.textSub,
+      fontWeight: '700',
+    },
+    consensusBar: {
+      height: 12,
+      borderRadius: 6,
+      backgroundColor: colors.btnSecondaryBg,
+      flexDirection: 'row',
+      overflow: 'hidden',
+      width: '100%',
+      borderWidth: 1,
+      borderColor: colors.inputBorder,
+    },
+    consensusBarSegment: {
+      height: '100%',
+    },
+    consensusLabelsRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginTop: 8,
+    },
+    consensusLabelText: {
+      fontSize: 11,
+      fontWeight: '800',
+      color: colors.textMain,
+    },
+    consensusTotalLabel: {
+      fontSize: 10,
+      color: colors.textSub,
+      textAlign: 'center',
+      marginTop: 10,
+      fontWeight: '600',
+    },
+    consensusActionButton: {
+      backgroundColor: colors.primary,
+      paddingVertical: 10,
+      paddingHorizontal: 24,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: colors.primaryBorder,
+      shadowColor: colors.primary,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.2,
+      shadowRadius: 6,
+    },
+    consensusActionText: {
+      color: '#ffffff',
+      fontSize: 13,
+      fontWeight: '800',
+    },
+    expandedBetsContainer: {
+      marginTop: 16,
+      width: '100%',
+    },
+    expandedBetsDivider: {
+      height: 1.5,
+      backgroundColor: colors.cardBorder,
+      marginBottom: 12,
+    },
+    expandedBetsTitle: {
+      fontSize: 12,
+      fontWeight: '800',
+      color: colors.primary,
+      marginBottom: 10,
+      textTransform: 'uppercase',
+      letterSpacing: 0.8,
+    },
+    expandedBetsEmpty: {
+      fontSize: 12,
+      color: colors.textSub,
+      textAlign: 'center',
+      paddingVertical: 10,
+    },
+    expandedBetsTableContainer: {
+      alignItems: 'stretch',
+    },
+    expandedBetsTable: {
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+      width: '100%',
+      minWidth: 650,
+      flexDirection: 'column',
+      borderRadius: 8,
+      overflow: 'hidden',
+      backgroundColor: colors.inputBg,
+    },
+    expandedBetsHeader: {
+      flexDirection: 'row',
+      width: '100%',
+      backgroundColor: colors.btnSecondaryBg,
+      paddingVertical: 8,
+      paddingHorizontal: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.cardBorder,
+    },
+    expandedBetsHeadCell: {
+      fontSize: 10,
+      fontWeight: '800',
+      color: colors.textSub,
+      textTransform: 'uppercase',
+    },
+    expandedBetsRow: {
+      flexDirection: 'row',
+      width: '100%',
+      paddingVertical: 10,
+      paddingHorizontal: 12,
+      borderBottomWidth: 0.8,
+      borderBottomColor: 'rgba(62, 56, 48, 0.08)',
+      alignItems: 'center',
+    },
+    expandedBetsCell: {
+      fontSize: 12,
+      color: colors.textMain,
+    },
+    bracketHeaderRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 10,
+      flexWrap: 'wrap',
+      gap: 8,
+    },
+    zoomControls: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.btnSecondaryBg,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: colors.inputBorder,
+      paddingHorizontal: 6,
+      paddingVertical: 4,
+      gap: 8,
+    },
+    zoomBtn: {
+      backgroundColor: colors.primary,
+      width: 24,
+      height: 24,
+      borderRadius: 6,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    zoomBtnText: {
+      color: '#ffffff',
+      fontSize: 14,
+      fontWeight: '800',
+    },
+    zoomText: {
+      fontSize: 11,
+      fontWeight: '700',
+      color: colors.textMain,
+      minWidth: 32,
+      textAlign: 'center',
+    },
+    zoomResetBtn: {
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      backgroundColor: colors.inputBg,
+      borderRadius: 4,
+      borderWidth: 1,
+      borderColor: colors.inputBorder,
+    },
+    zoomResetText: {
+      fontSize: 10,
+      fontWeight: '700',
+      color: colors.textSub,
+    },
+    bracketHorizontalScroll: {
+      flexDirection: 'row',
+      width: '100%',
+      marginTop: 10,
+      backgroundColor: isDarkMode ? 'rgba(0,0,0,0.2)' : 'rgba(232, 223, 199, 0.3)',
+      borderRadius: 14,
+      paddingVertical: 10,
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+    },
+    bracketHorizontalScrollContent: {
+      paddingRight: 50,
+    },
+    bracketScaleContainer: {
+      flexDirection: 'row',
+      height: 1450,
+      transformOrigin: 'top left',
+      paddingHorizontal: 15,
+    },
+    bracketColumn: {
+      width: 230,
+      marginRight: 24,
+      height: '100%',
+    },
+    bracketColumnTitle: {
+      fontSize: 12,
+      fontWeight: '800',
+      color: colors.primary,
+      textTransform: 'uppercase',
+      textAlign: 'center',
+      letterSpacing: 0.8,
+      marginBottom: 16,
+      backgroundColor: colors.btnSecondaryBg,
+      paddingVertical: 6,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+    },
+    bracketColumnMatches: {
+      flex: 1,
+      justifyContent: 'space-around',
+      paddingVertical: 10,
+    },
+    bracketMatchCard: {
+      width: '100%',
+      padding: 10,
+      borderRadius: 10,
+      shadowColor: colors.shadowColor,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.05,
+      shadowRadius: 4,
+      position: 'relative',
+      backgroundColor: colors.cardBg,
+      borderColor: colors.cardBorder,
+      borderWidth: 1,
+    },
+    bracketTeamRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingVertical: 4,
+    },
+    bracketTeamLost: {
+      opacity: 0.5,
+    },
+    bracketTeamText: {
+      fontSize: 12,
+      fontWeight: '700',
+      color: colors.textMain,
+      flex: 1,
+    },
+    bracketScore: {
+      fontSize: 12,
+      fontWeight: '800',
+      color: colors.primary,
+      marginLeft: 6,
+    },
+    bracketVsContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginVertical: 2,
+      gap: 8,
+    },
+    bracketVsLine: {
+      flex: 1,
+      height: 1,
+      backgroundColor: colors.cardBorder,
+    },
+    bracketVsTextCard: {
+      fontSize: 9,
+      fontWeight: '800',
+      color: colors.textSub,
+      letterSpacing: 0.5,
+    },
+    thirdPlaceBadge: {
+      position: 'absolute',
+      bottom: -8,
+      right: 8,
+      backgroundColor: '#74acdf',
+      borderRadius: 4,
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+    },
+    thirdPlaceBadgeText: {
+      color: '#ffffff',
+      fontSize: 8,
+      fontWeight: '800',
+      textTransform: 'uppercase',
+    },
+    groupScroll: {
+      marginBottom: 12,
+    },
+    groupBtn: {
+      paddingVertical: 8,
+      paddingHorizontal: 16,
+      backgroundColor: colors.btnSecondaryBg,
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: colors.inputBorder,
+    },
+    groupBtnActive: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primaryBorder,
+    },
+    groupBtnText: {
+      fontSize: 12,
+      fontWeight: '800',
+      color: colors.textMain,
+    },
+    groupBtnTextActive: {
+      color: '#ffffff',
+    },
+    teamSelectorGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 8,
+      marginBottom: 16,
+      justifyContent: 'space-between',
+    },
+    teamGridBtn: {
+      width: '48%',
+      backgroundColor: isDarkMode ? 'rgba(30, 34, 45, 0.4)' : 'rgba(230, 220, 191, 0.6)',
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+      borderRadius: 10,
+      paddingVertical: 8,
+      paddingHorizontal: 10,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    teamGridBtnActive: {
+      backgroundColor: colors.inputBg,
+      borderColor: colors.primary,
+      borderWidth: 1.5,
+    },
+    teamGridFlag: {
+      fontSize: 16,
+    },
+    teamGridName: {
+      fontSize: 12,
+      fontWeight: '700',
+      color: colors.textSub,
+      flex: 1,
+    },
+    teamGridNameActive: {
+      color: colors.primary,
+      fontWeight: '800',
+    },
+    teamDetailsCard: {
+      padding: 16,
+      borderRadius: 14,
+      shadowColor: colors.shadowColor,
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.08,
+      shadowRadius: 10,
+      backgroundColor: colors.cardBg,
+      borderColor: colors.cardBorder,
+      borderWidth: 1,
+    },
+    teamDetailsHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      borderBottomWidth: 1.5,
+      borderBottomColor: colors.cardBorder,
+      paddingBottom: 12,
+      marginBottom: 12,
+    },
+    teamDetailsTitle: {
+      fontSize: 20,
+      fontWeight: '900',
+      color: colors.textMain,
+    },
+    teamDetailsSub: {
+      fontSize: 11,
+      color: colors.textSub,
+      fontWeight: '600',
+    },
+    avgRatingWidget: {
+      backgroundColor: isDarkMode ? 'rgba(255, 183, 125, 0.12)' : '#b4530914',
+      borderWidth: 1,
+      borderColor: isDarkMode ? 'rgba(255, 183, 125, 0.3)' : '#b4530930',
+      borderRadius: 8,
+      padding: 6,
+      alignItems: 'center',
+    },
+    avgRatingLabel: {
+      fontSize: 8,
+      color: colors.textSub,
+      fontWeight: '800',
+    },
+    avgRatingVal: {
+      fontSize: 18,
+      fontWeight: '900',
+      color: colors.primary,
+    },
+    viewModeToggleRow: {
+      flexDirection: 'row',
+      backgroundColor: colors.btnSecondaryBg,
+      borderRadius: 8,
+      padding: 3,
+      marginBottom: 14,
+    },
+    viewModeBtn: {
+      flex: 1,
+      paddingVertical: 8,
+      alignItems: 'center',
+      borderRadius: 6,
+    },
+    viewModeBtnActive: {
+      backgroundColor: colors.inputBg,
+      shadowColor: colors.shadowColor,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.05,
+      shadowRadius: 4,
+    },
+    viewModeText: {
+      fontSize: 12,
+      fontWeight: '700',
+      color: colors.textSub,
+    },
+    viewModeTextActive: {
+      color: colors.primary,
+      fontWeight: '800',
+    },
+    statsSummaryBar: {
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+      backgroundColor: colors.inputBg,
+      borderRadius: 8,
+      paddingVertical: 8,
+      marginBottom: 16,
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+    },
+    statsSummaryText: {
+      fontSize: 11,
+      color: colors.textSub,
+      fontWeight: '600',
+    },
+    posSection: {
+      marginBottom: 16,
+    },
+    posSectionTitle: {
+      fontSize: 12,
+      fontWeight: '800',
+      color: colors.textMain,
+      textTransform: 'uppercase',
+      marginBottom: 10,
+      backgroundColor: isDarkMode ? 'rgba(255, 183, 125, 0.12)' : '#e6dcbf60',
+      paddingVertical: 4,
+      paddingHorizontal: 8,
+      borderRadius: 6,
+      overflow: 'hidden',
+    },
+    playerRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingVertical: 8,
+      borderBottomWidth: 0.8,
+      borderBottomColor: colors.cardBorder,
+    },
+    playerInfoCol: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    playerName: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: colors.textMain,
+    },
+    playerPositionBadge: {
+      fontSize: 9,
+      fontWeight: '800',
+      backgroundColor: colors.btnSecondaryBg,
+      color: colors.textSub,
+      paddingHorizontal: 5,
+      paddingVertical: 2,
+      borderRadius: 4,
+      overflow: 'hidden',
+    },
+    playerRatingsCol: {
+      flexDirection: 'row',
+      gap: 12,
+      minWidth: 140,
+    },
+    ratingBarContainer: {
+      flex: 1,
+    },
+    ratingSubLabel: {
+      fontSize: 8,
+      color: colors.textSub,
+      fontWeight: '700',
+      marginBottom: 2,
+    },
+    ratingTrack: {
+      height: 4,
+      backgroundColor: colors.btnSecondaryBg,
+      borderRadius: 2,
+      overflow: 'hidden',
+    },
+    ratingBar: {
+      height: '100%',
+      borderRadius: 2,
+    },
+    pitchIntroText: {
+      fontSize: 12,
+      color: colors.textSub,
+      fontWeight: '600',
+      marginBottom: 12,
+      textAlign: 'center',
+    },
+    footballPitch: {
+      height: 340,
+      width: '100%',
+      backgroundColor: '#1b4d22',
+      backgroundImage: 'linear-gradient(180deg, #1b4d22 0%, #2e7d32 100%)',
+      borderRadius: 14,
+      borderWidth: 3,
+      borderColor: '#ffffff50',
+      position: 'relative',
+      overflow: 'hidden',
+      shadowColor: '#000000',
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.15,
+      shadowRadius: 8,
+    },
+    pitchCenterCircle: {
+      position: 'absolute',
+      top: '50%',
+      left: '50%',
+      width: 80,
+      height: 80,
+      borderRadius: 40,
+      borderWidth: 2,
+      borderColor: '#ffffff30',
+      marginTop: -40,
+      marginLeft: -40,
+    },
+    pitchCenterLine: {
+      position: 'absolute',
+      top: '50%',
+      left: 0,
+      right: 0,
+      height: 2,
+      backgroundColor: '#ffffff30',
+    },
+    pitchPenaltyBoxTop: {
+      position: 'absolute',
+      top: 0,
+      left: '50%',
+      width: 140,
+      height: 60,
+      borderWidth: 2,
+      borderColor: '#ffffff30',
+      borderTopWidth: 0,
+      marginLeft: -70,
+    },
+    pitchPenaltyBoxBottom: {
+      position: 'absolute',
+      bottom: 0,
+      left: '50%',
+      width: 140,
+      height: 60,
+      borderWidth: 2,
+      borderColor: '#ffffff30',
+      borderBottomWidth: 0,
+      marginLeft: -70,
+    },
+    pitchPlayerNode: {
+      position: 'absolute',
+      width: 62,
+      marginLeft: -31,
+      alignItems: 'center',
+      zIndex: 10,
+    },
+    pitchPlayerCircle: {
+      width: 26,
+      height: 26,
+      borderRadius: 13,
+      backgroundColor: '#ffffff',
+      borderWidth: 2.5,
+      borderColor: colors.primary,
+      justifyContent: 'center',
+      alignItems: 'center',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.3,
+      shadowRadius: 2,
+    },
+    pitchPlayerCircleVal: {
+      fontSize: 10,
+      fontWeight: '900',
+      color: '#302b25',
+    },
+    pitchPlayerName: {
+      color: '#ffffff',
+      fontSize: 9,
+      fontWeight: '800',
+      marginTop: 2,
+      textAlign: 'center',
+      textShadowColor: 'rgba(0, 0, 0, 0.8)',
+      textShadowOffset: { width: 0, height: 1 },
+      textShadowRadius: 2,
+    },
+    pitchPlayerNodeText: {
+      color: '#ffffff',
+      fontSize: 9,
+      fontWeight: '800',
+      marginTop: 2,
+      textAlign: 'center',
+    },
+    pitchPlayerRole: {
+      color: '#ffd700',
+      fontSize: 7,
+      fontWeight: '900',
+      textTransform: 'uppercase',
+      textShadowColor: 'rgba(0, 0, 0, 0.8)',
+      textShadowOffset: { width: 0, height: 1 },
+      textShadowRadius: 2,
+    },
+    substitutesHeader: {
+      fontSize: 13,
+      fontWeight: '800',
+      color: colors.textMain,
+      textTransform: 'uppercase',
+      marginTop: 20,
+      marginBottom: 10,
+      borderBottomWidth: 1.5,
+      borderBottomColor: colors.cardBorder,
+      paddingBottom: 4,
+    },
+    substitutesGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 8,
+    },
+    subCard: {
+      width: '48%',
+      backgroundColor: colors.btnSecondaryBg,
+      borderRadius: 8,
+      padding: 8,
+      borderWidth: 0.8,
+      borderColor: colors.cardBorder,
+    },
+    subName: {
+      fontSize: 11,
+      fontWeight: '700',
+      color: colors.textMain,
+    },
+    subMeta: {
+      fontSize: 9,
+      color: colors.textSub,
+      marginTop: 2,
+      fontWeight: '600',
+    },
+    sortContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 16,
+      paddingHorizontal: 4,
+    },
+    sortLabel: {
+      fontSize: 12,
+      fontWeight: '800',
+      color: colors.textSub,
+      marginRight: 8,
+      textTransform: 'uppercase',
+    },
+    sortChipsScroll: {
+      gap: 8,
+      alignItems: 'center',
+    },
+    sortChip: {
+      paddingVertical: 6,
+      paddingHorizontal: 12,
+      borderRadius: 20,
+      backgroundColor: colors.btnSecondaryBg,
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+    },
+    sortChipActive: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    sortChipText: {
+      fontSize: 11,
+      fontWeight: '700',
+      color: colors.textSub,
+    },
+    sortChipTextActive: {
+      color: '#ffffff',
+    }
+  });
+};

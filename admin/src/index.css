@@ -13,6 +13,13 @@
   --text-main: #332c22;
   --text-sub: #7a6e5d;
 
+  /* Theme Specific UI Element Colors */
+  --sidebar-bg: #e8dfc7;
+  --menu-hover: #e2d7be;
+  --menu-active: linear-gradient(90deg, #e2d7be 0%, #dcd0b0 100%);
+  --user-badge-bg: #e2d7be;
+  --input-bg: #faf7ee;
+
   /* Vibrant Flag-Inspired Accents */
   --brazil-gold: #c5a01d;
   --brazil-green: #27773f;
@@ -25,6 +32,27 @@
   --btn-bg: #e6dcbf;
   --btn-hover: #dcd0b0;
   --active-blue: #b45309;
+}
+
+:root.dark, body.dark {
+  color-scheme: dark;
+  --bg-color: #111417;
+  --card-bg: rgba(30, 34, 45, 0.7);
+  --card-border: rgba(255, 183, 125, 0.18);
+  --text-main: #e1e2e8;
+  --text-sub: #a38c7c;
+
+  --sidebar-bg: #1d2024;
+  --menu-hover: #323539;
+  --menu-active: linear-gradient(90deg, #272a2e 0%, #323539 100%);
+  --user-badge-bg: #272a2e;
+  --input-bg: #1d2024;
+
+  /* Stitch Dark Theme Adjustments */
+  --btn-bg: #1d2024;
+  --btn-hover: #323539;
+  --active-blue: #ffb77d;
+  --brazil-gold: #ffb77d;
 }
 
 /* Custom Premium Scrollbars */
@@ -81,7 +109,7 @@ body {
 /* Sidebar Styling */
 .sidebar {
   width: 260px;
-  background-color: #e8dfc7;
+  background-color: var(--sidebar-bg);
   border-right: 2px solid var(--card-border);
   display: flex;
   flex-direction: column;
@@ -143,12 +171,12 @@ body {
 
 .menu-link:hover {
   color: var(--text-main);
-  background-color: #e2d7be;
+  background-color: var(--menu-hover);
 }
 
 .menu-link.active {
   color: var(--text-main);
-  background: linear-gradient(90deg, #e2d7be 0%, #dcd0b0 100%);
+  background: var(--menu-active);
   border: 1px solid var(--active-blue);
   box-shadow: 0 0 10px rgba(180, 83, 9, 0.15);
 }
@@ -163,7 +191,7 @@ body {
   flex-direction: column;
   gap: 8px;
   padding: 12px;
-  background-color: #e2d7be;
+  background-color: var(--user-badge-bg);
   border-radius: 8px;
   border: 1px solid var(--card-border);
   font-size: 0.85rem;
@@ -316,7 +344,7 @@ body {
 .form-control {
   width: 100%;
   padding: 12px 16px;
-  background-color: #faf7ee;
+  background-color: var(--input-bg);
   border: 2px solid var(--card-border);
   color: var(--text-main);
   border-radius: 8px;
@@ -344,7 +372,7 @@ body {
 
 .scoreboard-table th {
   padding: 14px 16px;
-  background-color: #e8dfc7;
+  background-color: var(--sidebar-bg);
   border-bottom: 2px solid var(--card-border);
   font-size: 0.75rem;
   font-weight: 800;
