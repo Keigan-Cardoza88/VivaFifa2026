@@ -366,21 +366,105 @@ module.exports = async (req, res) => {
         }
       }
 
-      // D. Apply Referee Bonus: Transfer ₹25 from referee kitty to any player with >=1 side correct
-      let totalBonusPayout = 0;
-      placedBets.forEach((bet) => {
-        const gotOneSideCorrect = (bet.goalsTeamA === Number(resultTeamAGoals) || bet.goalsTeamB === Number(resultTeamBGoals));
-        if (gotOneSideCorrect) {
-          totalBonusPayout += 25;
-          const currentWon = bet.amountWon || 0;
-          const updatePayload = {
-            amountWon: currentWon + 25
-          };
-          transaction.update(bet.ref, updatePayload);
-          Object.assign(bet, updatePayload);
+      // D. Apply Referee Bonus
+      let refereeKittyDeduction = 0;
+      let finalsKittyDeduction = 0;
+
+      const isAlreadySettledOld = (matchData.status === 'completed' && !matchData.settledWithNewBonus);
+      if (Number(matchId) < 45 || isAlreadySettledOld) {
+        // Old rule: Transfer ₹25 from referee kitty to any player with >=1 side correct
+        let totalBonusPayout = 0;
+        placedBets.forEach((bet) => {
+          const gotOneSideCorrect = (bet.goalsTeamA === Number(resultTeamAGoals) || bet.goalsTeamB === Number(resultTeamBGoals));
+          if (gotOneSideCorrect) {
+            totalBonusPayout += 25;
+            const currentWon = bet.amountWon || 0;
+            const updatePayload = {
+              amountWon: currentWon + 25
+            };
+            transaction.update(bet.ref, updatePayload);
+            Object.assign(bet, updatePayload);
+          }
+        });
+        refereeKittyDeduction = totalBonusPayout;
+      } else {
+        // New rule (Match ID >= 45):
+        // Over existing rules, referee will give:
+        // - ₹200 for winning team bet
+        // - ₹200 for winning goal bets fully both sides correct, or ₹100 if only 1 side correct
+        let totalRequiredBonus = 0;
+        const playerBonusDetails = [];
+
+        placedBets.forEach((bet) => {
+          let bonus = 0;
+          const teamWon = (bet.teamPrediction === winner);
+          const goalsACorrect = (bet.goalsTeamA === Number(resultTeamAGoals));
+          const goalsBCorrect = (bet.goalsTeamB === Number(resultTeamBGoals));
+
+          if (teamWon) {
+            bonus += 200;
+          }
+          if (goalsACorrect && goalsBCorrect) {
+            bonus += 200;
+          } else if (goalsACorrect || goalsBCorrect) {
+            bonus += 100;
+          }
+
+          if (bonus > 0) {
+            totalRequiredBonus += bonus;
+            playerBonusDetails.push({ bet, bonus });
+          }
+        });
+
+        // Fetch current kitty balances to avoid going below 0
+        const allKittiesSnapshot = await transaction.get(db.collection('kitty'));
+        let currentRefereeKitty = 0;
+        let currentFinalsKitty = 0;
+        allKittiesSnapshot.forEach(doc => {
+          const data = doc.data();
+          if (data.matchId === String(matchId)) return; // skip this match's old data if resubmitted
+          currentRefereeKitty += data.splitReferee || 0;
+          currentFinalsKitty += data.splitFinals || 0;
+        });
+
+        // Apply incoming match inflow to available balance first (since this settlement transaction
+        // will write this match's inflow, we can treat it as part of available funds)
+        const availableReferee = Math.max(0, currentRefereeKitty + refereeKittyInflow);
+        const availableFinals = Math.max(0, currentFinalsKitty + finalsKittyInflow);
+        const totalAvailable = availableReferee + availableFinals;
+
+        let actualBonusPayout = totalRequiredBonus;
+        let scaleFactor = 1.0;
+
+        if (totalRequiredBonus > totalAvailable) {
+          actualBonusPayout = totalAvailable;
+          scaleFactor = totalAvailable / totalRequiredBonus;
         }
-      });
-      refereeKittyInflow -= totalBonusPayout;
+
+        if (actualBonusPayout > 0) {
+          if (actualBonusPayout <= availableReferee) {
+            refereeKittyDeduction = actualBonusPayout;
+          } else {
+            refereeKittyDeduction = availableReferee;
+            finalsKittyDeduction = actualBonusPayout - availableReferee;
+          }
+
+          playerBonusDetails.forEach(({ bet, bonus }) => {
+            const scaledBonus = Math.round(bonus * scaleFactor * 100) / 100;
+            if (scaledBonus > 0) {
+              const currentWon = bet.amountWon || 0;
+              const updatePayload = {
+                amountWon: currentWon + scaledBonus
+              };
+              transaction.update(bet.ref, updatePayload);
+              Object.assign(bet, updatePayload);
+            }
+          });
+        }
+      }
+
+      refereeKittyInflow -= refereeKittyDeduction;
+      finalsKittyInflow -= finalsKittyDeduction;
 
       // E. Write Kitty Logs if there was inflow/outflow
       if (refereeKittyInflow !== 0 || finalsKittyInflow !== 0) {
@@ -400,12 +484,16 @@ module.exports = async (req, res) => {
       }
 
       // Update match document
-      transaction.update(matchRef, {
+      const updateFields = {
         status: 'completed',
         resultTeamAGoals: Number(resultTeamAGoals),
         resultTeamBGoals: Number(resultTeamBGoals),
         winner
-      });
+      };
+      if (Number(matchId) >= 45 && !isAlreadySettledOld) {
+        updateFields.settledWithNewBonus = true;
+      }
+      transaction.update(matchRef, updateFields);
 
       // Write full settlement backup snapshot
       const backupRef = db.collection('settlement_backups').doc(String(matchId));
