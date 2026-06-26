@@ -701,7 +701,7 @@ export default function App() {
                         <Text style={[styles.expandedBetsCell, { flex: 1 }]}>
                           {b.teamPrediction === 'teamA' ? getTeamFlag(match.teamA) : (b.teamPrediction === 'teamB' ? getTeamFlag(match.teamB) : 'Draw')} {b.teamPrediction === 'teamA' ? match.teamA : (b.teamPrediction === 'teamB' ? match.teamB : 'Draw')}
                         </Text>
-                        <Text style={[styles.expandedBetsCell, { flex: 1, textAlign: 'center', fontWeight: '800', color: '#ffd700' }]}>
+                        <Text style={[styles.expandedBetsCell, { flex: 1, textAlign: 'center', fontWeight: '800', color: isDarkMode ? '#ffd700' : '#854d0e' }]}>
                           {b.goalsTeamA < 0 ? 'N/A' : `${b.goalsTeamA} - ${b.goalsTeamB}`}
                         </Text>
                       </View>
@@ -719,7 +719,7 @@ export default function App() {
   if (loading) {
     return (
       <SafeAreaView style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#ffd700" />
+        <ActivityIndicator size="large" color={isDarkMode ? '#ffd700' : '#854d0e'} />
         <Text style={styles.loadingText}>Connecting to VivaFifa2026...</Text>
       </SafeAreaView>
     );
@@ -829,11 +829,11 @@ export default function App() {
             </Text>
             <View style={{ backgroundColor: '#fdfcf9', borderRadius: 10, padding: 16, marginBottom: 20, borderWidth: 1.5, borderColor: 'rgba(62, 56, 48, 0.15)', gap: 8 }}>
               <View style={[styles.paymentSelect, { justifyContent: 'flex-start', marginBottom: 0 }]}>
-                <Text style={{ color: '#b45309', fontWeight: '700', fontSize: 13, width: 60 }}>Name: </Text>
+                <Text style={{ color: '#854d0e', fontWeight: '700', fontSize: 13, width: 60 }}>Name: </Text>
                 <Text style={{ color: '#302b25', fontWeight: '600', fontSize: 13 }}>{userProfile.name}</Text>
               </View>
               <View style={[styles.paymentSelect, { justifyContent: 'flex-start', marginBottom: 0 }]}>
-                <Text style={{ color: '#b45309', fontWeight: '700', fontSize: 13, width: 60 }}>Plan: </Text>
+                <Text style={{ color: '#854d0e', fontWeight: '700', fontSize: 13, width: 60 }}>Plan: </Text>
                 <Text style={{ color: '#302b25', fontWeight: '600', fontSize: 13, textTransform: 'capitalize' }}>{userProfile.paymentPlan}</Text>
               </View>
             </View>
@@ -1013,7 +1013,7 @@ export default function App() {
           cx="35"
           cy="35"
           r={radius}
-          stroke="#b45309"
+          stroke={isDarkMode ? '#ffb77d' : '#854d0e'}
           strokeWidth={stroke}
           fill="transparent"
           strokeDasharray={circumference}
@@ -1027,8 +1027,6 @@ export default function App() {
 
   return (
     <SafeAreaView style={styles.appContainer}>
-      <View style={styles.ambientGlow1} />
-      <View style={styles.ambientGlow2} />
       <StatusBar barStyle="light-content" />
       <View style={styles.header}>
         <Text style={styles.headerTitle}>VIVAFIFA2026</Text>
@@ -1069,7 +1067,7 @@ export default function App() {
             <View style={styles.statsCardGrid}>
               <View style={[styles.statWidget, styles.glassCard, { borderLeftColor: '#74acdf' }]}>
                 <Text style={styles.statWidgetLabel}>Total Staked</Text>
-                <Text style={[styles.statWidgetValue, { color: '#b45309' }]}>
+                <Text style={[styles.statWidgetValue, { color: isDarkMode ? '#ffb77d' : '#854d0e' }]}>
                   ₹{Number(totalStaked).toFixed(2)}
                 </Text>
               </View>
@@ -1079,7 +1077,7 @@ export default function App() {
                   ₹{Number(totalReturned).toFixed(2)}
                 </Text>
               </View>
-              <View style={[styles.statWidget, styles.glassCard, { borderLeftColor: '#ffd700' }]}>
+              <View style={[styles.statWidget, styles.glassCard, { borderLeftColor: isDarkMode ? '#ffb77d' : '#854d0e' }]}>
                 <Text style={styles.statWidgetLabel}>Net Profit</Text>
                 <Text style={[styles.statWidgetValue, { color: netProfit >= 0 ? '#00e676' : '#ff3d71' }]}>
                   ₹{Number(netProfit).toFixed(2)}
@@ -1177,7 +1175,7 @@ export default function App() {
                           <Text style={[styles.consensusLabelText, { color: '#82776a' }]}>
                             Draw: {countD} ({Number(pctD).toFixed(2)}%)
                           </Text>
-                          <Text style={[styles.consensusLabelText, { color: '#b45309' }]}>
+                          <Text style={[styles.consensusLabelText, { color: isDarkMode ? '#ffb77d' : '#854d0e' }]}>
                             {match.teamB}: {countB} ({Number(pctB).toFixed(2)}%)
                           </Text>
                         </View>
@@ -1239,7 +1237,7 @@ export default function App() {
 
               return Object.keys(groups).map(dateStr => (
                 <View key={dateStr} style={{ marginBottom: 18 }}>
-                  <Text style={{ fontSize: 12, fontWeight: '800', color: '#b45309', marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.8 }}>
+                  <Text style={{ fontSize: 12, fontWeight: '800', color: isDarkMode ? '#ffb77d' : '#854d0e', marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.8 }}>
                     📅 {dateStr}
                   </Text>
                   {groups[dateStr].map(match => renderMatchCard(match))}
@@ -1291,7 +1289,7 @@ export default function App() {
                         ₹{Number(player.netProfit).toFixed(2)}
                       </Text>
                     ) : (
-                      <Text style={[styles.tableCell, { flex: 2, textAlign: 'right', fontWeight: '800', color: '#ffd700' }]}>
+                      <Text style={[styles.tableCell, { flex: 2, textAlign: 'right', fontWeight: '800', color: isDarkMode ? '#ffd700' : '#854d0e' }]}>
                         {Number(player.accuracyPercent).toFixed(2)}%
                       </Text>
                     )}
@@ -1511,7 +1509,7 @@ export default function App() {
                                     <Text style={[styles.expandedBetsCell, { flex: 2 }]}>
                                       {b.teamPrediction === 'teamA' ? getTeamFlag(match.teamA) : (b.teamPrediction === 'teamB' ? getTeamFlag(match.teamB) : 'Draw')} {b.teamPrediction === 'teamA' ? match.teamA : (b.teamPrediction === 'teamB' ? match.teamB : 'Draw')}
                                     </Text>
-                                    <Text style={[styles.expandedBetsCell, { flex: 1.5, textAlign: 'center', fontWeight: '800', color: '#ffd700' }]}>
+                                    <Text style={[styles.expandedBetsCell, { flex: 1.5, textAlign: 'center', fontWeight: '800', color: isDarkMode ? '#ffd700' : '#854d0e' }]}>
                                       {b.goalsTeamA < 0 ? 'N/A' : `${b.goalsTeamA} - ${b.goalsTeamB}`}
                                     </Text>
                                     <Text style={[styles.expandedBetsCell, { flex: 1.1, textAlign: 'right', fontWeight: '800', color: teamNet >= 0 ? '#00e676' : '#ff3d71' }]}>
@@ -1786,7 +1784,7 @@ export default function App() {
                   {teamsViewMode === 'roster' && (
                     <View style={{ marginTop: 12 }}>
                       <View style={styles.statsSummaryBar}>
-                        <Text style={styles.statsSummaryText}>Avg 2026 Rating: <Text style={{ fontWeight: '800', color: '#b45309' }}>{Number(squadAvg).toFixed(2)}</Text></Text>
+                        <Text style={styles.statsSummaryText}>Avg 2026 Rating: <Text style={{ fontWeight: '800', color: isDarkMode ? '#ffb77d' : '#854d0e' }}>{Number(squadAvg).toFixed(2)}</Text></Text>
                         <Text style={styles.statsSummaryText}>Avg Peak Rating: <Text style={{ fontWeight: '800', color: '#27773f' }}>{Number(peakAvg).toFixed(2)}</Text></Text>
                       </View>
 
@@ -1814,7 +1812,7 @@ export default function App() {
                                   <View style={styles.ratingBarContainer}>
                                     <Text style={styles.ratingSubLabel}>Current {Number(p.current).toFixed(2)}</Text>
                                     <View style={styles.ratingTrack}>
-                                      <View style={[styles.ratingBar, { width: `${(p.current / 100) * 100}%`, backgroundColor: '#b45309' }]} />
+                                      <View style={[styles.ratingBar, { width: `${(p.current / 100) * 100}%`, backgroundColor: isDarkMode ? '#ffb77d' : '#854d0e' }]} />
                                     </View>
                                   </View>
                                 </View>
@@ -1893,7 +1891,7 @@ export default function App() {
               </View>
               <View style={styles.profileRow}>
                 <Text style={styles.profileLabel}>Payment Status:</Text>
-                <Text style={[styles.profileValue, userProfile?.paymentStatus === 'paid' ? { color: '#00e676' } : { color: '#ffd700' }]}>
+                <Text style={[styles.profileValue, userProfile?.paymentStatus === 'paid' ? { color: '#00e676' } : { color: isDarkMode ? '#ffd700' : '#854d0e' }]}>
                   {userProfile?.paymentStatus?.toUpperCase() || 'UNPAID'}
                 </Text>
               </View>
@@ -2004,10 +2002,10 @@ export default function App() {
               <Text style={{ color: '#82776a', fontSize: 13, textAlign: 'center', marginVertical: 12 }}>You can edit this bet until the lock time.</Text>
 
               <View style={styles.confirmDetails}>
-                <Text style={styles.confirmText}>Outcome: <Text style={{ fontWeight: '800', color: '#b45309' }}>
+                <Text style={styles.confirmText}>Outcome: <Text style={{ fontWeight: '800', color: isDarkMode ? '#ffb77d' : '#854d0e' }}>
                   {teamPrediction === 'teamA' ? <>{getTeamFlag(selectedMatch.teamA)} {selectedMatch.teamA}</> : (teamPrediction === 'teamB' ? <>{selectedMatch.teamB} {getTeamFlag(selectedMatch.teamB)}</> : 'Draw')}
                 </Text></Text>
-                <Text style={styles.confirmText}>Exact Score: <Text style={{ fontWeight: '800', color: '#b45309' }}>{goalsA} - {goalsB}</Text></Text>
+                <Text style={styles.confirmText}>Exact Score: <Text style={{ fontWeight: '800', color: isDarkMode ? '#ffb77d' : '#854d0e' }}>{goalsA} - {goalsB}</Text></Text>
               </View>
 
               <View style={styles.modalBtnRow}>
@@ -2028,21 +2026,21 @@ export default function App() {
 
 const getStyles = (isDarkMode) => {
   const colors = {
-    bg: isDarkMode ? '#111417' : '#f1ebd9',
-    headerBg: isDarkMode ? '#1d2024' : '#e8dfc7',
-    headerBorder: isDarkMode ? 'rgba(255, 183, 125, 0.12)' : 'rgba(62, 56, 48, 0.12)',
-    cardBg: isDarkMode ? 'rgba(30, 34, 45, 0.7)' : 'rgba(250, 247, 238, 0.85)',
-    cardBorder: isDarkMode ? 'rgba(255, 183, 125, 0.12)' : 'rgba(62, 56, 48, 0.12)',
-    textMain: isDarkMode ? '#e1e2e8' : '#302b25',
-    textSub: isDarkMode ? '#a38c7c' : '#82776a',
-    inputBg: isDarkMode ? '#1d2024' : '#faf7ee',
-    inputBorder: isDarkMode ? 'rgba(255, 183, 125, 0.15)' : 'rgba(62, 56, 48, 0.15)',
-    primary: isDarkMode ? '#ffb77d' : '#b45309',
-    primaryBorder: isDarkMode ? '#ffb77d' : '#d97706',
-    btnSecondaryBg: isDarkMode ? '#1d2024' : '#e6dcbf',
-    shadowColor: isDarkMode ? '#000000' : '#3e3830',
-    navBg: isDarkMode ? '#1d2024' : '#e8dfc7',
-    navBorder: isDarkMode ? 'rgba(255, 183, 125, 0.12)' : 'rgba(62, 56, 48, 0.15)',
+    bg: isDarkMode ? '#171513' : '#f4efe2',
+    headerBg: isDarkMode ? '#1f1c19' : '#ebdcb9',
+    headerBorder: isDarkMode ? '#5c5346' : '#4e4537',
+    cardBg: isDarkMode ? '#22201d' : '#faf6eb',
+    cardBorder: isDarkMode ? '#5c5346' : '#4e4537',
+    textMain: isDarkMode ? '#ebdcb9' : '#2b261d',
+    textSub: isDarkMode ? '#a89b88' : '#7a6e5b',
+    inputBg: isDarkMode ? '#1f1c19' : '#fbf9f3',
+    inputBorder: isDarkMode ? '#5c5346' : '#4e4537',
+    primary: isDarkMode ? '#ffb77d' : '#854d0e',
+    primaryBorder: isDarkMode ? '#ffb77d' : '#a16207',
+    btnSecondaryBg: isDarkMode ? '#1f1c19' : '#ebdcb9',
+    shadowColor: isDarkMode ? '#000000' : '#4e4537',
+    navBg: isDarkMode ? '#1f1c19' : '#ebdcb9',
+    navBorder: isDarkMode ? '#5c5346' : '#4e4537',
   };
 
   return StyleSheet.create({
@@ -2115,21 +2113,27 @@ const getStyles = (isDarkMode) => {
     card: {
       backgroundColor: colors.cardBg,
       borderColor: colors.cardBorder,
-      borderWidth: 1,
-      borderRadius: 16,
+      borderWidth: 2,
+      borderRadius: 12,
       padding: 24,
       width: '100%',
       marginBottom: 20,
       shadowColor: colors.shadowColor,
-      shadowOffset: { width: 0, height: 8 },
-      shadowOpacity: 0.1,
-      shadowRadius: 10,
+      shadowOffset: { width: 4, height: 4 },
+      shadowOpacity: 1,
+      shadowRadius: 0,
+      elevation: 4,
     },
     glassCard: {
       backgroundColor: colors.cardBg,
       borderColor: colors.cardBorder,
-      borderWidth: 1,
-      backdropFilter: 'blur(10px)',
+      borderWidth: 2,
+      borderRadius: 12,
+      shadowColor: colors.shadowColor,
+      shadowOffset: { width: 4, height: 4 },
+      shadowOpacity: 1,
+      shadowRadius: 0,
+      elevation: 4,
     },
     cardHeader: {
       fontSize: 16,
@@ -2290,27 +2294,29 @@ const getStyles = (isDarkMode) => {
       width: '100%',
       backgroundColor: colors.cardBg,
       borderColor: colors.cardBorder,
-      borderWidth: 1.5,
+      borderWidth: 2,
       borderRadius: 12,
       padding: 16,
       shadowColor: colors.shadowColor,
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.08,
-      shadowRadius: 8,
+      shadowOffset: { width: 4, height: 4 },
+      shadowOpacity: 1,
+      shadowRadius: 0,
+      elevation: 4,
     },
     ringCard: {
       width: '100%',
       backgroundColor: colors.cardBg,
       borderColor: colors.cardBorder,
-      borderWidth: 1.5,
+      borderWidth: 2,
       borderRadius: 12,
       padding: 16,
       alignItems: 'center',
       justifyContent: 'center',
       shadowColor: colors.shadowColor,
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.08,
-      shadowRadius: 8,
+      shadowOffset: { width: 4, height: 4 },
+      shadowOpacity: 1,
+      shadowRadius: 0,
+      elevation: 4,
     },
     chartTitle: {
       fontSize: 11,
@@ -2362,14 +2368,15 @@ const getStyles = (isDarkMode) => {
     matchCard: {
       backgroundColor: colors.cardBg,
       borderColor: colors.cardBorder,
-      borderWidth: 1.5,
-      borderRadius: 14,
+      borderWidth: 2,
+      borderRadius: 12,
       padding: 18,
       marginBottom: 16,
       shadowColor: colors.shadowColor,
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.08,
-      shadowRadius: 6,
+      shadowOffset: { width: 4, height: 4 },
+      shadowOpacity: 1,
+      shadowRadius: 0,
+      elevation: 4,
     },
     matchHeaderRow: {
       flexDirection: 'row',
@@ -2504,14 +2511,14 @@ const getStyles = (isDarkMode) => {
     tableCard: {
       backgroundColor: colors.cardBg,
       borderColor: colors.cardBorder,
-      borderWidth: 1,
-      borderRadius: 14,
+      borderWidth: 2,
+      borderRadius: 12,
       paddingVertical: 8,
       shadowColor: colors.shadowColor,
-      shadowOffset: { width: 0, height: 6 },
-      shadowOpacity: 0.08,
-      shadowRadius: 10,
-      backdropFilter: 'blur(10px)',
+      shadowOffset: { width: 4, height: 4 },
+      shadowOpacity: 1,
+      shadowRadius: 0,
+      elevation: 4,
     },
     tableHeaderRow: {
       flexDirection: 'row',
@@ -2547,15 +2554,15 @@ const getStyles = (isDarkMode) => {
     historyCard: {
       backgroundColor: colors.cardBg,
       borderColor: colors.cardBorder,
-      borderWidth: 1,
-      borderRadius: 14,
+      borderWidth: 2,
+      borderRadius: 12,
       padding: 18,
       marginBottom: 16,
       shadowColor: colors.shadowColor,
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.08,
-      shadowRadius: 6,
-      backdropFilter: 'blur(10px)',
+      shadowOffset: { width: 4, height: 4 },
+      shadowOpacity: 1,
+      shadowRadius: 0,
+      elevation: 4,
     },
     historyBetRow: {
       flexDirection: 'row',
@@ -2618,15 +2625,15 @@ const getStyles = (isDarkMode) => {
     bracketStageCard: {
       backgroundColor: colors.cardBg,
       borderColor: colors.cardBorder,
-      borderWidth: 1,
-      borderRadius: 14,
+      borderWidth: 2,
+      borderRadius: 12,
       padding: 18,
       marginBottom: 16,
       shadowColor: colors.shadowColor,
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.08,
-      shadowRadius: 6,
-      backdropFilter: 'blur(10px)',
+      shadowOffset: { width: 4, height: 4 },
+      shadowOpacity: 1,
+      shadowRadius: 0,
+      elevation: 4,
     },
     bracketStageTitle: {
       color: colors.primary,
@@ -2768,14 +2775,15 @@ const getStyles = (isDarkMode) => {
       backgroundColor: colors.bg,
       borderColor: '#b92028',
       borderWidth: 2,
-      borderRadius: 16,
+      borderRadius: 12,
       padding: 24,
       width: '100%',
       maxWidth: 340,
       shadowColor: colors.shadowColor,
-      shadowOffset: { width: 0, height: 10 },
-      shadowOpacity: 0.12,
-      shadowRadius: 15,
+      shadowOffset: { width: 4, height: 4 },
+      shadowOpacity: 1,
+      shadowRadius: 0,
+      elevation: 4,
     },
     modalHeader: {
       fontSize: 18,
@@ -2889,39 +2897,18 @@ const getStyles = (isDarkMode) => {
       gap: 10,
       marginTop: 20
     },
-    ambientGlow1: {
-      position: 'absolute',
-      top: -120,
-      left: -120,
-      width: 350,
-      height: 350,
-      borderRadius: 175,
-      backgroundColor: isDarkMode ? 'rgba(255, 183, 125, 0.08)' : 'rgba(180, 83, 9, 0.1)',
-      filter: 'blur(80px)',
-      pointerEvents: 'none',
-    },
-    ambientGlow2: {
-      position: 'absolute',
-      bottom: 80,
-      right: -150,
-      width: 450,
-      height: 450,
-      borderRadius: 225,
-      backgroundColor: isDarkMode ? 'rgba(78, 222, 163, 0.04)' : 'rgba(217, 119, 6, 0.05)',
-      filter: 'blur(100px)',
-      pointerEvents: 'none',
-    },
     mainConsensusCard: {
       padding: 20,
-      borderRadius: 16,
+      borderRadius: 12,
       marginBottom: 24,
       shadowColor: colors.shadowColor,
-      shadowOffset: { width: 0, height: 6 },
-      shadowOpacity: 0.1,
-      shadowRadius: 12,
+      shadowOffset: { width: 4, height: 4 },
+      shadowOpacity: 1,
+      shadowRadius: 0,
       backgroundColor: colors.cardBg,
       borderColor: colors.cardBorder,
-      borderWidth: 1.5,
+      borderWidth: 2,
+      elevation: 4,
     },
     consensusHeader: {
       flexDirection: 'row',
@@ -3199,13 +3186,14 @@ const getStyles = (isDarkMode) => {
       padding: 10,
       borderRadius: 10,
       shadowColor: colors.shadowColor,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.05,
-      shadowRadius: 4,
+      shadowOffset: { width: 3, height: 3 },
+      shadowOpacity: 1,
+      shadowRadius: 0,
       position: 'relative',
       backgroundColor: colors.cardBg,
       borderColor: colors.cardBorder,
-      borderWidth: 1,
+      borderWidth: 2,
+      elevation: 2,
     },
     bracketTeamRow: {
       flexDirection: 'row',
@@ -3323,14 +3311,15 @@ const getStyles = (isDarkMode) => {
     },
     teamDetailsCard: {
       padding: 16,
-      borderRadius: 14,
+      borderRadius: 12,
       shadowColor: colors.shadowColor,
-      shadowOffset: { width: 0, height: 6 },
-      shadowOpacity: 0.08,
-      shadowRadius: 10,
+      shadowOffset: { width: 4, height: 4 },
+      shadowOpacity: 1,
+      shadowRadius: 0,
       backgroundColor: colors.cardBg,
       borderColor: colors.cardBorder,
-      borderWidth: 1,
+      borderWidth: 2,
+      elevation: 4,
     },
     teamDetailsHeader: {
       flexDirection: 'row',

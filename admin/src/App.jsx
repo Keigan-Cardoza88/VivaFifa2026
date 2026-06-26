@@ -887,7 +887,7 @@ function App() {
               Participants ({users.filter(u => u.role === 'participant').length})
               {users.filter(u => u.role === 'pending').length > 0 && (
                 <span style={{
-                  marginLeft: '8px', backgroundColor: '#ffd700', color: '#0b0f19',
+                  marginLeft: '8px', backgroundColor: 'var(--brazil-gold)', color: '#0b0f19',
                   borderRadius: '10px', padding: '1px 7px', fontSize: '0.7rem', fontWeight: '800'
                 }}>
                   {users.filter(u => u.role === 'pending').length}
@@ -1299,7 +1299,7 @@ function App() {
 
                           {/* Override Form */}
                           <div style={{ marginTop: '16px', padding: '12px', backgroundColor: 'rgba(19, 27, 46, 0.4)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                              <h5 style={{ fontSize: '0.8rem', marginBottom: '8px', color: '#ffd700' }}>Override/Place Bet for User</h5>
+                              <h5 style={{ fontSize: '0.8rem', marginBottom: '8px', color: 'var(--brazil-gold)' }}>Override/Place Bet for User</h5>
                               <form onSubmit={(e) => handleOverrideBetSubmit(e, match.matchId)}>
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
                                   <select className="form-control" style={{ fontSize: '0.75rem', padding: '6px' }} required
@@ -1351,8 +1351,8 @@ function App() {
 
             {/* PENDING JOIN REQUESTS */}
             {users.filter(u => u.role === 'pending').length > 0 && (
-              <div className="content-card" style={{ borderColor: '#ffd700', borderWidth: '2px' }}>
-                <h3 className="card-title" style={{ color: '#ffd700' }}>Pending Join Requests ({users.filter(u => u.role === 'pending').length})</h3>
+              <div className="content-card" style={{ borderColor: 'var(--brazil-gold)', borderWidth: '2px' }}>
+                <h3 className="card-title" style={{ color: 'var(--brazil-gold)' }}>Pending Join Requests ({users.filter(u => u.role === 'pending').length})</h3>
                 <div className="table-responsive">
                   <table className="scoreboard-table">
                     <thead>

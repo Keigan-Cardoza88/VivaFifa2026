@@ -7,50 +7,50 @@
   font-weight: 400;
 
   color-scheme: light;
-  --bg-color: #f1ebd9;
-  --card-bg: rgba(250, 247, 238, 0.85);
-  --card-border: rgba(62, 56, 48, 0.18);
-  --text-main: #332c22;
-  --text-sub: #7a6e5d;
+  --bg-color: #f4efe2;       /* Warm vintage parchment paper */
+  --card-bg: #faf6eb;        /* Lighter parchment card background */
+  --card-border: #4e4537;    /* Solid dark vintage charcoal border */
+  --text-main: #2b261d;      /* Deep ink charcoal-brown */
+  --text-sub: #7a6e5b;       /* Aged sepia secondary text */
 
   /* Theme Specific UI Element Colors */
-  --sidebar-bg: #e8dfc7;
-  --menu-hover: #e2d7be;
-  --menu-active: linear-gradient(90deg, #e2d7be 0%, #dcd0b0 100%);
-  --user-badge-bg: #e2d7be;
-  --input-bg: #faf7ee;
+  --sidebar-bg: #ebdcb9;     /* Warm dark cream/kraft paper */
+  --menu-hover: #dfceaa;
+  --menu-active: linear-gradient(90deg, #dfceaa 0%, #d5c29a 100%);
+  --user-badge-bg: #dfceaa;
+  --input-bg: #fbf9f3;
 
   /* Vibrant Flag-Inspired Accents */
-  --brazil-gold: #c5a01d;
+  --brazil-gold: #854d0e;
   --brazil-green: #27773f;
-  --arg-sky-blue: #5489be;
-  --spain-red: #b92028;
-  --spain-gold: #d97706;
+  --arg-sky-blue: #3d719e;
+  --spain-red: #9e1b21;
+  --spain-gold: #a16207;
   
   --win-green: #27773f;
-  --loss-red: #b92028;
-  --btn-bg: #e6dcbf;
-  --btn-hover: #dcd0b0;
-  --active-blue: #b45309;
+  --loss-red: #9e1b21;
+  --btn-bg: #ebdcb9;
+  --btn-hover: #dfceaa;
+  --active-blue: #854d0e;
 }
 
 :root.dark, body.dark {
   color-scheme: dark;
-  --bg-color: #111417;
-  --card-bg: rgba(30, 34, 45, 0.7);
-  --card-border: rgba(255, 183, 125, 0.18);
-  --text-main: #e1e2e8;
-  --text-sub: #a38c7c;
+  --bg-color: #171513;       /* Vintage ink / very dark brown-black */
+  --card-bg: #22201d;        /* Warm charcoal/wood grain dark */
+  --card-border: #5c5346;    /* Muted retro solid border */
+  --text-main: #ebdcb9;      /* Warm aged paper text */
+  --text-sub: #a89b88;       /* Aged sepia secondary text */
 
-  --sidebar-bg: #1d2024;
-  --menu-hover: #323539;
-  --menu-active: linear-gradient(90deg, #272a2e 0%, #323539 100%);
-  --user-badge-bg: #272a2e;
-  --input-bg: #1d2024;
+  --sidebar-bg: #1f1c19;     /* Deep vintage leather / charcoal */
+  --menu-hover: #2f2b26;
+  --menu-active: linear-gradient(90deg, #26231f 0%, #2f2b26 100%);
+  --user-badge-bg: #26231f;
+  --input-bg: #1f1c19;
 
   /* Stitch Dark Theme Adjustments */
-  --btn-bg: #1d2024;
-  --btn-hover: #323539;
+  --btn-bg: #1f1c19;
+  --btn-hover: #2f2b26;
   --active-blue: #ffb77d;
   --brazil-gold: #ffb77d;
 }
@@ -256,22 +256,21 @@ body {
 
 .stat-card {
   background-color: var(--card-bg);
-  border: 1px solid var(--card-border);
-  border-radius: 16px;
+  border: 2px solid var(--card-border);
+  border-radius: 12px;
   padding: 24px;
   display: flex;
   flex-direction: column;
   gap: 8px;
   position: relative;
   overflow: hidden;
-  transition: transform 0.2s;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  box-shadow: 0 8px 32px 0 rgba(62, 56, 48, 0.08);
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 4px 4px 0px 0px var(--card-border);
 }
 
 .stat-card:hover {
-  transform: translateY(-4px);
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0px 0px var(--card-border);
 }
 
 .stat-card.brazil { border-color: var(--brazil-gold); }
@@ -308,13 +307,11 @@ body {
 /* Content Cards */
 .content-card {
   background-color: var(--card-bg);
-  border: 1px solid var(--card-border);
-  border-radius: 16px;
+  border: 2px solid var(--card-border);
+  border-radius: 12px;
   padding: 28px;
   margin-bottom: 30px;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  box-shadow: 0 8px 32px 0 rgba(62, 56, 48, 0.08);
+  box-shadow: 4px 4px 0px 0px var(--card-border);
 }
 
 .card-title {
@@ -492,15 +489,13 @@ body {
 
 .match-item-card {
   background-color: var(--card-bg);
-  border: 1px solid var(--card-border);
-  border-radius: 16px;
+  border: 2px solid var(--card-border);
+  border-radius: 12px;
   padding: 20px;
   display: flex;
   flex-direction: column;
   gap: 12px;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  box-shadow: 0 8px 32px 0 rgba(62, 56, 48, 0.08);
+  box-shadow: 4px 4px 0px 0px var(--card-border);
 }
 
 .match-item-header {
@@ -551,27 +546,24 @@ body {
   border-top: 1px solid var(--card-border);
 }
 
-/* Login Page Styling */
 .login-page {
   display: flex;
   justify-content: center;
   align-items: center;
   height: 100vh;
   width: 100vw;
-  background: radial-gradient(circle at center, #eae0cf 0%, var(--bg-color) 70%);
+  background-color: var(--bg-color);
 }
 
 .login-card {
   background-color: var(--card-bg);
-  border: 1px solid var(--card-border);
-  border-radius: 16px;
+  border: 2px solid var(--card-border);
+  border-radius: 12px;
   padding: 48px;
   width: 100%;
   max-width: 440px;
   text-align: center;
-  box-shadow: 0 8px 32px 0 rgba(62, 56, 48, 0.12);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 6px 6px 0px 0px var(--card-border);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -716,7 +708,6 @@ body {
     width: 100vw;
     height: 100vh;
     background-color: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(4px);
     z-index: 1000;
   }
 
