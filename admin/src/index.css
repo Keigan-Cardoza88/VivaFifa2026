@@ -535,6 +535,7 @@ body {
   border-radius: 6px;
   font-size: 1.15rem;
   font-weight: 800;
+  color: #2b261d; /* Explicit dark text on light square */
 }
 
 .match-item-footer {
