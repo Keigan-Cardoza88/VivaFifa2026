@@ -150,6 +150,9 @@ module.exports = async (req, res) => {
 
       // Delete old kitty logs to prevent duplicates on resettlement
       const kittySnapshot = await transaction.get(db.collection('kitty').where('matchId', '==', String(matchId)));
+      // Pre-fetch all kitty logs to sum up reserves (reads must happen before any writes/deletes)
+      const allKittiesSnapshot = await transaction.get(db.collection('kitty'));
+
       kittySnapshot.forEach((doc) => {
         transaction.delete(doc.ref);
       });
@@ -416,8 +419,7 @@ module.exports = async (req, res) => {
           }
         });
 
-        // Fetch current kitty balances to avoid going below 0
-        const allKittiesSnapshot = await transaction.get(db.collection('kitty'));
+        // Use pre-fetched allKittiesSnapshot from the top of the transaction to prevent read-after-write error
         let currentRefereeKitty = 0;
         let currentFinalsKitty = 0;
         allKittiesSnapshot.forEach(doc => {
