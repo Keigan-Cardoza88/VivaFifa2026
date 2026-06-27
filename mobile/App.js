@@ -1494,7 +1494,7 @@ export default function App() {
                                     : (b.teamBetResult === 'refunded' ? 0 : -matchPayouts.teamStake)
                                 );
                                 const gotOneSideCorrect = !b.isDefault && (b.goalsTeamA === Number(match.resultTeamAGoals) || b.goalsTeamB === Number(match.resultTeamBGoals));
-                                const refereeBonus = (gotOneSideCorrect && !isPostponed) ? 25 : 0;
+                                const refereeBonus = isPostponed ? 0 : (b.refereeBonus !== undefined ? b.refereeBonus : (gotOneSideCorrect ? 25 : 0));
                                 const goalNet = isPostponed ? 0 : (
                                   (b.goalBetResult === 'won' || b.goalBetResult === 'won_partial')
                                     ? (matchPayouts.goalSharePerWinner - matchPayouts.goalStake)
@@ -1519,7 +1519,7 @@ export default function App() {
                                       {goalNet >= 0 ? '+' : ''}₹{Number(goalNet).toFixed(2)}
                                     </Text>
                                     <Text style={[styles.expandedBetsCell, { flex: 1.5, textAlign: 'right', fontWeight: '800', color: refereeBonus > 0 ? '#00e676' : '#82776a' }]}>
-                                      {refereeBonus > 0 ? '+25' : '+0'}
+                                      {refereeBonus > 0 ? `+${refereeBonus}` : '+0'}
                                     </Text>
                                     <Text style={[styles.expandedBetsCell, { flex: 1.3, textAlign: 'right', fontWeight: '800', color: isPostponed ? '#94a3b8' : (net >= 0 ? '#00e676' : '#ff3d71') }]}>
                                       {isPostponed ? '' : (net >= 0 ? '+' : '')}₹{Number(net).toFixed(2)}

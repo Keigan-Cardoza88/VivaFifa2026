@@ -383,7 +383,14 @@ module.exports = async (req, res) => {
             totalBonusPayout += 25;
             const currentWon = bet.amountWon || 0;
             const updatePayload = {
-              amountWon: currentWon + 25
+              amountWon: currentWon + 25,
+              refereeBonus: 25
+            };
+            transaction.update(bet.ref, updatePayload);
+            Object.assign(bet, updatePayload);
+          } else {
+            const updatePayload = {
+              refereeBonus: 0
             };
             transaction.update(bet.ref, updatePayload);
             Object.assign(bet, updatePayload);
@@ -416,6 +423,12 @@ module.exports = async (req, res) => {
           if (bonus > 0) {
             totalRequiredBonus += bonus;
             playerBonusDetails.push({ bet, bonus });
+          } else {
+            const updatePayload = {
+              refereeBonus: 0
+            };
+            transaction.update(bet.ref, updatePayload);
+            Object.assign(bet, updatePayload);
           }
         });
 
@@ -453,14 +466,21 @@ module.exports = async (req, res) => {
 
           playerBonusDetails.forEach(({ bet, bonus }) => {
             const scaledBonus = Math.round(bonus * scaleFactor * 100) / 100;
-            if (scaledBonus > 0) {
-              const currentWon = bet.amountWon || 0;
-              const updatePayload = {
-                amountWon: currentWon + scaledBonus
-              };
-              transaction.update(bet.ref, updatePayload);
-              Object.assign(bet, updatePayload);
-            }
+            const currentWon = bet.amountWon || 0;
+            const updatePayload = {
+              amountWon: currentWon + scaledBonus,
+              refereeBonus: scaledBonus
+            };
+            transaction.update(bet.ref, updatePayload);
+            Object.assign(bet, updatePayload);
+          });
+        } else {
+          playerBonusDetails.forEach(({ bet }) => {
+            const updatePayload = {
+              refereeBonus: 0
+            };
+            transaction.update(bet.ref, updatePayload);
+            Object.assign(bet, updatePayload);
           });
         }
       }
