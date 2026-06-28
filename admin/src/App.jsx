@@ -745,6 +745,21 @@ function App() {
     }
   };
 
+  // Q2. Delete Placed Bet
+  const handleDeleteBet = async (betId, matchId) => {
+    if (!window.confirm("Are you sure you want to delete this player's bet?")) return;
+    setActionLoading(true);
+    try {
+      await deleteDoc(doc(db, 'bets', betId));
+      setStatusMessage({ type: 'success', text: 'Bet deleted successfully.' });
+      await handleViewBets(matchId); // reload bets
+    } catch (err) {
+      setStatusMessage({ type: 'error', text: `Failed to delete bet: ${err.message}` });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   // Close betting for all non-completed matches
   const handleCloseAllBets = async () => {
     if (!window.confirm("Are you sure you want to CLOSE betting for all upcoming/live matches immediately?")) return;
@@ -1331,6 +1346,7 @@ function App() {
                                     <th>Team Pick</th>
                                     <th>Scoreline</th>
                                     <th>Status</th>
+                                    <th>Actions</th>
                                   </tr>
                                 </thead>
                                 <tbody>
@@ -1342,6 +1358,15 @@ function App() {
                                         <td>{b.teamPrediction}</td>
                                         <td>{b.goalsTeamA} - {b.goalsTeamB}</td>
                                         <td>{b.isOverride ? 'Override' : (b.isDefault ? 'Default' : 'User')}</td>
+                                        <td>
+                                          <button 
+                                            className="btn" 
+                                            style={{ padding: '2px 6px', fontSize: '0.65rem', backgroundColor: 'var(--loss-red)', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                                            onClick={() => handleDeleteBet(b.id, match.matchId)}
+                                          >
+                                            🗑️ Delete
+                                          </button>
+                                        </td>
                                       </tr>
                                     );
                                   })}
