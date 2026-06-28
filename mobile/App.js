@@ -1966,6 +1966,30 @@ export default function App() {
           </View>
         )}
 
+        {/* TAB 6: REAL STAKES */}
+        {activeTab === 'realstakes' && (
+          <View style={{ padding: 16 }}>
+            <View style={[styles.profileCard, { borderColor: '#ff3d71', borderWidth: 1 }]}>
+              <Text style={[styles.profileName, { color: '#ff3d71' }]}>Real Stakes</Text>
+              <Text style={[styles.profileEmail, { marginBottom: 16 }]}>Stakes & Kitty Reserves</Text>
+              
+              <View style={styles.profileDivider} />
+              
+              <View style={styles.profileRow}>
+                <Text style={styles.profileLabel}>Total Entry Fees Pot:</Text>
+                <Text style={[styles.profileValue, { color: '#ff3d71', fontWeight: 'bold' }]}>
+                  ₹{(Object.values(allUsers).filter(u => u.role === 'participant').length * 10400).toLocaleString()}
+                </Text>
+              </View>
+
+              <View style={styles.profileRow}>
+                <Text style={styles.profileLabel}>Match Stake Pool:</Text>
+                <Text style={styles.profileValue}>₹150 per Match (₹100 Team / ₹50 Goal)</Text>
+              </View>
+            </View>
+          </View>
+        )}
+
       </ScrollView>
 
       {/* FOOTER TAB BAR */}
@@ -1984,6 +2008,9 @@ export default function App() {
         </TouchableOpacity>
         <TouchableOpacity style={[styles.tabItem, activeTab === 'teams' && styles.tabActive]} onPress={() => setActiveTab('teams')}>
           <Text style={styles.tabText}>Teams</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={[styles.tabItem, activeTab === 'realstakes' && styles.tabActive]} onPress={() => setActiveTab('realstakes')}>
+          <Text style={[styles.tabText, { color: '#ff3d71', fontWeight: 'bold' }]}>Stakes</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[styles.tabItem, activeTab === 'profile' && styles.tabActive]} onPress={() => setActiveTab('profile')}>
           <Text style={styles.tabText}>Profile</Text>
