@@ -868,7 +868,7 @@ export default function App() {
       const bet = myBets[m.matchId];
       if (bet && (bet.amountWon !== undefined || bet.amountLost !== undefined)) {
         if (m.status === 'postponed') return;
-        const stage = m.stage;
+        const stage = m.stage || (Number(m.matchId) < 149 ? 'group' : 'r32');
         let stageStakes = settings?.stakes?.[stage] || {
           group: { team: 100, goal: 50 },
           r32: { team: 75, goal: 75 },
@@ -881,6 +881,12 @@ export default function App() {
         if (stage === 'group' && Number(m.matchId) < 45) {
           stageStakes = { team: 50, goal: 50 };
         }
+
+        // Filter by current active round
+        const rawStage = m.stage || (Number(m.matchId) < 149 ? 'group' : 'r32');
+        const matchStageForGraph = rawStage === 'third_place' ? 'final' : rawStage;
+        if (matchStageForGraph !== selectedStageTab) return;
+
         const totalStake = (stageStakes.team || 100) + (stageStakes.goal || 50);
 
         settledBets.push({
