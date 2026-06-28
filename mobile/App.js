@@ -366,7 +366,11 @@ export default function App() {
     const qMatches = query(collection(db, 'matches'), orderBy('kickoffTimeIST', 'asc'));
     const unsubMatches = onSnapshot(qMatches, (snap) => {
       const list = [];
-      snap.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
+      snap.forEach(doc => {
+        const data = doc.data();
+        const stage = data.stage || (Number(data.matchId) < 149 ? 'group' : 'r32');
+        list.push({ id: doc.id, ...data, stage });
+      });
       setMatches(list);
     });
 
@@ -1264,13 +1268,12 @@ export default function App() {
                   <TouchableOpacity
                     key={stg.id}
                     style={[
-                      styles.toggleBtn,
-                      { flex: 0, flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 10, marginRight: 8 },
-                      selectedStageTab === stg.id && styles.toggleActive
+                      styles.stageTabBtn,
+                      selectedStageTab === stg.id && styles.stageTabActive
                     ]}
                     onPress={() => setSelectedStageTab(stg.id)}
                   >
-                    <Text numberOfLines={1} style={[styles.toggleText, { fontSize: 11 }, selectedStageTab === stg.id && { color: isDarkMode ? '#000000' : '#ffffff' }]}>{stg.label}</Text>
+                    <Text style={[styles.stageTabText, selectedStageTab === stg.id && { color: isDarkMode ? '#000000' : '#ffffff' }]}>{stg.label}</Text>
                   </TouchableOpacity>
                 ))}
               </ScrollView>
@@ -1342,13 +1345,12 @@ export default function App() {
                   <TouchableOpacity
                     key={stg.id}
                     style={[
-                      styles.toggleBtn,
-                      { flex: 0, flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 10, marginRight: 8 },
-                      selectedStageTab === stg.id && styles.toggleActive
+                      styles.stageTabBtn,
+                      selectedStageTab === stg.id && styles.stageTabActive
                     ]}
                     onPress={() => setSelectedStageTab(stg.id)}
                   >
-                    <Text numberOfLines={1} style={[styles.toggleText, { fontSize: 11 }, selectedStageTab === stg.id && { color: isDarkMode ? '#000000' : '#ffffff' }]}>{stg.label}</Text>
+                    <Text style={[styles.stageTabText, selectedStageTab === stg.id && { color: isDarkMode ? '#000000' : '#ffffff' }]}>{stg.label}</Text>
                   </TouchableOpacity>
                 ))}
               </ScrollView>
@@ -2570,6 +2572,26 @@ const getStyles = (isDarkMode) => {
       color: colors.textMain,
       fontWeight: '700',
       fontSize: 13
+    },
+    stageTabBtn: {
+      paddingHorizontal: 16,
+      paddingVertical: 10,
+      backgroundColor: colors.btnSecondaryBg,
+      borderColor: colors.cardBorder,
+      borderWidth: 1.5,
+      borderRadius: 10,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: 8
+    },
+    stageTabActive: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primaryBorder
+    },
+    stageTabText: {
+      color: colors.textMain,
+      fontWeight: '700',
+      fontSize: 12
     },
     tableCard: {
       backgroundColor: colors.cardBg,

@@ -77,7 +77,7 @@ module.exports = async (req, res) => {
     }
 
     const matchData = matchDoc.data();
-    const stage = matchData.stage;
+    const stage = matchData.stage || (Number(matchId) < 149 ? 'group' : 'r32');
 
     // Fetch Global Settings
     const settingsDoc = await db.collection('settings').doc('global').get();
@@ -245,17 +245,17 @@ module.exports = async (req, res) => {
         });
         // forfeitTeamPool routed to winners — nothing extra to kitty for team bets
       } else {
-        // No team winners at all — everyone lost + forfeits → kitty
-        const totalTeamPool = (teamLosers.length * teamStake) + forfeitTeamPool;
-        if (totalTeamPool > 0) {
-          refereeKittyInflow += totalTeamPool * 0.5;
-          finalsKittyInflow += totalTeamPool * 0.5;
+        // No team winners at all — active players get refunded, only forfeits go to kitty
+        if (forfeitTeamPool > 0) {
+          refereeKittyInflow += forfeitTeamPool * 0.5;
+          finalsKittyInflow += forfeitTeamPool * 0.5;
         }
 
         teamLosers.forEach((bet) => {
           const updatePayload = {
-            teamBetResult: 'lost',
-            amountLost: teamStake
+            teamBetResult: 'refunded',
+            amountLost: 0,
+            amountWon: bet.amountWon || 0
           };
           transaction.update(bet.ref, updatePayload);
           Object.assign(bet, updatePayload);
@@ -350,17 +350,17 @@ module.exports = async (req, res) => {
             Object.assign(bet, updatePayload);
           });
         } else {
-          // No exact or partial winners: all goal stakes go to the kitty split.
-          if (totalGoalPool > 0) {
-            refereeKittyInflow += totalGoalPool * 0.5;
-            finalsKittyInflow += totalGoalPool * 0.5;
+          // No exact or partial goal winners: active players get refunded, only forfeits go to kitty
+          if (forfeitGoalPool > 0) {
+            refereeKittyInflow += forfeitGoalPool * 0.5;
+            finalsKittyInflow += forfeitGoalPool * 0.5;
           }
 
           goalLosers.forEach((bet) => {
             const existingLost = bet.amountLost || 0;
             const updatePayload = {
-              goalBetResult: 'lost',
-              amountLost: existingLost + goalStake,
+              goalBetResult: 'refunded',
+              amountLost: existingLost,
               amountWon: bet.amountWon || 0
             };
             transaction.update(bet.ref, updatePayload);
@@ -638,8 +638,9 @@ async function rebuildLeaderboard() {
       Object.keys(completedMatches).forEach((matchId) => {
         const match = completedMatches[matchId];
         
+        const rawStage = match.stage || (Number(matchId) < 149 ? 'group' : 'r32');
         // Group 'third_place' under 'final' stage for leaderboard aggregation
-        const matchStageForLeaderboard = match.stage === 'third_place' ? 'final' : match.stage;
+        const matchStageForLeaderboard = rawStage === 'third_place' ? 'final' : rawStage;
         if (matchStageForLeaderboard !== stage) {
           return;
         }
@@ -653,23 +654,32 @@ async function rebuildLeaderboard() {
           return;
         }
 
-        let stageStakes = settings.stakes[match.stage] || { team: 50, goal: 50 };
-        if (match.stage === 'group' && Number(matchId) < 45) {
+        let stageStakes = settings.stakes[rawStage] || { team: 50, goal: 50 };
+        if (rawStage === 'group' && Number(matchId) < 45) {
           stageStakes = { team: 50, goal: 50 };
         }
         const teamStake = stageStakes.team;
         const goalStake = stageStakes.goal;
 
         totalPredictions += 2; // Team + Goal predictions
-        totalLost += teamStake + goalStake; // Always add the user's total stake contribution
+
+        let matchTeamLost = teamStake;
+        let matchGoalLost = goalStake;
 
         const bet = userBets[matchId];
         if (bet) {
-          let won = bet.amountWon || 0;
-          if (bet.goalBetResult === 'refunded') {
-            won = Math.max(0, won - goalStake);
+          if (bet.isDefault) {
+            matchTeamLost = teamStake;
+            matchGoalLost = goalStake;
+          } else {
+            if (bet.teamBetResult === 'refunded') {
+              matchTeamLost = 0;
+            }
+            if (bet.goalBetResult === 'refunded') {
+              matchGoalLost = 0;
+            }
           }
-          totalWon += won;
+          totalWon += bet.amountWon || 0;
 
           if (bet.teamBetResult === 'won' || bet.teamBetResult === 'draw_win') {
             correctPredictions += 1;
@@ -677,7 +687,12 @@ async function rebuildLeaderboard() {
           if (bet.goalBetResult === 'won') {
             correctPredictions += 1;
           }
+        } else {
+          matchTeamLost = teamStake;
+          matchGoalLost = goalStake;
         }
+
+        totalLost += matchTeamLost + matchGoalLost;
       });
 
       const netProfit = totalWon - totalLost;
@@ -708,7 +723,7 @@ async function resettleMatchDirectly(db, matchId) {
   const matchData = matchDoc.data();
   if (matchData.status !== 'completed') return;
 
-  const stage = matchData.stage;
+  const stage = matchData.stage || (Number(matchId) < 149 ? 'group' : 'r32');
   const settingsDoc = await db.collection('settings').doc('global').get();
   const settings = settingsDoc.exists ? settingsDoc.data() : {
     stakes: {
