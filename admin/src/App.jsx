@@ -999,7 +999,7 @@ function App() {
             <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '12px', marginBottom: '16px' }}>
               {[
                 { id: 'group', label: 'Group Stage' },
-                { id: 'r32', label: 'Round of 32' },
+                { id: 'r32', label: 'STAKES (Round of 32)' },
                 { id: 'r16', label: 'Round of 16' },
                 { id: 'qf', label: 'Quarter-Finals' },
                 { id: 'sf', label: 'Semi-Finals' },
@@ -1008,7 +1008,17 @@ function App() {
                 <button
                   key={stg.id}
                   className={`btn ${selectedStageTab === stg.id ? 'btn-primary' : 'btn-secondary'}`}
-                  style={{ whiteSpace: 'nowrap', padding: '8px 16px', fontSize: '0.8rem' }}
+                  style={{
+                    whiteSpace: 'nowrap',
+                    padding: '8px 16px',
+                    fontSize: '0.8rem',
+                    ...(stg.id === 'r32' ? {
+                      borderColor: '#ff3d71',
+                      borderWidth: '1.5px',
+                      color: selectedStageTab === 'r32' ? '#ffffff' : '#ff3d71',
+                      backgroundColor: selectedStageTab === 'r32' ? '#ff3d71' : 'transparent',
+                    } : {})
+                  }}
                   onClick={() => setSelectedStageTab(stg.id)}
                 >
                   {stg.label}
@@ -1200,7 +1210,7 @@ function App() {
                       <select className="form-control" required value={editMatchForm.stage}
                               onChange={e => setEditMatchForm({ ...editMatchForm, stage: e.target.value })}>
                         <option value="group">Group Stage</option>
-                        <option value="r32">Round of 32</option>
+                        <option value="r32" style={{ color: '#ff3d71', fontWeight: 'bold' }}>STAKES (Round of 32)</option>
                         <option value="r16">Round of 16</option>
                         <option value="qf">Quarter-final</option>
                         <option value="sf">Semi-final</option>
@@ -1701,7 +1711,7 @@ function App() {
                       <select className="form-control" required value={customMatch.stage}
                               onChange={e => setCustomMatch({ ...customMatch, stage: e.target.value })}>
                         <option value="group">Group Stage</option>
-                        <option value="r32">Round of 32</option>
+                        <option value="r32" style={{ color: '#ff3d71', fontWeight: 'bold' }}>STAKES (Round of 32)</option>
                         <option value="r16">Round of 16</option>
                         <option value="qf">Quarter-final</option>
                         <option value="sf">Semi-final</option>
