@@ -209,6 +209,7 @@ export default function App() {
   const [stakesLeaderboardType, setStakesLeaderboardType] = useState('money');
   const [stakesSubTab, setStakesSubTab] = useState('leaderboard');
   const [stakesStageTab, setStakesStageTab] = useState('r32');
+  const [stakesWarningVisible, setStakesWarningVisible] = useState(false);
 
   // New state for user names mapping, group consensus, and history bet expander
   const [allUsers, setAllUsers] = useState({});
@@ -2480,7 +2481,10 @@ export default function App() {
         <TouchableOpacity style={[styles.tabItem, activeTab === 'teams' && styles.tabActive]} onPress={() => setActiveTab('teams')}>
           <Text style={styles.tabText}>Teams</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.tabItem, activeTab === 'realstakes' && styles.tabActive]} onPress={() => setActiveTab('realstakes')}>
+        <TouchableOpacity
+          style={[styles.tabItem, activeTab === 'realstakes' && styles.tabActive]}
+          onPress={() => { setStakesWarningVisible(true); }}
+        >
           <Text style={[styles.tabText, { color: '#ff3d71', fontWeight: 'bold' }]}>Stakes</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[styles.tabItem, activeTab === 'profile' && styles.tabActive]} onPress={() => setActiveTab('profile')}>
@@ -2577,6 +2581,84 @@ export default function App() {
           </View>
         </Modal>
       )}
+      {/* STAKES MODE WARNING DIALOG */}
+      <Modal animationType="fade" transparent={true} visible={stakesWarningVisible}>
+        <View style={{
+          flex: 1,
+          justifyContent: 'center',
+          alignItems: 'center',
+          backgroundColor: 'rgba(0, 0, 0, 0.75)',
+          paddingHorizontal: 24,
+        }}>
+          <View style={{
+            backgroundColor: isDarkMode ? '#1a1218' : '#fff5f7',
+            borderRadius: 16,
+            borderWidth: 2,
+            borderColor: '#ff3d71',
+            padding: 28,
+            width: '100%',
+            maxWidth: 360,
+            shadowColor: '#ff3d71',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.3,
+            shadowRadius: 12,
+            elevation: 10,
+          }}>
+            <Text style={{ fontSize: 28, textAlign: 'center', marginBottom: 6 }}>⚠️</Text>
+            <Text style={{
+              fontSize: 18,
+              fontWeight: '900',
+              color: '#ff3d71',
+              textAlign: 'center',
+              letterSpacing: 0.5,
+              marginBottom: 16,
+              textTransform: 'uppercase',
+            }}>
+              Stakes Mode
+            </Text>
+            <Text style={{
+              fontSize: 14,
+              color: isDarkMode ? '#e2c4cc' : '#7a1a30',
+              textAlign: 'center',
+              lineHeight: 22,
+              marginBottom: 24,
+              fontWeight: '600',
+            }}>
+              Bets placed in Stakes Mode involve{' '}
+              <Text style={{ fontWeight: '900', color: '#ff3d71' }}>actual real money</Text>.
+              {' '}Participation is entirely voluntary. Proceed with caution.
+            </Text>
+            <TouchableOpacity
+              style={{
+                backgroundColor: '#ff3d71',
+                paddingVertical: 14,
+                borderRadius: 10,
+                alignItems: 'center',
+              }}
+              onPress={() => {
+                setStakesWarningVisible(false);
+                setActiveTab('realstakes');
+              }}
+            >
+              <Text style={{ color: '#ffffff', fontWeight: '900', fontSize: 15, letterSpacing: 0.5 }}>
+                I Understand — Proceed
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={{
+                marginTop: 12,
+                paddingVertical: 10,
+                alignItems: 'center',
+              }}
+              onPress={() => setStakesWarningVisible(false)}
+            >
+              <Text style={{ color: isDarkMode ? '#a1a1aa' : '#71717a', fontWeight: '700', fontSize: 13 }}>
+                Cancel
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
