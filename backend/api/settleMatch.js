@@ -149,7 +149,7 @@ module.exports = async (req, res) => {
       });
 
       // Delete old kitty logs to prevent duplicates on resettlement
-      const kittySnapshot = await transaction.get(db.collection('kitty').where('matchId', '==', String(matchId)));
+      const kittySnapshot = await transaction.get(db.collection('kitty').where('matchId', '==', Number(matchId)));
       // Pre-fetch all kitty logs to sum up reserves (reads must happen before any writes/deletes)
       const allKittiesSnapshot = await transaction.get(db.collection('kitty'));
 
@@ -437,7 +437,7 @@ module.exports = async (req, res) => {
         let currentFinalsKitty = 0;
         allKittiesSnapshot.forEach(doc => {
           const data = doc.data();
-          if (data.matchId === String(matchId)) return; // skip this match's old data if resubmitted
+          if (Number(data.matchId) === Number(matchId)) return; // skip this match's old data if resubmitted
           currentRefereeKitty += data.splitReferee || 0;
           currentFinalsKitty += data.splitFinals || 0;
         });
@@ -601,6 +601,7 @@ async function rebuildLeaderboard() {
   };
 
   const batch = db.batch();
+  const ALL_STAGES = ['group', 'r32', 'r16', 'qf', 'sf', 'final'];
 
   for (const userDoc of usersSnapshot.docs) {
     const userId = userDoc.id;
@@ -618,65 +619,73 @@ async function rebuildLeaderboard() {
       userBets[doc.data().matchId] = doc.data();
     });
 
-    let totalWon = 0;
-    let totalLost = 0;
-    let correctPredictions = 0;
-    let totalPredictions = 0;
+    ALL_STAGES.forEach((stage) => {
+      let totalWon = 0;
+      let totalLost = 0;
+      let correctPredictions = 0;
+      let totalPredictions = 0;
 
-    // Iterate through completed matches that kicked off after the user joined
-    Object.keys(completedMatches).forEach((matchId) => {
-      const match = completedMatches[matchId];
-      
-      // Late entry protection: skip matches that started before they joined
-      if (joinedAfterMatch(userData, match)) {
-        return;
-      }
-
-      if (match.status === 'postponed') {
-        return;
-      }
-
-      const stage = match.stage;
-      let stageStakes = settings.stakes[stage] || { team: 50, goal: 50 };
-      if (stage === 'group' && Number(matchId) < 45) {
-        stageStakes = { team: 50, goal: 50 };
-      }
-      const teamStake = stageStakes.team;
-      const goalStake = stageStakes.goal;
-
-      totalPredictions += 2; // Team + Goal predictions
-      totalLost += teamStake + goalStake; // Always add the user's total stake contribution
-
-      const bet = userBets[matchId];
-      if (bet) {
-        let won = bet.amountWon || 0;
-        if (bet.goalBetResult === 'refunded') {
-          won = Math.max(0, won - goalStake);
+      // Iterate through completed matches that kicked off after the user joined
+      Object.keys(completedMatches).forEach((matchId) => {
+        const match = completedMatches[matchId];
+        
+        // Group 'third_place' under 'final' stage for leaderboard aggregation
+        const matchStageForLeaderboard = match.stage === 'third_place' ? 'final' : match.stage;
+        if (matchStageForLeaderboard !== stage) {
+          return;
         }
-        totalWon += won;
 
-        if (bet.teamBetResult === 'won' || bet.teamBetResult === 'draw_win') {
-          correctPredictions += 1;
+        // Late entry protection: skip matches that started before they joined
+        if (joinedAfterMatch(userData, match)) {
+          return;
         }
-        if (bet.goalBetResult === 'won') {
-          correctPredictions += 1;
+
+        if (match.status === 'postponed') {
+          return;
         }
-      }
-    });
 
-    const netProfit = totalWon - totalLost;
-    const accuracyPercent = totalPredictions > 0 ? Number(((correctPredictions / totalPredictions) * 100).toFixed(2)) : 0;
+        let stageStakes = settings.stakes[match.stage] || { team: 50, goal: 50 };
+        if (match.stage === 'group' && Number(matchId) < 45) {
+          stageStakes = { team: 50, goal: 50 };
+        }
+        const teamStake = stageStakes.team;
+        const goalStake = stageStakes.goal;
 
-    const leaderboardRef = db.collection('leaderboard').doc(userId);
-    batch.set(leaderboardRef, {
-      userId,
-      userName: userData.name || 'Anonymous',
-      netProfit,
-      totalWon,
-      totalLost,
-      correctPredictions,
-      totalPredictions,
-      accuracyPercent
+        totalPredictions += 2; // Team + Goal predictions
+        totalLost += teamStake + goalStake; // Always add the user's total stake contribution
+
+        const bet = userBets[matchId];
+        if (bet) {
+          let won = bet.amountWon || 0;
+          if (bet.goalBetResult === 'refunded') {
+            won = Math.max(0, won - goalStake);
+          }
+          totalWon += won;
+
+          if (bet.teamBetResult === 'won' || bet.teamBetResult === 'draw_win') {
+            correctPredictions += 1;
+          }
+          if (bet.goalBetResult === 'won') {
+            correctPredictions += 1;
+          }
+        }
+      });
+
+      const netProfit = totalWon - totalLost;
+      const accuracyPercent = totalPredictions > 0 ? Number(((correctPredictions / totalPredictions) * 100).toFixed(2)) : 0;
+
+      const leaderboardRef = db.collection('leaderboard').doc(`${userId}_${stage}`);
+      batch.set(leaderboardRef, {
+        userId,
+        userName: userData.name || 'Anonymous',
+        stage,
+        netProfit,
+        totalWon,
+        totalLost,
+        correctPredictions,
+        totalPredictions,
+        accuracyPercent
+      });
     });
   }
 

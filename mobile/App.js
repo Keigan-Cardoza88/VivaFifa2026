@@ -203,6 +203,7 @@ export default function App() {
 
   // Leaderboard toggle
   const [leaderboardType, setLeaderboardType] = useState('money');
+  const [selectedStageTab, setSelectedStageTab] = useState('r32');
 
   // New state for user names mapping, group consensus, and history bet expander
   const [allUsers, setAllUsers] = useState({});
@@ -382,14 +383,14 @@ export default function App() {
       if (snap.exists()) setSettings(snap.data());
     });
 
-    const qMoney = query(collection(db, 'leaderboard'), orderBy('netProfit', 'desc'));
+    const qMoney = query(collection(db, 'leaderboard'), where('stage', '==', selectedStageTab), orderBy('netProfit', 'desc'));
     const unsubMoney = onSnapshot(qMoney, (snap) => {
       const list = [];
       snap.forEach(doc => list.push(doc.data()));
       setLeaderboardMoney(list);
     });
 
-    const qAccuracy = query(collection(db, 'leaderboard'), orderBy('accuracyPercent', 'desc'));
+    const qAccuracy = query(collection(db, 'leaderboard'), where('stage', '==', selectedStageTab), orderBy('accuracyPercent', 'desc'));
     const unsubAccuracy = onSnapshot(qAccuracy, (snap) => {
       const list = [];
       snap.forEach(doc => list.push(doc.data()));
@@ -425,7 +426,7 @@ export default function App() {
       unsubAccuracy();
       unsubUsers();
     };
-  }, [currentUser, userProfile]);
+  }, [currentUser, userProfile, selectedStageTab]);
 
   const firstUpcomingMatch = matches.find(m => m.status === 'upcoming');
   const openUpcomingMatches = matches.filter(m => m.status === 'upcoming');
@@ -1250,6 +1251,31 @@ export default function App() {
         {/* TAB 2: RANKS */}
         {activeTab === 'leaderboard' && (
           <View>
+            <View style={{ marginBottom: 12 }}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingHorizontal: 4 }}>
+                {[
+                  { id: 'group', label: 'Group Stage' },
+                  { id: 'r32', label: 'Round of 32' },
+                  { id: 'r16', label: 'Round of 16' },
+                  { id: 'qf', label: 'Quarter-Finals' },
+                  { id: 'sf', label: 'Semi-Finals' },
+                  { id: 'final', label: 'Finals' }
+                ].map((stg) => (
+                  <TouchableOpacity
+                    key={stg.id}
+                    style={[
+                      styles.toggleBtn,
+                      { paddingHorizontal: 12, height: 36, minWidth: 90, marginRight: 8 },
+                      selectedStageTab === stg.id && styles.toggleActive
+                    ]}
+                    onPress={() => setSelectedStageTab(stg.id)}
+                  >
+                    <Text style={styles.toggleText}>{stg.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+
             <View style={styles.toggleRow}>
               <TouchableOpacity
                 style={[styles.toggleBtn, leaderboardType === 'money' && styles.toggleActive]}
@@ -1303,6 +1329,31 @@ export default function App() {
         {/* TAB 3: HISTORY */}
         {activeTab === 'history' && (
           <View>
+            <View style={{ marginBottom: 12 }}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingHorizontal: 4 }}>
+                {[
+                  { id: 'group', label: 'Group Stage' },
+                  { id: 'r32', label: 'Round of 32' },
+                  { id: 'r16', label: 'Round of 16' },
+                  { id: 'qf', label: 'Quarter-Finals' },
+                  { id: 'sf', label: 'Semi-Finals' },
+                  { id: 'final', label: 'Finals' }
+                ].map((stg) => (
+                  <TouchableOpacity
+                    key={stg.id}
+                    style={[
+                      styles.toggleBtn,
+                      { paddingHorizontal: 12, height: 36, minWidth: 90, marginRight: 8 },
+                      selectedStageTab === stg.id && styles.toggleActive
+                    ]}
+                    onPress={() => setSelectedStageTab(stg.id)}
+                  >
+                    <Text style={styles.toggleText}>{stg.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+
             <Text style={styles.sectionHeader}>Settled Matches</Text>
 
             {/* Sort Chips Row */}
@@ -1337,7 +1388,12 @@ export default function App() {
             </View>
 
             {(() => {
-              const settled = matches.filter(m => m.status === 'completed' || m.status === 'postponed');
+              const settled = matches.filter(m => {
+                const isMatchSettled = m.status === 'completed' || m.status === 'postponed';
+                if (!isMatchSettled) return false;
+                const matchStageForLeaderboard = m.stage === 'third_place' ? 'final' : m.stage;
+                return matchStageForLeaderboard === selectedStageTab;
+              });
               settled.sort((a, b) => {
                 if (historySort === 'latest') {
                   return (b.kickoffTimeIST?.seconds || 0) - (a.kickoffTimeIST?.seconds || 0);
@@ -2581,6 +2637,13 @@ const getStyles = (isDarkMode) => {
     historyBetTitle: {
       fontSize: 10,
       color: colors.textSub,
+      fontWeight: '700',
+      textTransform: 'uppercase',
+      letterSpacing: 0.5
+    },
+    historyBetLabel: {
+      fontSize: 10,
+      color: colors.textMain,
       fontWeight: '700',
       textTransform: 'uppercase',
       letterSpacing: 0.5
