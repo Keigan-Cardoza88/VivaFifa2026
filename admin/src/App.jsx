@@ -1175,16 +1175,12 @@ function App() {
                       <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
                         {match.status !== 'completed' && match.status !== 'postponed' ? (
                           <>
-                            <button className="btn btn-primary" style={{ flex: 1, padding: '6px 8px', fontSize: '0.75rem' }}
+                            <button className="btn btn-primary" style={{ width: '100%', padding: '6px 8px', fontSize: '0.75rem' }}
                                     onClick={() => {
                                       setSelectedMatch(match);
                                       setScoreInput({ matchId: match.matchId, teamAGoals: 0, teamBGoals: 0, winner: '' });
                                     }}>
                               Settle
-                            </button>
-                            <button className="btn btn-secondary" style={{ flex: 1, padding: '6px 8px', fontSize: '0.75rem' }}
-                                    onClick={() => handlePostponeMatch(match.matchId)}>
-                              Postpone
                             </button>
                           </>
                         ) : (
