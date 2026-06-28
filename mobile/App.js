@@ -1265,12 +1265,12 @@ export default function App() {
                     key={stg.id}
                     style={[
                       styles.toggleBtn,
-                      { flex: 0, paddingHorizontal: 16, paddingVertical: 10, minWidth: 95, marginRight: 8 },
+                      { flex: 0, flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 10, marginRight: 8 },
                       selectedStageTab === stg.id && styles.toggleActive
                     ]}
                     onPress={() => setSelectedStageTab(stg.id)}
                   >
-                    <Text style={[styles.toggleText, { fontSize: 11 }, selectedStageTab === stg.id && { color: isDarkMode ? '#000000' : '#ffffff' }]}>{stg.label}</Text>
+                    <Text numberOfLines={1} style={[styles.toggleText, { fontSize: 11 }, selectedStageTab === stg.id && { color: isDarkMode ? '#000000' : '#ffffff' }]}>{stg.label}</Text>
                   </TouchableOpacity>
                 ))}
               </ScrollView>
@@ -1343,12 +1343,12 @@ export default function App() {
                     key={stg.id}
                     style={[
                       styles.toggleBtn,
-                      { flex: 0, paddingHorizontal: 16, paddingVertical: 10, minWidth: 95, marginRight: 8 },
+                      { flex: 0, flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 10, marginRight: 8 },
                       selectedStageTab === stg.id && styles.toggleActive
                     ]}
                     onPress={() => setSelectedStageTab(stg.id)}
                   >
-                    <Text style={[styles.toggleText, { fontSize: 11 }, selectedStageTab === stg.id && { color: isDarkMode ? '#000000' : '#ffffff' }]}>{stg.label}</Text>
+                    <Text numberOfLines={1} style={[styles.toggleText, { fontSize: 11 }, selectedStageTab === stg.id && { color: isDarkMode ? '#000000' : '#ffffff' }]}>{stg.label}</Text>
                   </TouchableOpacity>
                 ))}
               </ScrollView>

@@ -130,6 +130,7 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState(null);
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [selectedStageTab, setSelectedStageTab] = useState('r32');
   const [isDarkMode, setIsDarkMode] = useState(() => {
     return localStorage.getItem('admin_theme') === 'dark';
   });
@@ -507,8 +508,6 @@ function App() {
     const numAmt = Number(amount);
     if (isNaN(numAmt) || numAmt <= 0) return alert('Enter valid amount');
     try {
-      const settingsRef = doc(db, 'settings', 'global');
-      // Decrement referee kitty, add to prizes or logs
       const logRef = doc(collection(db, 'kitty'));
       await setDoc(logRef, {
         kittyId: logRef.id,
@@ -516,11 +515,39 @@ function App() {
         amount: -numAmt,
         splitReferee: -numAmt,
         splitFinals: numAmt,
+        stage: selectedStageTab,
         createdAt: new Date()
       });
       setStatusMessage({ type: 'success', text: `Allocated Rs ${numAmt} from Referee Kitty to Finals Pool.` });
     } catch (err) {
        setStatusMessage({ type: 'error', text: err.message });
+    }
+  };
+
+  // Adjust Kitty Balances Directly
+  const handleAdjustKitty = async (targetField, currentTotal) => {
+    const promptText = targetField === 'referee'
+      ? `Enter new balance for Referee Kitty Reserve (current: Rs ${currentTotal}):`
+      : `Enter new balance for Finals Kitty Pool (current: Rs ${currentTotal}):`;
+    const newAmtStr = prompt(promptText, currentTotal);
+    if (newAmtStr === null) return; // user cancelled
+    const numNew = Number(newAmtStr);
+    if (isNaN(numNew)) return alert('Enter a valid number');
+    const difference = numNew - currentTotal;
+    if (difference === 0) return;
+    try {
+      const logRef = doc(collection(db, 'kitty'));
+      await setDoc(logRef, {
+        kittyId: logRef.id,
+        type: 'manual_adjustment',
+        createdAt: new Date(),
+        stage: selectedStageTab,
+        splitReferee: targetField === 'referee' ? difference : 0,
+        splitFinals: targetField === 'finals' ? difference : 0
+      });
+      setStatusMessage({ type: 'success', text: `Adjusted ${targetField === 'referee' ? 'Referee Kitty' : 'Finals Pot'} by ${difference >= 0 ? '+' : ''}Rs ${difference}` });
+    } catch (err) {
+      setStatusMessage({ type: 'error', text: err.message });
     }
   };
 
@@ -814,8 +841,20 @@ function App() {
   let refereeKitty = 0;
   let finalsKittyBonus = 0;
   kittyLogs.forEach(log => {
-    refereeKitty += log.splitReferee || 0;
-    finalsKittyBonus += log.splitFinals || 0;
+    let logStage = 'group'; // default
+    if (log.matchId) {
+      const matchObj = matches.find(m => Number(m.matchId) === Number(log.matchId));
+      if (matchObj) {
+        logStage = matchObj.stage === 'third_place' ? 'final' : matchObj.stage;
+      }
+    } else if (log.stage) {
+      logStage = log.stage;
+    }
+    
+    if (logStage === selectedStageTab) {
+      refereeKitty += log.splitReferee || 0;
+      finalsKittyBonus += log.splitFinals || 0;
+    }
   });
 
   // Total entry fees pot
@@ -943,14 +982,49 @@ function App() {
               <p className="page-subtitle">Tournament-wide aggregates and referee records.</p>
             </div>
 
+            {/* Stage Switcher control */}
+            <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '12px', marginBottom: '16px' }}>
+              {[
+                { id: 'group', label: 'Group Stage' },
+                { id: 'r32', label: 'Round of 32' },
+                { id: 'r16', label: 'Round of 16' },
+                { id: 'qf', label: 'Quarter-Finals' },
+                { id: 'sf', label: 'Semi-Finals' },
+                { id: 'final', label: 'Finals' }
+              ].map((stg) => (
+                <button
+                  key={stg.id}
+                  className={`btn ${selectedStageTab === stg.id ? 'btn-primary' : 'btn-secondary'}`}
+                  style={{ whiteSpace: 'nowrap', padding: '8px 16px', fontSize: '0.8rem' }}
+                  onClick={() => setSelectedStageTab(stg.id)}
+                >
+                  {stg.label}
+                </button>
+              ))}
+            </div>
+
             <div className="stats-grid">
-              <div className="stat-card argentina">
+              <div className="stat-card argentina" style={{ position: 'relative' }}>
                 <span className="stat-label">Finals Kitty Pool</span>
                 <span className="stat-value">Rs {finalsKittyBonus.toLocaleString()}</span>
+                <button 
+                  className="btn btn-secondary" 
+                  style={{ position: 'absolute', bottom: '8px', right: '8px', padding: '2px 8px', fontSize: '0.7rem' }}
+                  onClick={() => handleAdjustKitty('finals', finalsKittyBonus)}
+                >
+                  ✏️ Edit
+                </button>
               </div>
-              <div className="stat-card spain">
+              <div className="stat-card spain" style={{ position: 'relative' }}>
                 <span className="stat-label">Referee Kitty Reserve</span>
                 <span className="stat-value">Rs {refereeKitty.toLocaleString()}</span>
+                <button 
+                  className="btn btn-secondary" 
+                  style={{ position: 'absolute', bottom: '8px', right: '8px', padding: '2px 8px', fontSize: '0.7rem' }}
+                  onClick={() => handleAdjustKitty('referee', refereeKitty)}
+                >
+                  ✏️ Edit
+                </button>
               </div>
               <div className="stat-card">
                 <span className="stat-label">Settled Fixtures</span>
