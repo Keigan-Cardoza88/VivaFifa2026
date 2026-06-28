@@ -15,3 +15,8 @@
 [debug] [2026-06-28T10:55:58.165Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/vivafifa2026:testIamPermissions [none]
 [debug] [2026-06-28T10:55:58.165Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/vivafifa2026:testIamPermissions  x-goog-user-project=vivafifa2026
 [debug] [2026-06-28T10:55:58.166Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/vivafifa2026:testIamPermissions {"permissions":["firebase.projects.get","firebasehosting.sites.update"]}
+[debug] [2026-06-28T10:56:00.260Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/vivafifa2026:testIamPermissions 200
+[debug] [2026-06-28T10:56:00.260Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/vivafifa2026:testIamPermissions {"permissions":["firebase.projects.get","firebasehosting.sites.update"]}
+[debug] [2026-06-28T10:56:00.260Z] Checked if tokens are valid: true, expires at: 1782645598364
+[debug] [2026-06-28T10:56:00.261Z] Checked if tokens are valid: true, expires at: 1782645598364
+[debug] [2026-06-28T10:56:00.261Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/vivafifa2026 [none]
