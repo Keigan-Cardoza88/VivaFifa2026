@@ -167,7 +167,7 @@ function App() {
   const [viewingMatchBets, setViewingMatchBets] = useState(null);
   const [matchBetsData, setMatchBetsData] = useState([]);
   const [betsLoading, setBetsLoading] = useState(false);
-  const [overrideBetForm, setOverrideBetForm] = useState({ userId: '', teamPrediction: '', goalsTeamA: '', goalsTeamB: '' });
+  const [overrideBetForm, setOverrideBetForm] = useState({ userId: '', teamPrediction: '', goalsTeamA: '', goalsTeamB: '', mode: 'normal' });
   const [matchesSortOrder, setMatchesSortOrder] = useState('time-asc');
 
   // 1. Monitor Auth State
@@ -708,10 +708,17 @@ function App() {
     setViewingMatchBets(matchId);
     setBetsLoading(true);
     try {
+      const list = [];
       const betsQuery = query(collection(db, 'bets'), where('matchId', '==', String(matchId)));
       const snapshot = await getDocs(betsQuery);
-      const list = [];
-      snapshot.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
+      snapshot.forEach(doc => list.push({ id: doc.id, collectionName: 'bets', isStakes: false, ...doc.data() }));
+
+      if (Number(matchId) >= 151) {
+        const stakesQuery = query(collection(db, 'stakes_bets'), where('matchId', '==', String(matchId)));
+        const stakesSnapshot = await getDocs(stakesQuery);
+        stakesSnapshot.forEach(doc => list.push({ id: doc.id, collectionName: 'stakes_bets', isStakes: true, ...doc.data() }));
+      }
+
       setMatchBetsData(list);
     } catch (err) {
       console.error(err);
@@ -729,8 +736,11 @@ function App() {
     }
     setActionLoading(true);
     try {
+      const mode = Number(matchId) >= 151 ? (overrideBetForm.mode || 'normal') : 'normal';
+      const collectionName = mode === 'stakes' ? 'stakes_bets' : 'bets';
+
       const betId = `${overrideBetForm.userId}_${matchId}`;
-      const betRef = doc(db, 'bets', betId);
+      const betRef = doc(db, collectionName, betId);
       
       const newBet = {
         betId,
@@ -745,8 +755,8 @@ function App() {
       };
 
       await setDoc(betRef, newBet);
-      setStatusMessage({ type: 'success', text: `Bet overridden for user ${overrideBetForm.userId}.` });
-      setOverrideBetForm({ userId: '', teamPrediction: '', goalsTeamA: '', goalsTeamB: '' });
+      setStatusMessage({ type: 'success', text: `Bet (${mode.toUpperCase()}) overridden for user ${overrideBetForm.userId}.` });
+      setOverrideBetForm({ userId: '', teamPrediction: '', goalsTeamA: '', goalsTeamB: '', mode: 'normal' });
       await handleViewBets(matchId); // reload bets
     } catch (err) {
       setStatusMessage({ type: 'error', text: `Failed to override bet: ${err.message}` });
@@ -756,11 +766,11 @@ function App() {
   };
 
   // Q2. Delete Placed Bet
-  const handleDeleteBet = async (betId, matchId) => {
+  const handleDeleteBet = async (betId, collectionName, matchId) => {
     if (!window.confirm("Are you sure you want to delete this player's bet?")) return;
     setActionLoading(true);
     try {
-      await deleteDoc(doc(db, 'bets', betId));
+      await deleteDoc(doc(db, collectionName || 'bets', betId));
       setStatusMessage({ type: 'success', text: 'Bet deleted successfully.' });
       await handleViewBets(matchId); // reload bets
     } catch (err) {
@@ -806,21 +816,36 @@ function App() {
     }
   };
 
-  const isUserEligibleForMatch = (u, match) => {
-    if (!u || !match?.kickoffTimeIST) return true;
-    const joinedAt = u.approvedAt || u.joinedAt;
-    if (!joinedAt) return true;
-    const joinedTime = joinedAt.seconds * 1000;
-    const kickoffTime = match.kickoffTimeIST.seconds * 1000;
-    return joinedTime <= kickoffTime;
+  const isUserEligibleForMatch = (u, match, forcedMode = null) => {
+    if (!u) return false;
+    
+    // Determine active filter state or default split
+    const mode = forcedMode || (matchesStakesFilter === 'stakes' ? 'stakes' : (matchesStakesFilter === 'normal' ? 'normal' : null));
+    const isStakes = mode === 'stakes' || 
+                     (mode === null && match?.stage === 'r32' && Number(match?.matchId) > 150);
+                     
+    if (isStakes) {
+      if (!match?.kickoffTimeIST) return true;
+      const joinedAt = u.approvedAt || u.joinedAt;
+      if (!joinedAt) return true;
+      const joinedTime = joinedAt.seconds * 1000;
+      const kickoffTime = match.kickoffTimeIST.seconds * 1000;
+      return joinedTime <= kickoffTime;
+    } else {
+      if (u.isLateEntry || u.entryFee === 1500) return false;
+      if (!match?.kickoffTimeIST) return true;
+      const joinedAt = u.approvedAt || u.joinedAt;
+      if (!joinedAt) return true;
+      const joinedTime = joinedAt.seconds * 1000;
+      const kickoffTime = match.kickoffTimeIST.seconds * 1000;
+      return joinedTime <= kickoffTime;
+    }
   };
 
   const getSortedMatches = () => {
     let list = [...matches];
-    if (matchesStakesFilter === 'normal') {
-      list = list.filter(m => !(m.stage === 'r32' && Number(m.matchId) > 150));
-    } else if (matchesStakesFilter === 'stakes') {
-      list = list.filter(m => m.stage === 'r32' && Number(m.matchId) > 150);
+    if (matchesStakesFilter === 'stakes') {
+      list = list.filter(m => Number(m.matchId) >= 151);
     }
 
     if (matchesSortOrder === 'time-asc') {
@@ -876,18 +901,44 @@ function App() {
   // Dashboard Stats calculations
   const totalParticipants = users.filter(u => u.role === 'participant').length;
   const completedMatches = matches.filter(m => m.status === 'completed');
+
+  const getStageMatchStats = () => {
+    let stageMatches = [];
+    if (selectedStageTab === 'group') {
+      stageMatches = matches.filter(m => m.stage === 'group');
+    } else if (selectedStageTab === 'r32_normal') {
+      stageMatches = matches.filter(m => m.stage === 'r32' && Number(m.matchId) <= 150);
+    } else if (selectedStageTab === 'r32') {
+      stageMatches = matches.filter(m => m.stage === 'r32' && Number(m.matchId) > 150);
+    } else if (selectedStageTab === 'r16' || selectedStageTab === 'r16_stakes') {
+      stageMatches = matches.filter(m => m.stage === 'r16');
+    } else if (selectedStageTab === 'qf' || selectedStageTab === 'qf_stakes') {
+      stageMatches = matches.filter(m => m.stage === 'qf');
+    } else if (selectedStageTab === 'sf' || selectedStageTab === 'sf_stakes') {
+      stageMatches = matches.filter(m => m.stage === 'sf');
+    } else if (selectedStageTab === 'final' || selectedStageTab === 'final_stakes') {
+      stageMatches = matches.filter(m => m.stage === 'final' || m.stage === 'third_place');
+    }
+    const completed = stageMatches.filter(m => m.status === 'completed').length;
+    const total = stageMatches.length;
+    return { completed, total };
+  };
+  const stageStats = getStageMatchStats();
   
   // Compute total kitty reserves
   let finalsKittyBonus = 0;
   kittyLogs.forEach(log => {
     let logStage = 'group'; // default
     if (log.matchId) {
-      const matchObj = matches.find(m => Number(m.matchId) === Number(log.matchId));
+      const cleanMatchId = String(log.matchId).replace('_stakes', '');
+      const isStakesLog = String(log.matchId).endsWith('_stakes');
+      const matchObj = matches.find(m => Number(m.matchId) === Number(cleanMatchId));
       if (matchObj) {
         if (matchObj.stage === 'r32') {
-          logStage = Number(matchObj.matchId) <= 150 ? 'r32_normal' : 'r32';
+          logStage = isStakesLog ? 'r32' : 'r32_normal';
         } else {
-          logStage = matchObj.stage === 'third_place' ? 'final' : matchObj.stage;
+          const baseStage = matchObj.stage === 'third_place' ? 'final' : matchObj.stage;
+          logStage = isStakesLog ? `${baseStage}_stakes` : baseStage;
         }
       }
     } else if (log.stage) {
@@ -1030,30 +1081,37 @@ function App() {
                 { id: 'group', label: 'Group Stage' },
                 { id: 'r32_normal', label: 'Round of 32 (Normal)' },
                 { id: 'r32', label: 'STAKES (Round of 32)' },
-                { id: 'r16', label: 'Round of 16' },
-                { id: 'qf', label: 'Quarter-Finals' },
-                { id: 'sf', label: 'Semi-Finals' },
-                { id: 'final', label: 'Finals' }
-              ].map((stg) => (
-                <button
-                  key={stg.id}
-                  className={`btn ${selectedStageTab === stg.id ? 'btn-primary' : 'btn-secondary'}`}
-                  style={{
-                    whiteSpace: 'nowrap',
-                    padding: '8px 16px',
-                    fontSize: '0.8rem',
-                    ...(stg.id === 'r32' ? {
-                      borderColor: '#ff3d71',
-                      borderWidth: '1.5px',
-                      color: selectedStageTab === 'r32' ? '#ffffff' : '#ff3d71',
-                      backgroundColor: selectedStageTab === 'r32' ? '#ff3d71' : 'transparent',
-                    } : {})
-                  }}
-                  onClick={() => setSelectedStageTab(stg.id)}
-                >
-                  {stg.label}
-                </button>
-              ))}
+                { id: 'r16', label: 'Round of 16 (Normal)' },
+                { id: 'r16_stakes', label: 'STAKES (Round of 16)' },
+                { id: 'qf', label: 'Quarter-Finals (Normal)' },
+                { id: 'qf_stakes', label: 'STAKES (Quarter-Finals)' },
+                { id: 'sf', label: 'Semi-Finals (Normal)' },
+                { id: 'sf_stakes', label: 'STAKES (Semi-Finals)' },
+                { id: 'final', label: 'Finals (Normal)' },
+                { id: 'final_stakes', label: 'STAKES (Finals)' }
+              ].map((stg) => {
+                const isStakes = stg.id === 'r32' || stg.id.endsWith('_stakes');
+                return (
+                  <button
+                    key={stg.id}
+                    className={`btn ${selectedStageTab === stg.id ? 'btn-primary' : 'btn-secondary'}`}
+                    style={{
+                      whiteSpace: 'nowrap',
+                      padding: '8px 16px',
+                      fontSize: '0.8rem',
+                      ...(isStakes ? {
+                        borderColor: '#ff3d71',
+                        borderWidth: '1.5px',
+                        color: selectedStageTab === stg.id ? '#ffffff' : '#ff3d71',
+                        backgroundColor: selectedStageTab === stg.id ? '#ff3d71' : 'transparent',
+                      } : {})
+                    }}
+                    onClick={() => setSelectedStageTab(stg.id)}
+                  >
+                    {stg.label}
+                  </button>
+                );
+              })}
             </div>
 
             <div className="stats-grid">
@@ -1070,7 +1128,7 @@ function App() {
               </div>
               <div className="stat-card">
                 <span className="stat-label">Settled Fixtures</span>
-                <span className="stat-value">{completedMatches.length} / 104</span>
+                <span className="stat-value">{stageStats.completed} / {stageStats.total}</span>
               </div>
             </div>
 
@@ -1295,10 +1353,22 @@ function App() {
                         Number(match.matchId) <= 150 ? (
                           <span style={{ color: 'var(--text-sub)' }}>r32 (NORMAL)</span>
                         ) : (
-                          <span style={{ color: '#ff3d71', fontWeight: 'bold' }}>r32 (STAKES)</span>
+                          <>
+                            <span style={{ color: 'var(--text-sub)' }}>r32 (NORMAL)</span>
+                            <span style={{ color: 'var(--text-sub)', margin: '0 4px' }}>|</span>
+                            <span style={{ color: '#ff3d71', fontWeight: 'bold' }}>r32 (STAKES)</span>
+                          </>
                         )
                       ) : (
-                        match.stage
+                        Number(match.matchId) >= 151 ? (
+                          <>
+                            <span style={{ color: 'var(--text-sub)' }}>{match.stage} (NORMAL)</span>
+                            <span style={{ color: 'var(--text-sub)', margin: '0 4px' }}>|</span>
+                            <span style={{ color: '#ff3d71', fontWeight: 'bold' }}>{match.stage} (STAKES)</span>
+                          </>
+                        ) : (
+                          match.stage
+                        )
                       )} (Match #{match.matchId})
                     </span>
                     <span className={`badge ${match.status === 'upcoming' ? 'win' : (match.status === 'completed' ? 'info' : 'loss')}`}>
@@ -1415,6 +1485,7 @@ function App() {
                                 <thead>
                                   <tr>
                                     <th>User</th>
+                                    <th>Type</th>
                                     <th>Team Pick</th>
                                     <th>Scoreline</th>
                                     <th>Status</th>
@@ -1427,6 +1498,11 @@ function App() {
                                     return (
                                       <tr key={b.id}>
                                         <td>{u ? u.name : b.userId}</td>
+                                        <td>
+                                          <span className="badge" style={{ backgroundColor: b.isStakes ? '#ff3d71' : '#00e676', color: '#fff', fontSize: '0.65rem', padding: '2px 6px' }}>
+                                            {b.isStakes ? 'STAKES' : 'NORMAL'}
+                                          </span>
+                                        </td>
                                         <td>{b.teamPrediction}</td>
                                         <td>{b.goalsTeamA} - {b.goalsTeamB}</td>
                                         <td>{b.isOverride ? 'Override' : (b.isDefault ? 'Default' : 'User')}</td>
@@ -1434,7 +1510,7 @@ function App() {
                                           <button 
                                             className="btn" 
                                             style={{ padding: '2px 6px', fontSize: '0.65rem', backgroundColor: 'var(--loss-red)', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
-                                            onClick={() => handleDeleteBet(b.id, match.matchId)}
+                                            onClick={() => handleDeleteBet(b.id, b.collectionName, match.matchId)}
                                           >
                                             🗑️ Delete
                                           </button>
@@ -1451,11 +1527,21 @@ function App() {
                           <div style={{ marginTop: '16px', padding: '12px', backgroundColor: 'rgba(19, 27, 46, 0.4)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
                               <h5 style={{ fontSize: '0.8rem', marginBottom: '8px', color: 'var(--brazil-gold)' }}>Override/Place Bet for User</h5>
                               <form onSubmit={(e) => handleOverrideBetSubmit(e, match.matchId)}>
+                                {Number(match.matchId) >= 151 && (
+                                  <div style={{ marginBottom: '8px' }}>
+                                    <label style={{ fontSize: '0.7rem', color: 'var(--text-sub)', display: 'block', marginBottom: '4px' }}>Bet Mode:</label>
+                                    <select className="form-control" style={{ fontSize: '0.75rem', padding: '6px', width: '100%' }} required
+                                            value={overrideBetForm.mode} onChange={e => setOverrideBetForm({ ...overrideBetForm, mode: e.target.value })}>
+                                      <option value="normal">Normal (Standard)</option>
+                                      <option value="stakes">Stakes (Real Money)</option>
+                                    </select>
+                                  </div>
+                                )}
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
                                   <select className="form-control" style={{ fontSize: '0.75rem', padding: '6px' }} required
                                           value={overrideBetForm.userId} onChange={e => setOverrideBetForm({ ...overrideBetForm, userId: e.target.value })}>
                                     <option value="">Select User...</option>
-                                    {users.filter(u => u.role === 'participant' && isUserEligibleForMatch(u, match)).map(u => (
+                                    {users.filter(u => u.role === 'participant' && isUserEligibleForMatch(u, match, Number(match.matchId) >= 151 ? (overrideBetForm.mode || 'normal') : 'normal')).map(u => (
                                       <option key={u.id} value={u.id}>{u.name} ({u.email})</option>
                                     ))}
                                   </select>

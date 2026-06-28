@@ -181,6 +181,7 @@ export default function App() {
   // Real-time collections
   const [matches, setMatches] = useState([]);
   const [myBets, setMyBets] = useState({});
+  const [myStakesBets, setMyStakesBets] = useState({});
   const [leaderboardMoney, setLeaderboardMoney] = useState([]);
   const [leaderboardAccuracy, setLeaderboardAccuracy] = useState([]);
   const [settings, setSettings] = useState(null);
@@ -207,6 +208,7 @@ export default function App() {
   const [allLeaderboardDocs, setAllLeaderboardDocs] = useState([]);
   const [stakesLeaderboardType, setStakesLeaderboardType] = useState('money');
   const [stakesSubTab, setStakesSubTab] = useState('leaderboard');
+  const [stakesStageTab, setStakesStageTab] = useState('r32');
 
   // New state for user names mapping, group consensus, and history bet expander
   const [allUsers, setAllUsers] = useState({});
@@ -386,6 +388,15 @@ export default function App() {
       setMyBets(map);
     });
 
+    const qStakesBets = query(collection(db, 'stakes_bets'), where('userId', '==', currentUser.uid));
+    const unsubStakesBets = onSnapshot(qStakesBets, (snap) => {
+      const map = {};
+      snap.forEach(doc => {
+        map[doc.data().matchId] = doc.data();
+      });
+      setMyStakesBets(map);
+    });
+
     const unsubSettings = onSnapshot(doc(db, 'settings', 'global'), (snap) => {
       if (snap.exists()) setSettings(snap.data());
     });
@@ -433,6 +444,7 @@ export default function App() {
     return () => {
       unsubMatches();
       unsubBets();
+      unsubStakesBets();
       unsubSettings();
       unsubLeaderboard();
       unsubUsers();
@@ -610,8 +622,9 @@ export default function App() {
         throw new Error('Voting is restricted for matches that are more than 3 days in the future.');
       }
 
+      const collectionName = activeTab === 'realstakes' ? 'stakes_bets' : 'bets';
       const betId = `${currentUser.uid}_${selectedMatch.matchId}`;
-      const betRef = doc(db, 'bets', betId);
+      const betRef = doc(db, collectionName, betId);
 
       const newBet = {
         betId,
@@ -643,7 +656,7 @@ export default function App() {
   const rankMoney = leaderboardMoney.findIndex(l => l.userId === currentUser.uid) + 1;
 
   const renderMatchCard = (match) => {
-    const bet = myBets[match.matchId];
+    const bet = activeTab === 'realstakes' ? myStakesBets[match.matchId] : myBets[match.matchId];
     const isLocked = match.status !== 'upcoming';
     const isTooEarly = new Date().getTime() < (match.kickoffTimeIST ? (match.kickoffTimeIST.seconds * 1000) - (3 * 24 * 60 * 60 * 1000) : 0);
     const matchBets = openMatchesBets[match.matchId] || [];
@@ -1965,7 +1978,7 @@ export default function App() {
         {activeTab === 'realstakes' && (
           <View style={{ padding: 16 }}>
             {/* Sub-Tab Selector within Stakes */}
-            <View style={{ flexDirection: 'row', borderBottomWidth: 2, borderBottomColor: isDarkMode ? 'rgba(255,61,113,0.15)' : 'rgba(255,61,113,0.1)', marginBottom: 20 }}>
+            <View style={{ flexDirection: 'row', borderBottomWidth: 2, borderBottomColor: isDarkMode ? 'rgba(255,61,113,0.15)' : 'rgba(255,61,113,0.1)', marginBottom: 12 }}>
               <TouchableOpacity
                 style={{
                   flex: 1,
@@ -2003,16 +2016,47 @@ export default function App() {
                   color: stakesSubTab === 'matches' ? '#ff3d71' : (isDarkMode ? '#a1a1aa' : '#71717a'),
                   letterSpacing: 0.5,
                 }}>
-                  R32 Matches
+                  Matches
                 </Text>
               </TouchableOpacity>
             </View>
 
+            {/* Stakes Stage Switcher */}
+            <View style={{ marginBottom: 16 }}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingHorizontal: 4 }}>
+                {[
+                  { id: 'r32', label: 'Round of 32' },
+                  { id: 'r16_stakes', label: 'Round of 16' },
+                  { id: 'qf_stakes', label: 'Quarter-Finals' },
+                  { id: 'sf_stakes', label: 'Semi-Finals' },
+                  { id: 'final_stakes', label: 'Finals' }
+                ].map((stg) => (
+                  <TouchableOpacity
+                    key={stg.id}
+                    style={[
+                      styles.stageTabBtn,
+                      { borderColor: '#ff3d71' },
+                      stakesStageTab === stg.id && { backgroundColor: '#ff3d71', borderColor: '#ff3d71' }
+                    ]}
+                    onPress={() => setStakesStageTab(stg.id)}
+                  >
+                    <Text style={[styles.stageTabText, { color: stakesStageTab === stg.id ? '#ffffff' : '#ff3d71' }]}>{stg.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+
             {stakesSubTab === 'leaderboard' && (
               <View>
-                {/* Sub-section: R32 Leaderboards */}
+                {/* Sub-section: Standings */}
                 <Text style={{ fontSize: 15, fontWeight: '800', color: '#ff3d71', marginBottom: 12, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                  Round of 32 Standings
+                  {({
+                    'r32': 'Round of 32',
+                    'r16_stakes': 'Round of 16',
+                    'qf_stakes': 'Quarter-Finals',
+                    'sf_stakes': 'Semi-Finals',
+                    'final_stakes': 'Finals'
+                  }[stakesStageTab] || 'Stakes')} Standings
                 </Text>
 
                 {/* Toggle Row (Red Theme) */}
@@ -2064,8 +2108,8 @@ export default function App() {
                   </View>
 
                   {(() => {
-                    const r32Docs = allLeaderboardDocs.filter(d => d.stage === 'r32');
-                    const sorted = [...r32Docs].sort((a, b) => {
+                    const filteredDocs = allLeaderboardDocs.filter(d => d.stage === stakesStageTab);
+                    const sorted = [...filteredDocs].sort((a, b) => {
                       if (stakesLeaderboardType === 'money') {
                         return (b.netProfit || 0) - (a.netProfit || 0);
                       } else {
@@ -2081,7 +2125,7 @@ export default function App() {
                     if (sorted.length === 0) {
                       return (
                         <Text style={{ color: isDarkMode ? '#cbd5e1' : '#7a6e5b', fontSize: 13, padding: 16, textAlign: 'center' }}>
-                          No R32 data loaded yet. Settle a match to generate standings.
+                          No data loaded yet for this stage. Settle a match to generate standings.
                         </Text>
                       );
                     }
@@ -2126,14 +2170,37 @@ export default function App() {
             {stakesSubTab === 'matches' && (
               <View>
                 <Text style={{ fontSize: 15, fontWeight: '800', color: '#ff3d71', marginBottom: 12, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                  Round of 32 Match Fixtures
+                  {({
+                    'r32': 'Round of 32',
+                    'r16_stakes': 'Round of 16',
+                    'qf_stakes': 'Quarter-Finals',
+                    'sf_stakes': 'Semi-Finals',
+                    'final_stakes': 'Finals'
+                  }[stakesStageTab] || 'Stakes')} Fixtures
                 </Text>
                 {(() => {
-                  const filteredMatches = matches.filter(m => m.stage === 'r32' && Number(m.matchId) > 150);
+                  const mapStakesStage = {
+                    'r32': 'r32',
+                    'r16_stakes': 'r16',
+                    'qf_stakes': 'qf',
+                    'sf_stakes': 'sf',
+                    'final_stakes': 'final'
+                  }[stakesStageTab];
+                  
+                  const filteredMatches = matches.filter(m => {
+                    if (stakesStageTab === 'r32') {
+                      return m.stage === 'r32' && Number(m.matchId) > 150;
+                    }
+                    if (stakesStageTab === 'final_stakes') {
+                      return m.stage === 'final' || m.stage === 'third_place';
+                    }
+                    return m.stage === mapStakesStage;
+                  });
+
                   if (filteredMatches.length === 0) {
                     return (
                       <Text style={{ color: isDarkMode ? '#cbd5e1' : '#7a6e5b', fontSize: 13, padding: 16, textAlign: 'center' }}>
-                        No R32 matches loaded yet.
+                        No match fixtures loaded yet for this stage.
                       </Text>
                     );
                   }
