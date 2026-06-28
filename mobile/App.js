@@ -1635,8 +1635,53 @@ export default function App() {
                 onResponderMove={handleBracketTouchMove}
                 onResponderRelease={handleBracketTouchEnd}
               >
-                {['r32', 'r16', 'qf', 'sf', 'final'].map((stage) => {
-                  if (stage === 'final') {
+                {[
+                  { key: 'r32_left', stage: 'r32', side: 'left', count: 8, title: 'Round of 32' },
+                  { key: 'r16_left', stage: 'r16', side: 'left', count: 4, title: 'Round of 16' },
+                  { key: 'qf_left', stage: 'qf', side: 'left', count: 2, title: 'Quarter-Finals' },
+                  { key: 'sf_left', stage: 'sf', side: 'left', count: 1, title: 'Semi-Finals' },
+                  { key: 'final', stage: 'final', side: 'center', count: 1, title: 'Finals' },
+                  { key: 'sf_right', stage: 'sf', side: 'right', count: 1, title: 'Semi-Finals' },
+                  { key: 'qf_right', stage: 'qf', side: 'right', count: 2, title: 'Quarter-Finals' },
+                  { key: 'r16_right', stage: 'r16', side: 'right', count: 4, title: 'Round of 16' },
+                  { key: 'r32_right', stage: 'r32', side: 'right', count: 8, title: 'Round of 32' }
+                ].map((col) => {
+                  const renderMatchCard = (m) => {
+                    const isPlaceholder = String(m.id).startsWith('placeholder');
+                    const teamAFlag = isPlaceholder ? null : getTeamFlag(m.teamA);
+                    const teamBFlag = isPlaceholder ? null : getTeamFlag(m.teamB);
+                    return (
+                      <View style={[styles.bracketMatchCard, styles.glassCard]} key={m.id}>
+                        <View style={[styles.bracketTeamRow, m.status === 'completed' && m.winner === 'teamB' && styles.bracketTeamLost]}>
+                          <Text style={styles.bracketTeamText} numberOfLines={1}>
+                            {teamAFlag} {m.teamA}
+                          </Text>
+                          {m.status === 'completed' && <Text style={styles.bracketScore}>{m.resultTeamAGoals}</Text>}
+                        </View>
+
+                        <View style={styles.bracketVsContainer}>
+                          <View style={styles.bracketVsLine} />
+                          <Text style={styles.bracketVsTextCard}>VS</Text>
+                          <View style={styles.bracketVsLine} />
+                        </View>
+
+                        <View style={[styles.bracketTeamRow, m.status === 'completed' && m.winner === 'teamA' && styles.bracketTeamLost]}>
+                          <Text style={styles.bracketTeamText} numberOfLines={1}>
+                            {teamBFlag} {m.teamB}
+                          </Text>
+                          {m.status === 'completed' && <Text style={styles.bracketScore}>{m.resultTeamBGoals}</Text>}
+                        </View>
+
+                        {m.stage === 'third_place' && (
+                          <View style={styles.thirdPlaceBadge}>
+                            <Text style={styles.thirdPlaceBadgeText}>3rd Place Playoff</Text>
+                          </View>
+                        )}
+                      </View>
+                    );
+                  };
+
+                  if (col.stage === 'final') {
                     const finalMatch = matches.find(m => m.stage === 'final') || {
                       id: 'placeholder_final',
                       teamA: 'TBD',
@@ -1652,44 +1697,9 @@ export default function App() {
                       stage: 'third_place'
                     };
 
-                    const renderMatchCard = (m) => {
-                      const isPlaceholder = String(m.id).startsWith('placeholder');
-                      const teamAFlag = isPlaceholder ? null : getTeamFlag(m.teamA);
-                      const teamBFlag = isPlaceholder ? null : getTeamFlag(m.teamB);
-                      return (
-                        <View style={[styles.bracketMatchCard, styles.glassCard]} key={m.id}>
-                          <View style={[styles.bracketTeamRow, m.status === 'completed' && m.winner === 'teamB' && styles.bracketTeamLost]}>
-                            <Text style={styles.bracketTeamText} numberOfLines={1}>
-                              {teamAFlag} {m.teamA}
-                            </Text>
-                            {m.status === 'completed' && <Text style={styles.bracketScore}>{m.resultTeamAGoals}</Text>}
-                          </View>
-
-                          <View style={styles.bracketVsContainer}>
-                            <View style={styles.bracketVsLine} />
-                            <Text style={styles.bracketVsTextCard}>VS</Text>
-                            <View style={styles.bracketVsLine} />
-                          </View>
-
-                          <View style={[styles.bracketTeamRow, m.status === 'completed' && m.winner === 'teamA' && styles.bracketTeamLost]}>
-                            <Text style={styles.bracketTeamText} numberOfLines={1}>
-                              {teamBFlag} {m.teamB}
-                            </Text>
-                            {m.status === 'completed' && <Text style={styles.bracketScore}>{m.resultTeamBGoals}</Text>}
-                          </View>
-
-                          {m.stage === 'third_place' && (
-                            <View style={styles.thirdPlaceBadge}>
-                              <Text style={styles.thirdPlaceBadgeText}>3rd Place Playoff</Text>
-                            </View>
-                          )}
-                        </View>
-                      );
-                    };
-
                     return (
-                      <View style={styles.bracketColumn} key={stage}>
-                        <Text style={styles.bracketColumnTitle}>Finals</Text>
+                      <View style={styles.bracketColumn} key={col.key}>
+                        <Text style={styles.bracketColumnTitle}>{col.title}</Text>
                         <View style={{ flex: 1, position: 'relative', paddingVertical: 10 }}>
                           {/* Centered Final Match */}
                           <View style={{ flex: 1, justifyContent: 'center' }}>
@@ -1704,54 +1714,33 @@ export default function App() {
                     );
                   }
 
-                  const stageMatches = matches.filter(m => m.stage === stage);
-                  const expectedMatchCount = { 'r32': 16, 'r16': 8, 'qf': 4, 'sf': 2 }[stage];
-                  const placeholdersNeeded = expectedMatchCount - stageMatches.length;
-                  const displayMatches = [...stageMatches];
+                  const stageMatches = matches.filter(m => m.stage === col.stage);
+                  stageMatches.sort((a, b) => Number(a.matchId) - Number(b.matchId));
+
+                  let colMatches = [];
+                  if (col.side === 'left') {
+                    colMatches = stageMatches.slice(0, col.count);
+                  } else {
+                    colMatches = stageMatches.slice(stageMatches.length - col.count);
+                  }
+
+                  const placeholdersNeeded = col.count - colMatches.length;
+                  const displayMatches = [...colMatches];
                   for (let idx = 0; idx < placeholdersNeeded; idx++) {
                     displayMatches.push({
-                      id: `placeholder_${stage}_${idx}`,
+                      id: `placeholder_${col.key}_${idx}`,
                       teamA: 'TBD',
                       teamB: 'TBD',
                       status: 'upcoming',
-                      stage: stage
+                      stage: col.stage
                     });
                   }
 
                   return (
-                    <View style={styles.bracketColumn} key={stage}>
-                      <Text style={styles.bracketColumnTitle}>
-                        {stage === 'r32' ? 'Round of 32' : stage === 'r16' ? 'Round of 16' : stage === 'qf' ? 'Quarter-Finals' : 'Semi-Finals'}
-                      </Text>
+                    <View style={styles.bracketColumn} key={col.key}>
+                      <Text style={styles.bracketColumnTitle}>{col.title}</Text>
                       <View style={styles.bracketColumnMatches}>
-                        {displayMatches.map(m => {
-                          const isPlaceholder = String(m.id).startsWith('placeholder');
-                          const teamAFlag = isPlaceholder ? null : getTeamFlag(m.teamA);
-                          const teamBFlag = isPlaceholder ? null : getTeamFlag(m.teamB);
-                          return (
-                            <View style={[styles.bracketMatchCard, styles.glassCard]} key={m.id}>
-                              <View style={[styles.bracketTeamRow, m.status === 'completed' && m.winner === 'teamB' && styles.bracketTeamLost]}>
-                                <Text style={styles.bracketTeamText} numberOfLines={1}>
-                                  {teamAFlag} {m.teamA}
-                                </Text>
-                                {m.status === 'completed' && <Text style={styles.bracketScore}>{m.resultTeamAGoals}</Text>}
-                              </View>
-
-                              <View style={styles.bracketVsContainer}>
-                                <View style={styles.bracketVsLine} />
-                                <Text style={styles.bracketVsTextCard}>VS</Text>
-                                <View style={styles.bracketVsLine} />
-                              </View>
-
-                              <View style={[styles.bracketTeamRow, m.status === 'completed' && m.winner === 'teamA' && styles.bracketTeamLost]}>
-                                <Text style={styles.bracketTeamText} numberOfLines={1}>
-                                  {teamBFlag} {m.teamB}
-                                </Text>
-                                {m.status === 'completed' && <Text style={styles.bracketScore}>{m.resultTeamBGoals}</Text>}
-                              </View>
-                            </View>
-                          );
-                        })}
+                        {displayMatches.map(m => renderMatchCard(m))}
                       </View>
                     </View>
                   );
