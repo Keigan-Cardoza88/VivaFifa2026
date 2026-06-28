@@ -1531,14 +1531,14 @@ export default function App() {
                               horizontal 
                               showsHorizontalScrollIndicator={false} 
                               contentContainerStyle={[styles.bracketHorizontalScrollContent, { minWidth: '100%', paddingRight: 0 }]}>
-                              <View style={[styles.expandedBetsTable, { minWidth: 720 }]}>
+                              <View style={[styles.expandedBetsTable, { minWidth: selectedStageTab === 'group' ? 720 : 620 }]}>
                                   <View style={styles.expandedBetsHeader}>
                                     <Text style={[styles.expandedBetsHeadCell, { flex: 2.2 }]}>Player</Text>
                                     <Text style={[styles.expandedBetsHeadCell, { flex: 2 }]}>Prediction</Text>
                                     <Text style={[styles.expandedBetsHeadCell, { flex: 1.5, textAlign: 'center' }]}>Goals</Text>
                                     <Text style={[styles.expandedBetsHeadCell, { flex: 1.1, textAlign: 'right' }]}>Team</Text>
                                     <Text style={[styles.expandedBetsHeadCell, { flex: 1.1, textAlign: 'right' }]}>Goal</Text>
-                                    <Text style={[styles.expandedBetsHeadCell, { flex: 1.5, textAlign: 'right' }]}>Ref Bonus</Text>
+                                    {selectedStageTab === 'group' && <Text style={[styles.expandedBetsHeadCell, { flex: 1.5, textAlign: 'right' }]}>Ref Bonus</Text>}
                                     <Text style={[styles.expandedBetsHeadCell, { flex: 1.3, textAlign: 'right' }]}>Net</Text>
                                   </View>
                               {eligibleExpandedMatchBets.map((b) => {
@@ -1550,7 +1550,7 @@ export default function App() {
                                     : (b.teamBetResult === 'refunded' ? 0 : -matchPayouts.teamStake)
                                 );
                                 const gotOneSideCorrect = !b.isDefault && (b.goalsTeamA === Number(match.resultTeamAGoals) || b.goalsTeamB === Number(match.resultTeamBGoals));
-                                const refereeBonus = isPostponed ? 0 : (b.refereeBonus !== undefined ? b.refereeBonus : (gotOneSideCorrect ? 25 : 0));
+                                const refereeBonus = selectedStageTab === 'group' ? (isPostponed ? 0 : (b.refereeBonus !== undefined ? b.refereeBonus : (gotOneSideCorrect ? 25 : 0))) : 0;
                                 const goalNet = isPostponed ? 0 : (
                                   (b.goalBetResult === 'won' || b.goalBetResult === 'won_partial')
                                     ? (matchPayouts.goalSharePerWinner - matchPayouts.goalStake)
@@ -1574,9 +1574,11 @@ export default function App() {
                                     <Text style={[styles.expandedBetsCell, { flex: 1.1, textAlign: 'right', fontWeight: '800', color: goalNet >= 0 ? '#00e676' : '#ff3d71' }]}>
                                       {goalNet >= 0 ? '+' : ''}₹{Number(goalNet).toFixed(2)}
                                     </Text>
-                                    <Text style={[styles.expandedBetsCell, { flex: 1.5, textAlign: 'right', fontWeight: '800', color: refereeBonus > 0 ? '#00e676' : '#82776a' }]}>
-                                      {refereeBonus > 0 ? `+${refereeBonus}` : '+0'}
-                                    </Text>
+                                    {selectedStageTab === 'group' && (
+                                      <Text style={[styles.expandedBetsCell, { flex: 1.5, textAlign: 'right', fontWeight: '800', color: refereeBonus > 0 ? '#00e676' : '#82776a' }]}>
+                                        {refereeBonus > 0 ? `+${refereeBonus}` : '+0'}
+                                      </Text>
+                                    )}
                                     <Text style={[styles.expandedBetsCell, { flex: 1.3, textAlign: 'right', fontWeight: '800', color: isPostponed ? '#94a3b8' : (net >= 0 ? '#00e676' : '#ff3d71') }]}>
                                       {isPostponed ? '' : (net >= 0 ? '+' : '')}₹{Number(net).toFixed(2)}
                                     </Text>

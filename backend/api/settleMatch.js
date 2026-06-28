@@ -374,7 +374,16 @@ module.exports = async (req, res) => {
       let finalsKittyDeduction = 0;
 
       const isAlreadySettledOld = (matchData.status === 'completed' && !matchData.settledWithNewBonus);
-      if (Number(matchId) < 45 || isAlreadySettledOld) {
+      if (stage !== 'group') {
+        // No referee bonus for knockout stage matches (Round of 32 onwards)
+        placedBets.forEach((bet) => {
+          const updatePayload = {
+            refereeBonus: 0
+          };
+          transaction.update(bet.ref, updatePayload);
+          Object.assign(bet, updatePayload);
+        });
+      } else if (Number(matchId) < 45 || isAlreadySettledOld) {
         // Old rule: Transfer ₹25 from referee kitty to any player with >=1 side correct
         let totalBonusPayout = 0;
         placedBets.forEach((bet) => {
