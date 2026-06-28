@@ -838,7 +838,6 @@ function App() {
   const completedMatches = matches.filter(m => m.status === 'completed');
   
   // Compute total kitty reserves
-  let refereeKitty = 0;
   let finalsKittyBonus = 0;
   kittyLogs.forEach(log => {
     let logStage = 'group'; // default
@@ -852,8 +851,7 @@ function App() {
     }
     
     if (logStage === selectedStageTab) {
-      refereeKitty += log.splitReferee || 0;
-      finalsKittyBonus += log.splitFinals || 0;
+      finalsKittyBonus += (log.splitFinals || 0) + (log.splitReferee || 0);
     }
   });
 
@@ -1011,17 +1009,6 @@ function App() {
                   className="btn btn-secondary" 
                   style={{ position: 'absolute', bottom: '8px', right: '8px', padding: '2px 8px', fontSize: '0.7rem' }}
                   onClick={() => handleAdjustKitty('finals', finalsKittyBonus)}
-                >
-                  ✏️ Edit
-                </button>
-              </div>
-              <div className="stat-card spain" style={{ position: 'relative' }}>
-                <span className="stat-label">Referee Kitty Reserve</span>
-                <span className="stat-value">Rs {refereeKitty.toLocaleString()}</span>
-                <button 
-                  className="btn btn-secondary" 
-                  style={{ position: 'absolute', bottom: '8px', right: '8px', padding: '2px 8px', fontSize: '0.7rem' }}
-                  onClick={() => handleAdjustKitty('referee', refereeKitty)}
                 >
                   ✏️ Edit
                 </button>
@@ -1606,21 +1593,6 @@ function App() {
               <p className="page-subtitle">Trace every financial transaction, forfeit logs, and reserve transfers.</p>
             </div>
 
-            <div className="content-card">
-              <h3 className="card-title">Allocate Kitty Funds to Prizes</h3>
-              <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-end' }}>
-                <div style={{ flex: 1 }}>
-                  <label className="form-label">Amount to transfer from Referee Kitty to Finals Pot (₹)</label>
-                  <input className="form-control" id="kittyAllocAmt" type="number" placeholder="Enter amount (e.g. 1000)"/>
-                </div>
-                <button className="btn btn-success" onClick={() => {
-                  const amt = document.getElementById('kittyAllocAmt').value;
-                  handleAllocateKitty(amt);
-                }}>
-                  Transfer Funds
-                </button>
-              </div>
-            </div>
 
             <div className="content-card">
               <h3 className="card-title">Transaction Ledger</h3>

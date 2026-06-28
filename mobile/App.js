@@ -387,26 +387,30 @@ export default function App() {
       if (snap.exists()) setSettings(snap.data());
     });
 
-    const qMoney = query(collection(db, 'leaderboard'), where('stage', '==', selectedStageTab), orderBy('netProfit', 'desc'));
-    const unsubMoney = onSnapshot(qMoney, (snap) => {
-      const list = [];
-      snap.forEach(doc => list.push(doc.data()));
-      setLeaderboardMoney(list);
-    });
+    const qLeaderboard = query(collection(db, 'leaderboard'));
+    const unsubLeaderboard = onSnapshot(qLeaderboard, (snap) => {
+      const allDocs = [];
+      snap.forEach(doc => allDocs.push(doc.data()));
 
-    const qAccuracy = query(collection(db, 'leaderboard'), where('stage', '==', selectedStageTab), orderBy('accuracyPercent', 'desc'));
-    const unsubAccuracy = onSnapshot(qAccuracy, (snap) => {
-      const list = [];
-      snap.forEach(doc => list.push(doc.data()));
-      list.sort((a, b) => {
-        if (b.accuracyPercent !== a.accuracyPercent) {
-          return b.accuracyPercent - a.accuracyPercent;
+      // Filter for active stage
+      const stageDocs = allDocs.filter(d => d.stage === selectedStageTab);
+
+      // Sort by netProfit descending
+      const moneySorted = [...stageDocs].sort((a, b) => (b.netProfit || 0) - (a.netProfit || 0));
+      setLeaderboardMoney(moneySorted);
+
+      // Sort by accuracyPercent descending
+      const accuracySorted = [...stageDocs].sort((a, b) => {
+        const accA = a.accuracyPercent || 0;
+        const accB = b.accuracyPercent || 0;
+        if (accB !== accA) {
+          return accB - accA;
         }
         return (b.correctPredictions || 0) - (a.correctPredictions || 0);
       });
-      setLeaderboardAccuracy(list);
+      setLeaderboardAccuracy(accuracySorted);
     }, (err) => {
-      console.error("Accuracy listener error:", err);
+      console.error("Leaderboard listener error:", err);
     });
 
     let unsubUsers = () => {};
@@ -426,8 +430,7 @@ export default function App() {
       unsubMatches();
       unsubBets();
       unsubSettings();
-      unsubMoney();
-      unsubAccuracy();
+      unsubLeaderboard();
       unsubUsers();
     };
   }, [currentUser, userProfile, selectedStageTab]);
@@ -1469,11 +1472,7 @@ export default function App() {
                   }
                 };
 
-                let userGross = bet ? (bet.amountWon || 0) : 0;
-                if (bet && bet.goalBetResult === 'refunded') {
-                  userGross = Math.max(0, userGross - (stageStakes.goal || 50));
-                }
-                const userNet = isPostponed ? 0 : (bet ? (userGross - totalStake) : -totalStake);
+                const userNet = isPostponed ? 0 : (bet ? ((bet.amountWon || 0) - (bet.amountLost || 0)) : -totalStake);
 
                 return (
                   <View key={match.id}>

@@ -247,8 +247,7 @@ module.exports = async (req, res) => {
       } else {
         // No team winners at all — active players get refunded, only forfeits go to kitty
         if (forfeitTeamPool > 0) {
-          refereeKittyInflow += forfeitTeamPool * 0.5;
-          finalsKittyInflow += forfeitTeamPool * 0.5;
+          finalsKittyInflow += forfeitTeamPool;
         }
 
         teamLosers.forEach((bet) => {
@@ -324,8 +323,7 @@ module.exports = async (req, res) => {
           const sharePerPartialWinner = (totalGoalPool * 0.5) / partialWinners.length;
 
           if (kittyGoalShare > 0) {
-            refereeKittyInflow += kittyGoalShare * 0.5;
-            finalsKittyInflow += kittyGoalShare * 0.5;
+            finalsKittyInflow += kittyGoalShare;
           }
 
           partialWinners.forEach((bet) => {
@@ -350,17 +348,17 @@ module.exports = async (req, res) => {
             Object.assign(bet, updatePayload);
           });
         } else {
-          // No exact or partial goal winners: active players get refunded, only forfeits go to kitty
-          if (forfeitGoalPool > 0) {
-            refereeKittyInflow += forfeitGoalPool * 0.5;
-            finalsKittyInflow += forfeitGoalPool * 0.5;
+          // No exact or partial goal winners: 50% of active goal stakes refunded, 50% to kitty. Forfeits go 100% to kitty.
+          const activeKittyShare = (placedBets.length * goalStake) * 0.5;
+          if (forfeitGoalPool > 0 || activeKittyShare > 0) {
+            finalsKittyInflow += forfeitGoalPool + activeKittyShare;
           }
 
           goalLosers.forEach((bet) => {
             const existingLost = bet.amountLost || 0;
             const updatePayload = {
-              goalBetResult: 'refunded',
-              amountLost: existingLost,
+              goalBetResult: 'refunded_partial',
+              amountLost: existingLost + (goalStake * 0.5),
               amountWon: bet.amountWon || 0
             };
             transaction.update(bet.ref, updatePayload);
@@ -442,20 +440,16 @@ module.exports = async (req, res) => {
         });
 
         // Use pre-fetched allKittiesSnapshot from the top of the transaction to prevent read-after-write error
-        let currentRefereeKitty = 0;
         let currentFinalsKitty = 0;
         allKittiesSnapshot.forEach(doc => {
           const data = doc.data();
           if (Number(data.matchId) === Number(matchId)) return; // skip this match's old data if resubmitted
-          currentRefereeKitty += data.splitReferee || 0;
-          currentFinalsKitty += data.splitFinals || 0;
+          currentFinalsKitty += (data.splitFinals || 0) + (data.splitReferee || 0);
         });
 
-        // Apply incoming match inflow to available balance first (since this settlement transaction
-        // will write this match's inflow, we can treat it as part of available funds)
-        const availableReferee = Math.max(0, currentRefereeKitty + refereeKittyInflow);
+        // Apply incoming match inflow to available balance first
         const availableFinals = Math.max(0, currentFinalsKitty + finalsKittyInflow);
-        const totalAvailable = availableReferee + availableFinals;
+        const totalAvailable = availableFinals;
 
         let actualBonusPayout = totalRequiredBonus;
         let scaleFactor = 1.0;
@@ -466,12 +460,7 @@ module.exports = async (req, res) => {
         }
 
         if (actualBonusPayout > 0) {
-          if (actualBonusPayout <= availableReferee) {
-            refereeKittyDeduction = actualBonusPayout;
-          } else {
-            refereeKittyDeduction = availableReferee;
-            finalsKittyDeduction = actualBonusPayout - availableReferee;
-          }
+          finalsKittyDeduction = actualBonusPayout;
 
           playerBonusDetails.forEach(({ bet, bonus }) => {
             const scaledBonus = Math.round(bonus * scaleFactor * 100) / 100;
@@ -494,11 +483,10 @@ module.exports = async (req, res) => {
         }
       }
 
-      refereeKittyInflow -= refereeKittyDeduction;
       finalsKittyInflow -= finalsKittyDeduction;
 
       // E. Write Kitty Logs if there was inflow/outflow
-      if (refereeKittyInflow !== 0 || finalsKittyInflow !== 0) {
+      if (finalsKittyInflow !== 0) {
         const kittyLogRef = db.collection('kitty').doc();
         const kittyType = teamWinners.length === 0 && goalWinners.length === 0
           ? 'goalbet_unsolved'
@@ -507,8 +495,8 @@ module.exports = async (req, res) => {
           kittyId: kittyLogRef.id,
           type: kittyType,
           matchId: String(matchId),
-          amount: refereeKittyInflow + finalsKittyInflow,
-          splitReferee: refereeKittyInflow,
+          amount: finalsKittyInflow,
+          splitReferee: 0,
           splitFinals: finalsKittyInflow,
           createdAt: admin.firestore.Timestamp.now()
         });
@@ -677,6 +665,8 @@ async function rebuildLeaderboard() {
             }
             if (bet.goalBetResult === 'refunded') {
               matchGoalLost = 0;
+            } else if (bet.goalBetResult === 'refunded_partial') {
+              matchGoalLost = goalStake * 0.5;
             }
           }
           totalWon += bet.amountWon || 0;
