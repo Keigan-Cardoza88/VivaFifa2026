@@ -515,6 +515,12 @@ export default function App() {
     return () => unsub();
   }, [currentUser, userProfile, expandedMatchId, activeTab]);
 
+  // Clear expanded match card whenever the user switches tabs to avoid stale data
+  useEffect(() => {
+    setExpandedMatchId(null);
+    setExpandedMatchBets([]);
+  }, [activeTab]);
+
   const handleRegister = async () => {
     if (!nameInput.trim()) {
       setAuthError('Please enter your name to submit the join request.');
@@ -2135,7 +2141,10 @@ export default function App() {
                   </View>
 
                   {(() => {
-                    const filteredDocs = allLeaderboardDocs.filter(d => d.stage === stakesStageTab);
+                    // Map stakes tab IDs (e.g. 'r16_stakes') to real Firestore stage values ('r16')
+                    const stageKeyMap = { r32: 'r32', r16_stakes: 'r16', qf_stakes: 'qf', sf_stakes: 'sf', final_stakes: 'final' };
+                    const realStage = stageKeyMap[stakesStageTab] || stakesStageTab;
+                    const filteredDocs = allLeaderboardDocs.filter(d => d.stage === realStage);
                     const sorted = [...filteredDocs].sort((a, b) => {
                       if (stakesLeaderboardType === 'money') {
                         return (b.netProfit || 0) - (a.netProfit || 0);
@@ -2324,7 +2333,6 @@ export default function App() {
                       final: { team: 200, goal: 200 }
                     }[stage] || { team: 100, goal: 50 };
 
-                    const totalStake = isPostponed ? 0 : (stageStakes.team || 100) + (stageStakes.goal || 50);
 
                     // Filter player predictions to only those who actually placed a bet in Stakes (no defaults)
                     const eligibleExpandedMatchBets = expandedMatchBets.filter(b =>

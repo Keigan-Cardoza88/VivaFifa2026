@@ -490,15 +490,30 @@ function App() {
     }
   };
 
-  // G. Edit Stakes per Stage
+  // G. Edit Stakes per Stage (Normal mode bet prices)
   const handleUpdateStakes = async (stage, field, value) => {
     try {
       const newStakes = { ...globalSettings.stakes };
       newStakes[stage][field] = Number(value);
       await updateDoc(doc(db, 'settings', 'global'), { stakes: newStakes });
-      setStatusMessage({ type: 'success', text: `Stakes updated for stage: ${stage}` });
+      setStatusMessage({ type: 'success', text: `Normal stakes updated for stage: ${stage}` });
     } catch (err) {
       setStatusMessage({ type: 'error', text: `Error updating stakes: ${err.message}` });
+    }
+  };
+
+  // G2. Edit Stakes Mode bet prices (real-money mode — separate from normal)
+  const handleUpdateStakesMode = async (stage, field, value) => {
+    try {
+      const current = globalSettings.stakes_mode || {};
+      const updated = {
+        ...current,
+        [stage]: { ...(current[stage] || { team: 100, goal: 50 }), [field]: Number(value) }
+      };
+      await updateDoc(doc(db, 'settings', 'global'), { stakes_mode: updated });
+      setStatusMessage({ type: 'success', text: `Stakes Mode prices updated for stage: ${stage}` });
+    } catch (err) {
+      setStatusMessage({ type: 'error', text: `Error updating stakes mode prices: ${err.message}` });
     }
   };
 
@@ -1732,6 +1747,47 @@ function App() {
                             </td>
                           </tr>
                         ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* STAKES MODE BET PRICES — real money, separate from normal */}
+                <div className="content-card" style={{ borderColor: '#ff3d71', borderWidth: '2px' }}>
+                  <h3 className="card-title" style={{ color: '#ff3d71' }}>⚡ Stakes Mode Bet Prices (Real Money) (Rs)</h3>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-sub)', marginBottom: '16px' }}>
+                    These prices apply only to real-money Stakes Mode (matches #151+). Fully independent from normal mode prices above.
+                  </p>
+                  <div className="table-responsive">
+                    <table className="scoreboard-table">
+                      <thead>
+                        <tr>
+                          <th>Stage</th>
+                          <th>Team Prediction Stake (Rs)</th>
+                          <th>Goal Prediction Stake (Rs)</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {['r32', 'r16', 'qf', 'sf', 'final'].map((stage) => {
+                          const sm = globalSettings.stakes_mode || {};
+                          const defaults = { r32: { team: 75, goal: 75 }, r16: { team: 100, goal: 100 }, qf: { team: 125, goal: 125 }, sf: { team: 150, goal: 150 }, final: { team: 200, goal: 200 } };
+                          const cur = sm[stage] || defaults[stage] || { team: 100, goal: 50 };
+                          return (
+                            <tr key={stage}>
+                              <td><strong style={{ textTransform: 'uppercase', color: '#ff3d71' }}>{stage}</strong></td>
+                              <td>
+                                <input className="form-control" type="number" style={{ width: '120px', padding: '6px', borderColor: '#ff3d71' }}
+                                       value={cur.team}
+                                       onChange={e => handleUpdateStakesMode(stage, 'team', e.target.value)}/>
+                              </td>
+                              <td>
+                                <input className="form-control" type="number" style={{ width: '120px', padding: '6px', borderColor: '#ff3d71' }}
+                                       value={cur.goal}
+                                       onChange={e => handleUpdateStakesMode(stage, 'goal', e.target.value)}/>
+                              </td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>

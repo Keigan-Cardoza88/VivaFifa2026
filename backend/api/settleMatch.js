@@ -688,9 +688,16 @@ async function rebuildLeaderboard() {
           return;
         }
 
-        let stageStakes = settings.stakes[rawStage] || { team: 50, goal: 50 };
-        if (rawStage === 'group' && Number(matchId) < 45) {
-          stageStakes = { team: 50, goal: 50 };
+        // Use stakes_mode prices for stakes matches, normal stakes prices for normal
+        let stageStakes;
+        if (isStakes) {
+          const smSettings = settings.stakes_mode || {};
+          stageStakes = smSettings[rawStage] || settings.stakes[rawStage] || { team: 50, goal: 50 };
+        } else {
+          stageStakes = settings.stakes[rawStage] || { team: 50, goal: 50 };
+          if (rawStage === 'group' && Number(matchId) < 45) {
+            stageStakes = { team: 50, goal: 50 };
+          }
         }
         const teamStake = stageStakes.team;
         const goalStake = stageStakes.goal;
@@ -725,9 +732,13 @@ async function rebuildLeaderboard() {
           }
           totalLost += matchTeamLost + matchGoalLost;
         } else {
-          // No bet placed means they forfeited (automatic loss of full stake)
-          totalPredictions += 2;
-          totalLost += teamStake + goalStake;
+          if (isStakes) {
+            // STAKES: no bet placed = no participation, no penalty. Skip entirely.
+          } else {
+            // NORMAL: no bet placed = forfeit (automatic loss of full stake)
+            totalPredictions += 2;
+            totalLost += teamStake + goalStake;
+          }
         }
       });
 
