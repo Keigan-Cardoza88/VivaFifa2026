@@ -206,6 +206,7 @@ export default function App() {
   const [selectedStageTab, setSelectedStageTab] = useState('r32');
   const [allLeaderboardDocs, setAllLeaderboardDocs] = useState([]);
   const [stakesLeaderboardType, setStakesLeaderboardType] = useState('money');
+  const [stakesSubTab, setStakesSubTab] = useState('leaderboard');
 
   // New state for user names mapping, group consensus, and history bet expander
   const [allUsers, setAllUsers] = useState({});
@@ -1968,135 +1969,175 @@ export default function App() {
         {/* TAB 6: REAL STAKES */}
         {activeTab === 'realstakes' && (
           <View style={{ padding: 16 }}>
-            <View style={[styles.profileCard, { borderColor: '#ff3d71', borderWidth: 1, marginBottom: 16 }]}>
-              <Text style={[styles.profileName, { color: '#ff3d71' }]}>Real Stakes</Text>
-              <Text style={[styles.profileEmail, { marginBottom: 16 }]}>Stakes & Kitty Reserves</Text>
-              
-              <View style={styles.profileDivider} />
-              
-              <View style={styles.profileRow}>
-                <Text style={styles.profileLabel}>Total Entry Fees Pot:</Text>
-                <Text style={[styles.profileValue, { color: '#ff3d71', fontWeight: 'bold' }]}>
-                  ₹{(Object.values(allUsers).filter(u => u.role === 'participant').length * 10400).toLocaleString()}
-                </Text>
-              </View>
-
-              <View style={styles.profileRow}>
-                <Text style={styles.profileLabel}>Match Stake Pool:</Text>
-                <Text style={styles.profileValue}>₹150 per Match (₹100 Team / ₹50 Goal)</Text>
-              </View>
-            </View>
-
-            {/* Sub-section: R32 Leaderboards */}
-            <Text style={{ fontSize: 15, fontWeight: '800', color: '#ff3d71', marginBottom: 12, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-              Round of 32 Standings
-            </Text>
-
-            {/* Toggle Row (Red Theme) */}
+            {/* Sub-Tab Selector within Stakes */}
             <View style={{ flexDirection: 'row', gap: 10, marginBottom: 16 }}>
               <TouchableOpacity
                 style={{
                   flex: 1,
-                  paddingVertical: 10,
+                  paddingVertical: 12,
                   alignItems: 'center',
                   borderRadius: 8,
-                  borderWidth: 1.5,
+                  borderWidth: 2,
                   borderColor: '#ff3d71',
-                  backgroundColor: stakesLeaderboardType === 'money' ? '#ff3d71' : 'transparent',
+                  backgroundColor: stakesSubTab === 'leaderboard' ? '#ff3d71' : 'transparent',
                 }}
-                onPress={() => setStakesLeaderboardType('money')}
+                onPress={() => setStakesSubTab('leaderboard')}
               >
-                <Text style={{ fontSize: 13, fontWeight: '800', color: stakesLeaderboardType === 'money' ? '#ffffff' : '#ff3d71' }}>
-                  Money (Net Profit)
+                <Text style={{ fontSize: 14, fontWeight: '800', color: stakesSubTab === 'leaderboard' ? '#ffffff' : '#ff3d71' }}>
+                  Leaderboard
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={{
                   flex: 1,
-                  paddingVertical: 10,
+                  paddingVertical: 12,
                   alignItems: 'center',
                   borderRadius: 8,
-                  borderWidth: 1.5,
+                  borderWidth: 2,
                   borderColor: '#ff3d71',
-                  backgroundColor: stakesLeaderboardType === 'accuracy' ? '#ff3d71' : 'transparent',
+                  backgroundColor: stakesSubTab === 'matches' ? '#ff3d71' : 'transparent',
                 }}
-                onPress={() => setStakesLeaderboardType('accuracy')}
+                onPress={() => setStakesSubTab('matches')}
               >
-                <Text style={{ fontSize: 13, fontWeight: '800', color: stakesLeaderboardType === 'accuracy' ? '#ffffff' : '#ff3d71' }}>
-                  Accuracy (%)
+                <Text style={{ fontSize: 14, fontWeight: '800', color: stakesSubTab === 'matches' ? '#ffffff' : '#ff3d71' }}>
+                  R32 Matches
                 </Text>
               </TouchableOpacity>
             </View>
 
-            {/* Leaderboard Table (Red Theme) */}
-            <View style={[styles.tableCard, { borderColor: '#ff3d71', borderWidth: 1 }]}>
-              <View style={[styles.tableHeaderRow, { borderBottomColor: 'rgba(255, 61, 113, 0.3)' }]}>
-                <Text style={[styles.tableHeadCell, { flex: 1 }]}>Rank</Text>
-                <Text style={[styles.tableHeadCell, { flex: 3 }]}>Name</Text>
-                {stakesLeaderboardType === 'money' ? (
-                  <Text style={[styles.tableHeadCell, { flex: 2, textAlign: 'right' }]}>Profit (₹)</Text>
-                ) : (
-                  <Text style={[styles.tableHeadCell, { flex: 2, textAlign: 'right' }]}>Accuracy</Text>
-                )}
-              </View>
+            {stakesSubTab === 'leaderboard' && (
+              <View>
+                {/* Sub-section: R32 Leaderboards */}
+                <Text style={{ fontSize: 15, fontWeight: '800', color: '#ff3d71', marginBottom: 12, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                  Round of 32 Standings
+                </Text>
 
-              {(() => {
-                const r32Docs = allLeaderboardDocs.filter(d => d.stage === 'r32');
-                const sorted = [...r32Docs].sort((a, b) => {
-                  if (stakesLeaderboardType === 'money') {
-                    return (b.netProfit || 0) - (a.netProfit || 0);
-                  } else {
-                    const accA = a.accuracyPercent || 0;
-                    const accB = b.accuracyPercent || 0;
-                    if (accB !== accA) {
-                      return accB - accA;
-                    }
-                    return (b.correctPredictions || 0) - (a.correctPredictions || 0);
-                  }
-                });
-
-                if (sorted.length === 0) {
-                  return (
-                    <Text style={{ color: isDarkMode ? '#cbd5e1' : '#7a6e5b', fontSize: 13, padding: 16, textAlign: 'center' }}>
-                      No R32 data loaded yet. Settle a match to generate standings.
+                {/* Toggle Row (Red Theme) */}
+                <View style={{ flexDirection: 'row', gap: 10, marginBottom: 16 }}>
+                  <TouchableOpacity
+                    style={{
+                      flex: 1,
+                      paddingVertical: 10,
+                      alignItems: 'center',
+                      borderRadius: 8,
+                      borderWidth: 1.5,
+                      borderColor: '#ff3d71',
+                      backgroundColor: stakesLeaderboardType === 'money' ? '#ff3d71' : 'transparent',
+                    }}
+                    onPress={() => setStakesLeaderboardType('money')}
+                  >
+                    <Text style={{ fontSize: 13, fontWeight: '800', color: stakesLeaderboardType === 'money' ? '#ffffff' : '#ff3d71' }}>
+                      Money (Net Profit)
                     </Text>
-                  );
-                }
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={{
+                      flex: 1,
+                      paddingVertical: 10,
+                      alignItems: 'center',
+                      borderRadius: 8,
+                      borderWidth: 1.5,
+                      borderColor: '#ff3d71',
+                      backgroundColor: stakesLeaderboardType === 'accuracy' ? '#ff3d71' : 'transparent',
+                    }}
+                    onPress={() => setStakesLeaderboardType('accuracy')}
+                  >
+                    <Text style={{ fontSize: 13, fontWeight: '800', color: stakesLeaderboardType === 'accuracy' ? '#ffffff' : '#ff3d71' }}>
+                      Accuracy (%)
+                    </Text>
+                  </TouchableOpacity>
+                </View>
 
-                return sorted.map((player, idx) => {
-                  const isMe = player.userId === currentUser.uid;
-                  return (
-                    <View 
-                      style={[
-                        styles.tableDataRow, 
-                        { borderBottomColor: 'rgba(255, 61, 113, 0.15)' },
-                        isMe && { 
-                          backgroundColor: isDarkMode ? 'rgba(255, 61, 113, 0.08)' : 'rgba(255, 61, 113, 0.05)',
-                          borderColor: '#ff3d71',
-                          borderWidth: 1,
-                          borderRadius: 6,
+                {/* Leaderboard Table (Red Theme) */}
+                <View style={[styles.tableCard, { borderColor: '#ff3d71', borderWidth: 1 }]}>
+                  <View style={[styles.tableHeaderRow, { borderBottomColor: 'rgba(255, 61, 113, 0.3)' }]}>
+                    <Text style={[styles.tableHeadCell, { flex: 1 }]}>Rank</Text>
+                    <Text style={[styles.tableHeadCell, { flex: 3 }]}>Name</Text>
+                    {stakesLeaderboardType === 'money' ? (
+                      <Text style={[styles.tableHeadCell, { flex: 2, textAlign: 'right' }]}>Profit (₹)</Text>
+                    ) : (
+                      <Text style={[styles.tableHeadCell, { flex: 2, textAlign: 'right' }]}>Accuracy</Text>
+                    )}
+                  </View>
+
+                  {(() => {
+                    const r32Docs = allLeaderboardDocs.filter(d => d.stage === 'r32');
+                    const sorted = [...r32Docs].sort((a, b) => {
+                      if (stakesLeaderboardType === 'money') {
+                        return (b.netProfit || 0) - (a.netProfit || 0);
+                      } else {
+                        const accA = a.accuracyPercent || 0;
+                        const accB = b.accuracyPercent || 0;
+                        if (accB !== accA) {
+                          return accB - accA;
                         }
-                      ]} 
-                      key={player.userId}
-                    >
-                      <Text style={[styles.tableCell, { flex: 1, fontWeight: '800' }]}>
-                        {idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx + 1}`}
+                        return (b.correctPredictions || 0) - (a.correctPredictions || 0);
+                      }
+                    });
+
+                    if (sorted.length === 0) {
+                      return (
+                        <Text style={{ color: isDarkMode ? '#cbd5e1' : '#7a6e5b', fontSize: 13, padding: 16, textAlign: 'center' }}>
+                          No R32 data loaded yet. Settle a match to generate standings.
+                        </Text>
+                      );
+                    }
+
+                    return sorted.map((player, idx) => {
+                      const isMe = player.userId === currentUser.uid;
+                      return (
+                        <View 
+                          style={[
+                            styles.tableDataRow, 
+                            { borderBottomColor: 'rgba(255, 61, 113, 0.15)' },
+                            isMe && { 
+                              backgroundColor: isDarkMode ? 'rgba(255, 61, 113, 0.08)' : 'rgba(255, 61, 113, 0.05)',
+                              borderColor: '#ff3d71',
+                              borderWidth: 1,
+                              borderRadius: 6,
+                            }
+                          ]} 
+                          key={player.userId}
+                        >
+                          <Text style={[styles.tableCell, { flex: 1, fontWeight: '800' }]}>
+                            {idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx + 1}`}
+                          </Text>
+                          <Text style={[styles.tableCell, { flex: 3, fontWeight: '700' }]}>{player.userName}</Text>
+                          {stakesLeaderboardType === 'money' ? (
+                            <Text style={[styles.tableCell, { flex: 2, textAlign: 'right', fontWeight: '800', color: player.netProfit >= 0 ? '#00e676' : '#ff3d71' }]}>
+                              ₹{Number(player.netProfit).toFixed(2)}
+                            </Text>
+                          ) : (
+                            <Text style={[styles.tableCell, { flex: 2, textAlign: 'right', fontWeight: '800', color: '#ff3d71' }]}>
+                              {Number(player.accuracyPercent).toFixed(2)}%
+                            </Text>
+                          )}
+                        </View>
+                      );
+                    });
+                  })()}
+                </View>
+              </View>
+            )}
+
+            {stakesSubTab === 'matches' && (
+              <View>
+                <Text style={{ fontSize: 15, fontWeight: '800', color: '#ff3d71', marginBottom: 12, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                  Round of 32 Match Fixtures
+                </Text>
+                {(() => {
+                  const filteredMatches = matches.filter(m => m.stage === 'r32' && Number(m.matchId) > 150);
+                  if (filteredMatches.length === 0) {
+                    return (
+                      <Text style={{ color: isDarkMode ? '#cbd5e1' : '#7a6e5b', fontSize: 13, padding: 16, textAlign: 'center' }}>
+                        No R32 matches loaded yet.
                       </Text>
-                      <Text style={[styles.tableCell, { flex: 3, fontWeight: '700' }]}>{player.userName}</Text>
-                      {stakesLeaderboardType === 'money' ? (
-                        <Text style={[styles.tableCell, { flex: 2, textAlign: 'right', fontWeight: '800', color: player.netProfit >= 0 ? '#00e676' : '#ff3d71' }]}>
-                          ₹{Number(player.netProfit).toFixed(2)}
-                        </Text>
-                      ) : (
-                        <Text style={[styles.tableCell, { flex: 2, textAlign: 'right', fontWeight: '800', color: '#ff3d71' }]}>
-                          {Number(player.accuracyPercent).toFixed(2)}%
-                        </Text>
-                      )}
-                    </View>
-                  );
-                });
-              })()}
-            </View>
+                    );
+                  }
+                  return filteredMatches.map(m => renderMatchCard(m));
+                })()}
+              </View>
+            )}
           </View>
         )}
 
