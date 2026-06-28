@@ -944,10 +944,6 @@ function App() {
             </div>
 
             <div className="stats-grid">
-              <div className="stat-card brazil">
-                <span className="stat-label">Total Stakes Pot</span>
-                <span className="stat-value">Rs {entryPot.toLocaleString()}</span>
-              </div>
               <div className="stat-card argentina">
                 <span className="stat-label">Finals Kitty Pool</span>
                 <span className="stat-value">Rs {finalsKittyBonus.toLocaleString()}</span>

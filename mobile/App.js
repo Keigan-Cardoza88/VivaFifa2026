@@ -1265,12 +1265,12 @@ export default function App() {
                     key={stg.id}
                     style={[
                       styles.toggleBtn,
-                      { paddingHorizontal: 12, height: 36, minWidth: 90, marginRight: 8 },
+                      { flex: 0, paddingHorizontal: 16, paddingVertical: 10, minWidth: 95, marginRight: 8 },
                       selectedStageTab === stg.id && styles.toggleActive
                     ]}
                     onPress={() => setSelectedStageTab(stg.id)}
                   >
-                    <Text style={styles.toggleText}>{stg.label}</Text>
+                    <Text style={[styles.toggleText, { fontSize: 11 }, selectedStageTab === stg.id && { color: isDarkMode ? '#000000' : '#ffffff' }]}>{stg.label}</Text>
                   </TouchableOpacity>
                 ))}
               </ScrollView>
@@ -1281,13 +1281,13 @@ export default function App() {
                 style={[styles.toggleBtn, leaderboardType === 'money' && styles.toggleActive]}
                 onPress={() => setLeaderboardType('money')}
               >
-                <Text style={styles.toggleText}>Money (Net Profit)</Text>
+                <Text style={[styles.toggleText, leaderboardType === 'money' && { color: isDarkMode ? '#000000' : '#ffffff' }]}>Money (Net Profit)</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.toggleBtn, leaderboardType === 'accuracy' && styles.toggleActive]}
                 onPress={() => setLeaderboardType('accuracy')}
               >
-                <Text style={styles.toggleText}>Accuracy (%)</Text>
+                <Text style={[styles.toggleText, leaderboardType === 'accuracy' && { color: isDarkMode ? '#000000' : '#ffffff' }]}>Accuracy (%)</Text>
               </TouchableOpacity>
             </View>
 
@@ -1343,12 +1343,12 @@ export default function App() {
                     key={stg.id}
                     style={[
                       styles.toggleBtn,
-                      { paddingHorizontal: 12, height: 36, minWidth: 90, marginRight: 8 },
+                      { flex: 0, paddingHorizontal: 16, paddingVertical: 10, minWidth: 95, marginRight: 8 },
                       selectedStageTab === stg.id && styles.toggleActive
                     ]}
                     onPress={() => setSelectedStageTab(stg.id)}
                   >
-                    <Text style={styles.toggleText}>{stg.label}</Text>
+                    <Text style={[styles.toggleText, { fontSize: 11 }, selectedStageTab === stg.id && { color: isDarkMode ? '#000000' : '#ffffff' }]}>{stg.label}</Text>
                   </TouchableOpacity>
                 ))}
               </ScrollView>
