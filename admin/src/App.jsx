@@ -859,7 +859,11 @@ function App() {
     if (log.matchId) {
       const matchObj = matches.find(m => Number(m.matchId) === Number(log.matchId));
       if (matchObj) {
-        logStage = matchObj.stage === 'third_place' ? 'final' : matchObj.stage;
+        if (matchObj.stage === 'r32') {
+          logStage = Number(matchObj.matchId) <= 150 ? 'r32_normal' : 'r32';
+        } else {
+          logStage = matchObj.stage === 'third_place' ? 'final' : matchObj.stage;
+        }
       }
     } else if (log.stage) {
       logStage = log.stage;
@@ -999,6 +1003,7 @@ function App() {
             <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '12px', marginBottom: '16px' }}>
               {[
                 { id: 'group', label: 'Group Stage' },
+                { id: 'r32_normal', label: 'Round of 32 (Normal)' },
                 { id: 'r32', label: 'STAKES (Round of 32)' },
                 { id: 'r16', label: 'Round of 16' },
                 { id: 'qf', label: 'Quarter-Finals' },
@@ -1238,7 +1243,17 @@ function App() {
               {sortedMatches.map((match) => (
                 <div className="match-item-card" key={match.id}>
                   <div className="match-item-header">
-                    <span className="match-stage-label">{match.stage} (Match #{match.matchId})</span>
+                    <span className="match-stage-label">
+                      {match.stage === 'r32' ? (
+                        Number(match.matchId) <= 150 ? (
+                          <span style={{ color: 'var(--text-sub)' }}>r32 (NORMAL)</span>
+                        ) : (
+                          <span style={{ color: '#ff3d71', fontWeight: 'bold' }}>r32 (STAKES)</span>
+                        )
+                      ) : (
+                        match.stage
+                      )} (Match #{match.matchId})
+                    </span>
                     <span className={`badge ${match.status === 'upcoming' ? 'win' : (match.status === 'completed' ? 'info' : 'loss')}`}>
                       {match.status}
                     </span>
