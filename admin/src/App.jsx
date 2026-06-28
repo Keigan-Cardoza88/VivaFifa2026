@@ -131,6 +131,7 @@ function App() {
   const [authError, setAuthError] = useState(null);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [selectedStageTab, setSelectedStageTab] = useState('r32');
+  const [leaderboard, setLeaderboard] = useState([]);
   const [isDarkMode, setIsDarkMode] = useState(() => {
     return localStorage.getItem('admin_theme') === 'dark';
   });
@@ -236,11 +237,19 @@ function App() {
       setKittyLogs(list);
     });
 
+    // Listen to leaderboard
+    const unsubLeaderboard = onSnapshot(collection(db, 'leaderboard'), (snapshot) => {
+      const list = [];
+      snapshot.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
+      setLeaderboard(list);
+    });
+
     return () => {
       unsubMatches();
       unsubUsers();
       unsubSettings();
       unsubKitty();
+      unsubLeaderboard();
     };
   }, [user]);
 

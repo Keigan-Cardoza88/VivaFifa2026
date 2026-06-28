@@ -1976,21 +1976,25 @@ export default function App() {
         {activeTab === 'realstakes' && (
           <View style={{ padding: 16 }}>
             {/* Sub-Tab Selector within Stakes */}
-            <View style={{ flexDirection: 'row', gap: 10, marginBottom: 16 }}>
+            <View style={{ flexDirection: 'row', borderBottomWidth: 2, borderBottomColor: isDarkMode ? 'rgba(255,61,113,0.15)' : 'rgba(255,61,113,0.1)', marginBottom: 20 }}>
               <TouchableOpacity
                 style={{
                   flex: 1,
                   paddingVertical: 12,
                   alignItems: 'center',
-                  borderRadius: 8,
-                  borderWidth: 2,
-                  borderColor: '#ff3d71',
-                  backgroundColor: stakesSubTab === 'leaderboard' ? '#ff3d71' : 'transparent',
+                  borderBottomWidth: stakesSubTab === 'leaderboard' ? 3 : 0,
+                  borderBottomColor: '#ff3d71',
+                  marginBottom: -2,
                 }}
                 onPress={() => setStakesSubTab('leaderboard')}
               >
-                <Text style={{ fontSize: 14, fontWeight: '800', color: stakesSubTab === 'leaderboard' ? '#ffffff' : '#ff3d71' }}>
-                  Leaderboards
+                <Text style={{ 
+                  fontSize: 15, 
+                  fontWeight: '800', 
+                  color: stakesSubTab === 'leaderboard' ? '#ff3d71' : (isDarkMode ? '#a1a1aa' : '#71717a'),
+                  letterSpacing: 0.5,
+                }}>
+                  Leaderboard
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -1998,14 +2002,18 @@ export default function App() {
                   flex: 1,
                   paddingVertical: 12,
                   alignItems: 'center',
-                  borderRadius: 8,
-                  borderWidth: 2,
-                  borderColor: '#ff3d71',
-                  backgroundColor: stakesSubTab === 'matches' ? '#ff3d71' : 'transparent',
+                  borderBottomWidth: stakesSubTab === 'matches' ? 3 : 0,
+                  borderBottomColor: '#ff3d71',
+                  marginBottom: -2,
                 }}
                 onPress={() => setStakesSubTab('matches')}
               >
-                <Text style={{ fontSize: 14, fontWeight: '800', color: stakesSubTab === 'matches' ? '#ffffff' : '#ff3d71' }}>
+                <Text style={{ 
+                  fontSize: 15, 
+                  fontWeight: '800', 
+                  color: stakesSubTab === 'matches' ? '#ff3d71' : (isDarkMode ? '#a1a1aa' : '#71717a'),
+                  letterSpacing: 0.5,
+                }}>
                   R32 Matches
                 </Text>
               </TouchableOpacity>
