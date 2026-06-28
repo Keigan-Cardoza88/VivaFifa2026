@@ -132,6 +132,7 @@ function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [selectedStageTab, setSelectedStageTab] = useState('r32');
   const [leaderboard, setLeaderboard] = useState([]);
+  const [matchesStakesFilter, setMatchesStakesFilter] = useState('all');
   const [isDarkMode, setIsDarkMode] = useState(() => {
     return localStorage.getItem('admin_theme') === 'dark';
   });
@@ -805,8 +806,23 @@ function App() {
     }
   };
 
+  const isUserEligibleForMatch = (u, match) => {
+    if (!u || !match?.kickoffTimeIST) return true;
+    const joinedAt = u.approvedAt || u.joinedAt;
+    if (!joinedAt) return true;
+    const joinedTime = joinedAt.seconds * 1000;
+    const kickoffTime = match.kickoffTimeIST.seconds * 1000;
+    return joinedTime <= kickoffTime;
+  };
+
   const getSortedMatches = () => {
-    const list = [...matches];
+    let list = [...matches];
+    if (matchesStakesFilter === 'normal') {
+      list = list.filter(m => !(m.stage === 'r32' && Number(m.matchId) > 150));
+    } else if (matchesStakesFilter === 'stakes') {
+      list = list.filter(m => m.stage === 'r32' && Number(m.matchId) > 150);
+    }
+
     if (matchesSortOrder === 'time-asc') {
       list.sort((a, b) => (a.kickoffTimeIST?.seconds || 0) - (b.kickoffTimeIST?.seconds || 0));
     } else if (matchesSortOrder === 'time-desc') {
@@ -1074,7 +1090,12 @@ function App() {
                   </thead>
                   <tbody>
                     {users.filter(u => u.role === 'participant').map((u) => {
-                      // We can query leaderboard collection, but let's mock/calculate or fetch from existing users list
+                      const stageKey = selectedStageTab === 'r32_normal' ? 'r32' : selectedStageTab;
+                      const entry = leaderboard.find(l => l.userId === u.uid && l.stage === stageKey);
+                      const won = entry ? entry.totalWon || 0 : 0;
+                      const lost = entry ? entry.totalLost || 0 : 0;
+                      const profit = entry ? entry.netProfit || 0 : 0;
+
                       return (
                         <tr key={u.uid}>
                           <td><strong>{u.name}</strong></td>
@@ -1084,9 +1105,14 @@ function App() {
                               {u.paymentStatus}
                             </span>
                           </td>
-                          <td style={{ color: 'var(--win-green)' }}>Rs 0</td>
-                          <td style={{ color: 'var(--loss-red)' }}>Rs {u.entryFee || 0}</td>
-                          <td style={{ fontWeight: 'bold' }}>Rs 0</td>
+                          <td style={{ color: 'var(--win-green)', fontWeight: '600' }}>Rs {won.toLocaleString()}</td>
+                          <td style={{ color: 'var(--loss-red)', fontWeight: '600' }}>Rs {lost.toLocaleString()}</td>
+                          <td style={{ 
+                            fontWeight: 'bold', 
+                            color: profit >= 0 ? 'var(--win-green)' : 'var(--loss-red)' 
+                          }}>
+                            Rs {profit.toLocaleString()}
+                          </td>
                         </tr>
                       );
                     })}
@@ -1117,16 +1143,28 @@ function App() {
                   </button>
                 </div>
                 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span className="form-label" style={{ marginBottom: 0, whiteSpace: 'nowrap', color: 'var(--text-sub)' }}>Rearrange Matches:</span>
-                  <select className="form-control" style={{ width: '220px', padding: '6px' }} value={matchesSortOrder}
-                          onChange={e => setMatchesSortOrder(e.target.value)}>
-                    <option value="time-asc">Kickoff Time (Earliest First)</option>
-                    <option value="time-desc">Kickoff Time (Latest First)</option>
-                    <option value="id-asc">Match Number (Ascending)</option>
-                    <option value="id-desc">Match Number (Descending)</option>
-                    <option value="stage">Tournament Stage</option>
-                  </select>
+                <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span className="form-label" style={{ marginBottom: 0, whiteSpace: 'nowrap', color: 'var(--text-sub)' }}>Stakes Filter:</span>
+                    <select className="form-control" style={{ width: '220px', padding: '6px', borderColor: matchesStakesFilter === 'stakes' ? '#ff3d71' : 'var(--border)' }} value={matchesStakesFilter}
+                            onChange={e => setMatchesStakesFilter(e.target.value)}>
+                      <option value="all">All Matches</option>
+                      <option value="normal">Normal Matches</option>
+                      <option value="stakes" style={{ color: '#ff3d71', fontWeight: 'bold' }}>Stakes Section Matches</option>
+                    </select>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span className="form-label" style={{ marginBottom: 0, whiteSpace: 'nowrap', color: 'var(--text-sub)' }}>Rearrange Matches:</span>
+                    <select className="form-control" style={{ width: '220px', padding: '6px' }} value={matchesSortOrder}
+                            onChange={e => setMatchesSortOrder(e.target.value)}>
+                      <option value="time-asc">Kickoff Time (Earliest First)</option>
+                      <option value="time-desc">Kickoff Time (Latest First)</option>
+                      <option value="id-asc">Match Number (Ascending)</option>
+                      <option value="id-desc">Match Number (Descending)</option>
+                      <option value="stage">Tournament Stage</option>
+                    </select>
+                  </div>
                 </div>
               </div>
 
@@ -1417,7 +1455,7 @@ function App() {
                                   <select className="form-control" style={{ fontSize: '0.75rem', padding: '6px' }} required
                                           value={overrideBetForm.userId} onChange={e => setOverrideBetForm({ ...overrideBetForm, userId: e.target.value })}>
                                     <option value="">Select User...</option>
-                                    {users.filter(u => u.role === 'participant').map(u => (
+                                    {users.filter(u => u.role === 'participant' && isUserEligibleForMatch(u, match)).map(u => (
                                       <option key={u.id} value={u.id}>{u.name} ({u.email})</option>
                                     ))}
                                   </select>
@@ -1677,7 +1715,21 @@ function App() {
                             {log.type}
                           </span>
                         </td>
-                        <td>{log.matchId ? `Match #${log.matchId}` : 'N/A'}</td>
+                        <td>
+                          {log.matchId ? (
+                            Number(log.matchId) >= 149 && Number(log.matchId) <= 164 ? (
+                              Number(log.matchId) <= 150 ? (
+                                `Match #${log.matchId} (NORMAL)`
+                              ) : (
+                                <span style={{ color: '#ff3d71', fontWeight: 'bold' }}>Match #{log.matchId} (STAKES)</span>
+                              )
+                            ) : (
+                              `Match #${log.matchId}`
+                            )
+                          ) : (
+                            'N/A'
+                          )}
+                        </td>
                         <td style={{ fontWeight: 'bold' }}>Rs {Math.abs(log.amount)}</td>
                         <td style={{ color: log.splitReferee < 0 ? 'var(--loss-red)' : 'var(--win-green)' }}>
                           {log.splitReferee < 0 ? '-' : '+'}Rs {Math.abs(log.splitReferee)}
