@@ -295,9 +295,13 @@ module.exports = async (req, res) => {
         const totalWageredPenalty = penaltyBets.length * penaltyStake;
         const unifiedGoalPool = totalWageredGoal + totalWageredPenalty + forfeitGoalPool;
 
+        // Define shootout/goals winners variable for return
+        let goalWinners = [];
+
         if (endedInPenalties) {
           // Shootout winners predicted shootout AND correct winning team
           const shootoutWinners = penaltyBets.filter(b => b.teamPrediction === winner);
+          goalWinners = shootoutWinners;
 
           // Mark all regular goal wagers as lost
           goalBets.forEach((bet) => {
@@ -368,7 +372,7 @@ module.exports = async (req, res) => {
           });
 
           // 2. Resolve regular goal predictions
-          const goalWinners = [];
+          goalWinners = [];
           const goalLosers = [];
 
           goalBets.forEach((bet) => {
