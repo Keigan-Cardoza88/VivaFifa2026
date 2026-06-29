@@ -629,43 +629,29 @@ function App() {
     if (!editingBracketMatch) return;
     setActionLoading(true);
     try {
-      const oldMatchId = String(editingBracketMatch.matchId || editingBracketMatch.id);
-      const newMatchId = String(bracketTeamForm.matchId || oldMatchId);
-      
-      const matchDocRef = doc(db, 'matches', oldMatchId);
+      const matchId = String(editingBracketMatch.matchId || editingBracketMatch.id);
+      const matchDocRef = doc(db, 'matches', matchId);
       const matchDoc = await getDoc(matchDocRef);
       
       const updatedData = {
         teamA: bracketTeamForm.teamA || '',
-        teamB: bracketTeamForm.teamB || '',
-        matchId: newMatchId
+        teamB: bracketTeamForm.teamB || ''
       };
 
-      if (oldMatchId !== newMatchId) {
-        // If match ID changed, write to new doc and delete the old one
-        const currentData = matchDoc.exists() ? matchDoc.data() : { stage: editingBracketMatch.stage, status: 'upcoming' };
-        await setDoc(doc(db, 'matches', newMatchId), {
-          ...currentData,
-          ...updatedData,
-          kickoffTimeIST: currentData.kickoffTimeIST || Timestamp.now()
-        });
-        await deleteDoc(matchDocRef);
+      if (matchDoc.exists()) {
+        await updateDoc(matchDocRef, updatedData);
       } else {
-        // If match ID is the same, simply update or set the existing document
-        if (matchDoc.exists()) {
-          await updateDoc(matchDocRef, updatedData);
-        } else {
-          await setDoc(matchDocRef, {
-            ...updatedData,
-            stage: editingBracketMatch.stage,
-            status: 'upcoming',
-            kickoffTimeIST: Timestamp.now()
-          });
-        }
+        await setDoc(matchDocRef, {
+          ...updatedData,
+          matchId,
+          stage: editingBracketMatch.stage,
+          status: 'upcoming',
+          kickoffTimeIST: Timestamp.now()
+        });
       }
       
       setEditingBracketMatch(null);
-      setStatusMessage({ type: 'success', text: `Bracket Match #${newMatchId} teams/ID updated successfully.` });
+      setStatusMessage({ type: 'success', text: `Bracket Match #${matchId} teams updated successfully.` });
     } catch (err) {
       setStatusMessage({ type: 'error', text: `Failed to update bracket teams: ${err.message}` });
     } finally {
@@ -673,20 +659,7 @@ function App() {
     }
   };
 
-  // Bracket Quick Delete Match Document
-  const handleBracketDeleteMatch = async (matchId) => {
-    if (!window.confirm(`Are you sure you want to delete Match #${matchId} from the database? This slot will revert to empty TBD.`)) return;
-    setActionLoading(true);
-    try {
-      await deleteDoc(doc(db, 'matches', String(matchId)));
-      setEditingBracketMatch(null);
-      setStatusMessage({ type: 'success', text: `Match #${matchId} deleted successfully.` });
-    } catch (err) {
-      setStatusMessage({ type: 'error', text: `Failed to delete match: ${err.message}` });
-    } finally {
-      setActionLoading(false);
-    }
-  };
+
 
   // L. Delete User from Database
   const handleDeleteUser = async (userId) => {
@@ -1320,123 +1293,7 @@ function App() {
                 </div>
               </div>
 
-            {selectedMatch ? (
-              <div className="content-card" style={{ border: '2px solid var(--brazil-gold)' }}>
-                <h3 className="card-title">Settle Match #{selectedMatch.matchId}</h3>
-                <form onSubmit={handleSettleMatch}>
-                   <div style={{ display: 'flex', gap: '20px', marginBottom: '20px' }}>
-                    <div style={{ flex: 1 }}>
-                      <label className="form-label">{getTeamFlag(selectedMatch.teamA)} {selectedMatch.teamA} Goals</label>
-                      <input className="form-control" type="number" min="0" required 
-                             value={scoreInput.teamAGoals} onChange={e => {
-                               const val = e.target.value;
-                               const otherVal = scoreInput.teamBGoals;
-                               let newWinner = scoreInput.winner;
-                               if (val !== '' && otherVal !== '') {
-                                 const goalsA = Number(val);
-                                 const goalsB = Number(otherVal);
-                                 if (selectedMatch.stage === 'group') {
-                                   if (goalsA > goalsB) newWinner = 'teamA';
-                                   else if (goalsB > goalsA) newWinner = 'teamB';
-                                   else newWinner = 'draw';
-                                 } else {
-                                   if (goalsA > goalsB) newWinner = 'teamA';
-                                   else if (goalsB > goalsA) newWinner = 'teamB';
-                                 }
-                               }
-                               setScoreInput({ ...scoreInput, teamAGoals: val, winner: newWinner });
-                             }}/>
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <label className="form-label">{selectedMatch.teamB} {getTeamFlag(selectedMatch.teamB)} Goals</label>
-                      <input className="form-control" type="number" min="0" required 
-                             value={scoreInput.teamBGoals} onChange={e => {
-                               const val = e.target.value;
-                               const otherVal = scoreInput.teamAGoals;
-                               let newWinner = scoreInput.winner;
-                               if (val !== '' && otherVal !== '') {
-                                 const goalsA = Number(otherVal);
-                                 const goalsB = Number(val);
-                                 if (selectedMatch.stage === 'group') {
-                                   if (goalsA > goalsB) newWinner = 'teamA';
-                                   else if (goalsB > goalsA) newWinner = 'teamB';
-                                   else newWinner = 'draw';
-                                 } else {
-                                   if (goalsA > goalsB) newWinner = 'teamA';
-                                   else if (goalsB > goalsA) newWinner = 'teamB';
-                                 }
-                               }
-                               setScoreInput({ ...scoreInput, teamBGoals: val, winner: newWinner });
-                             }}/>
-                    </div>
-                  </div>
 
-                  <div className="form-group">
-                    <label className="form-label">Calculated Match Winner</label>
-                    <select className="form-control" required value={scoreInput.winner}
-                            onChange={e => setScoreInput({ ...scoreInput, winner: e.target.value })}>
-                      <option value="">-- Choose Winner --</option>
-                      <option value="teamA">{selectedMatch.teamA}</option>
-                      <option value="teamB">{selectedMatch.teamB}</option>
-                      {selectedMatch.stage === 'group' && <option value="draw">Draw</option>}
-                    </select>
-                  </div>
-
-                  <div style={{ display: 'flex', gap: '12px' }}>
-                    <button className="btn btn-success" type="submit" disabled={actionLoading}>
-                      {actionLoading ? 'Settling...' : 'Submit Scores & Trigger Settlement'}
-                    </button>
-                    <button className="btn btn-secondary" type="button" onClick={() => setSelectedMatch(null)}>Cancel</button>
-                  </div>
-                </form>
-              </div>
-            ) : null}
-
-            {editingMatch ? (
-              <div className="content-card" style={{ border: '2px solid var(--active-blue)' }}>
-                <h3 className="card-title">Edit Match #{editingMatch.matchId}</h3>
-                <form onSubmit={handleSaveEditMatch}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
-                    <div>
-                      <label className="form-label">Team A</label>
-                      <input className="form-control" type="text" required 
-                             value={editMatchForm.teamA} onChange={e => setEditMatchForm({ ...editMatchForm, teamA: e.target.value })}/>
-                    </div>
-                    <div>
-                      <label className="form-label">Team B</label>
-                      <input className="form-control" type="text" required 
-                             value={editMatchForm.teamB} onChange={e => setEditMatchForm({ ...editMatchForm, teamB: e.target.value })}/>
-                    </div>
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
-                    <div>
-                      <label className="form-label">Stage</label>
-                      <select className="form-control" required value={editMatchForm.stage}
-                              onChange={e => setEditMatchForm({ ...editMatchForm, stage: e.target.value })}>
-                        <option value="group">Group Stage</option>
-                        <option value="r32" style={{ color: '#ff3d71', fontWeight: 'bold' }}>STAKES (Round of 32)</option>
-                        <option value="r16">Round of 16</option>
-                        <option value="qf">Quarter-final</option>
-                        <option value="sf">Semi-final</option>
-                        <option value="third_place">Third Place Play-off</option>
-                        <option value="final">Final</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="form-label">Kickoff Time (Local Time)</label>
-                      <input className="form-control" type="datetime-local" required
-                             value={editMatchForm.kickoffTime} onChange={e => setEditMatchForm({ ...editMatchForm, kickoffTime: e.target.value })}/>
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', gap: '12px' }}>
-                    <button className="btn btn-primary" type="submit" disabled={actionLoading}>
-                      {actionLoading ? 'Saving...' : 'Save Changes'}
-                    </button>
-                    <button className="btn btn-secondary" type="button" onClick={() => setEditingMatch(null)}>Cancel</button>
-                  </div>
-                </form>
-              </div>
-            ) : null}
 
             <div className="matches-grid">
               {sortedMatches.map((match) => (
@@ -1551,6 +1408,124 @@ function App() {
                         </button>
                       </div>
                     </div>
+
+                    {/* Contextual Settle Form */}
+                    {selectedMatch && selectedMatch.matchId === match.matchId && (
+                      <div className="content-card" style={{ marginTop: '16px', border: '1px solid var(--brazil-gold)', padding: '12px', borderRadius: '6px' }}>
+                        <h4 style={{ fontSize: '0.85rem', marginBottom: '12px', color: 'var(--brazil-gold)' }}>Settle Match #{match.matchId}</h4>
+                        <form onSubmit={handleSettleMatch}>
+                          <div style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
+                            <div style={{ flex: 1 }}>
+                              <label className="form-label" style={{ fontSize: '0.75rem' }}>{match.teamA} Goals</label>
+                              <input className="form-control" type="number" min="0" required style={{ padding: '4px 8px', fontSize: '0.8rem' }}
+                                     value={scoreInput.teamAGoals} onChange={e => {
+                                       const val = e.target.value;
+                                       const otherVal = scoreInput.teamBGoals;
+                                       let newWinner = scoreInput.winner;
+                                       if (val !== '' && otherVal !== '') {
+                                         const goalsA = Number(val);
+                                         const goalsB = Number(otherVal);
+                                         if (match.stage === 'group') {
+                                           if (goalsA > goalsB) newWinner = 'teamA';
+                                           else if (goalsB > goalsA) newWinner = 'teamB';
+                                           else newWinner = 'draw';
+                                         } else {
+                                           if (goalsA > goalsB) newWinner = 'teamA';
+                                           else if (goalsB > goalsA) newWinner = 'teamB';
+                                         }
+                                       }
+                                       setScoreInput({ ...scoreInput, teamAGoals: val, winner: newWinner });
+                                     }}/>
+                            </div>
+                            <div style={{ flex: 1 }}>
+                              <label className="form-label" style={{ fontSize: '0.75rem' }}>{match.teamB} Goals</label>
+                              <input className="form-control" type="number" min="0" required style={{ padding: '4px 8px', fontSize: '0.8rem' }}
+                                     value={scoreInput.teamBGoals} onChange={e => {
+                                       const val = e.target.value;
+                                       const otherVal = scoreInput.teamAGoals;
+                                       let newWinner = scoreInput.winner;
+                                       if (val !== '' && otherVal !== '') {
+                                         const goalsA = Number(otherVal);
+                                         const goalsB = Number(val);
+                                         if (match.stage === 'group') {
+                                           if (goalsA > goalsB) newWinner = 'teamA';
+                                           else if (goalsB > goalsA) newWinner = 'teamB';
+                                           else newWinner = 'draw';
+                                         } else {
+                                           if (goalsA > goalsB) newWinner = 'teamA';
+                                           else if (goalsB > goalsA) newWinner = 'teamB';
+                                         }
+                                       }
+                                       setScoreInput({ ...scoreInput, teamBGoals: val, winner: newWinner });
+                                     }}/>
+                            </div>
+                          </div>
+                          <div className="form-group" style={{ marginBottom: '12px' }}>
+                            <label className="form-label" style={{ fontSize: '0.75rem' }}>Winner</label>
+                            <select className="form-control" required style={{ padding: '4px 8px', fontSize: '0.8rem' }}
+                                    value={scoreInput.winner} onChange={e => setScoreInput({ ...scoreInput, winner: e.target.value })}>
+                              <option value="">-- Choose Winner --</option>
+                              <option value="teamA">{match.teamA}</option>
+                              <option value="teamB">{match.teamB}</option>
+                              {match.stage === 'group' && <option value="draw">Draw</option>}
+                            </select>
+                          </div>
+                          <div style={{ display: 'flex', gap: '8px' }}>
+                            <button className="btn btn-success" type="submit" disabled={actionLoading} style={{ padding: '4px 8px', fontSize: '0.75rem' }}>
+                              {actionLoading ? 'Settling...' : 'Submit Settle'}
+                            </button>
+                            <button className="btn btn-secondary" type="button" onClick={() => setSelectedMatch(null)} style={{ padding: '4px 8px', fontSize: '0.75rem' }}>Cancel</button>
+                          </div>
+                        </form>
+                      </div>
+                    )}
+
+                    {/* Contextual Edit Form */}
+                    {editingMatch && editingMatch.matchId === match.matchId && (
+                      <div className="content-card" style={{ marginTop: '16px', border: '1px solid var(--active-blue)', padding: '12px', borderRadius: '6px' }}>
+                        <h4 style={{ fontSize: '0.85rem', marginBottom: '12px', color: 'var(--active-blue)' }}>Edit Match #{match.matchId}</h4>
+                        <form onSubmit={handleSaveEditMatch}>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
+                            <div>
+                              <label className="form-label" style={{ fontSize: '0.75rem' }}>Team A</label>
+                              <input className="form-control" type="text" required style={{ padding: '4px 8px', fontSize: '0.8rem' }}
+                                     value={editMatchForm.teamA} onChange={e => setEditMatchForm({ ...editMatchForm, teamA: e.target.value })}/>
+                            </div>
+                            <div>
+                              <label className="form-label" style={{ fontSize: '0.75rem' }}>Team B</label>
+                              <input className="form-control" type="text" required style={{ padding: '4px 8px', fontSize: '0.8rem' }}
+                                     value={editMatchForm.teamB} onChange={e => setEditMatchForm({ ...editMatchForm, teamB: e.target.value })}/>
+                            </div>
+                          </div>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
+                            <div>
+                              <label className="form-label" style={{ fontSize: '0.75rem' }}>Stage</label>
+                              <select className="form-control" required style={{ padding: '4px 8px', fontSize: '0.8rem' }}
+                                      value={editMatchForm.stage} onChange={e => setEditMatchForm({ ...editMatchForm, stage: e.target.value })}>
+                                <option value="group">Group Stage</option>
+                                <option value="r32" style={{ color: '#ff3d71', fontWeight: 'bold' }}>STAKES (Round of 32)</option>
+                                <option value="r16">Round of 16</option>
+                                <option value="qf">Quarter-final</option>
+                                <option value="sf">Semi-final</option>
+                                <option value="third_place">Third Place Play-off</option>
+                                <option value="final">Final</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="form-label" style={{ fontSize: '0.75rem' }}>Kickoff Time</label>
+                              <input className="form-control" type="datetime-local" required style={{ padding: '4px 8px', fontSize: '0.8rem' }}
+                                     value={editMatchForm.kickoffTime} onChange={e => setEditMatchForm({ ...editMatchForm, kickoffTime: e.target.value })}/>
+                            </div>
+                          </div>
+                          <div style={{ display: 'flex', gap: '8px' }}>
+                            <button className="btn btn-primary" type="submit" disabled={actionLoading} style={{ padding: '4px 8px', fontSize: '0.75rem' }}>
+                              {actionLoading ? 'Saving...' : 'Save Changes'}
+                            </button>
+                            <button className="btn btn-secondary" type="button" onClick={() => setEditingMatch(null)} style={{ padding: '4px 8px', fontSize: '0.75rem' }}>Cancel</button>
+                          </div>
+                        </form>
+                      </div>
+                    )}
 
                   {/* Expandable View Bets Section */}
                   {viewingMatchBets === match.matchId && (
@@ -2055,18 +2030,9 @@ function App() {
 
             {editingBracketMatch && (
               <div className="content-card" style={{ border: '2px solid var(--brazil-gold)', backgroundColor: 'var(--input-bg)' }}>
-                <h3 className="card-title">Edit Bracket Match Details</h3>
+                <h3 className="card-title">Edit Bracket Teams (Match #{editingBracketMatch.matchId || editingBracketMatch.id})</h3>
                 <form onSubmit={handleSaveBracketTeams}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', marginBottom: '16px' }}>
-                    <div>
-                      <label className="form-label">Match ID (Number)</label>
-                      <input 
-                        className="form-control" 
-                        type="text" 
-                        value={bracketTeamForm.matchId} 
-                        onChange={e => setBracketTeamForm({ ...bracketTeamForm, matchId: e.target.value })} 
-                      />
-                    </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
                     <div>
                       <label className="form-label">Team A Name (Empty for TBD)</label>
                       <input 
@@ -2091,14 +2057,6 @@ function App() {
                   <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                     <button className="btn btn-success" type="submit" disabled={actionLoading}>
                       Save Changes
-                    </button>
-                    <button 
-                      className="btn btn-danger" 
-                      type="button" 
-                      onClick={() => handleBracketDeleteMatch(editingBracketMatch.matchId || editingBracketMatch.id)}
-                      disabled={actionLoading}
-                    >
-                      Delete Match Card
                     </button>
                     <button className="btn btn-secondary" type="button" onClick={() => setEditingBracketMatch(null)}>
                       Cancel
