@@ -427,7 +427,8 @@ export default function App() {
       setAllLeaderboardDocs(allDocs);
 
       // Filter for active stage
-      const stageDocs = allDocs.filter(d => d.stage === selectedStageTab);
+      const targetStageKey = selectedStageTab === 'r32' ? 'r32_normal' : selectedStageTab;
+      const stageDocs = allDocs.filter(d => d.stage === targetStageKey);
 
       // Sort by netProfit descending
       const moneySorted = [...stageDocs].sort((a, b) => (b.netProfit || 0) - (a.netProfit || 0));
