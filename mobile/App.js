@@ -509,6 +509,8 @@ export default function App() {
       const list = [];
       snap.forEach(doc => list.push(doc.data()));
       setFirstMatchBets(list);
+    }, (err) => {
+      console.log("First match bets query restricted: pre-kickoff protection active");
     });
     return () => unsub();
   }, [currentUser, userProfile, firstUpcomingMatch?.matchId, firstUpcomingMatch?.id]);
@@ -536,6 +538,8 @@ export default function App() {
         map[mid].push(data);
       });
       setOpenMatchesBets(map);
+    }, (err) => {
+      console.log("Upcoming matches bets query restricted: pre-kickoff protection active");
     });
 
     return () => unsub();
