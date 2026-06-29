@@ -469,8 +469,8 @@ module.exports = async (req, res) => {
                   transaction.update(bet.ref, updatePayload);
                   Object.assign(bet, updatePayload);
                 });
-              }
             }
+          }
         }
 
         if (!isStakesCollection && stage === 'group') {
@@ -561,6 +561,7 @@ module.exports = async (req, res) => {
             Object.assign(bet, updatePayload);
           });
         }
+      }
 
         return { finalsKittyInflow, teamWinners, goalWinners };
       };
@@ -621,6 +622,7 @@ module.exports = async (req, res) => {
         // Define active participants list for backup
         const backupParticipants = users.filter(u => u.role === 'participant' || ADMIN_EMAILS.includes(u.email));
 
+        const backupRef = db.collection('settlement_backups').doc(String(matchId));
         const backupData = {
           matchId: String(matchId),
           settledAt: admin.firestore.Timestamp.now(),
