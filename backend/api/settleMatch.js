@@ -193,10 +193,6 @@ module.exports = async (req, res) => {
             return;
           }
 
-          if (!isStakesCollection && (user.isLateEntry || user.entryFee === 1500)) {
-            return;
-          }
-
           const userBet = existingBetsMap[user.uid];
 
           if (!userBet) {

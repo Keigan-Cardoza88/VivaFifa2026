@@ -528,7 +528,8 @@ export default function App() {
       return;
     }
 
-    const q = query(collection(db, 'bets'), where('matchId', 'in', ids));
+    const collectionName = activeTab === 'realstakes' ? 'stakes_bets' : 'bets';
+    const q = query(collection(db, collectionName), where('matchId', 'in', ids));
     const unsub = onSnapshot(q, (snap) => {
       const map = {};
       snap.forEach(doc => {
@@ -543,7 +544,7 @@ export default function App() {
     });
 
     return () => unsub();
-  }, [currentUser, userProfile, JSON.stringify(activeMatchesForBets.map(m => m.matchId || m.id))]);
+  }, [currentUser, userProfile, activeTab, JSON.stringify(activeMatchesForBets.map(m => m.matchId || m.id))]);
 
   useEffect(() => {
     if (!currentUser || !userProfile || !expandedMatchId) {
