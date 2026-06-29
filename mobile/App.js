@@ -172,6 +172,23 @@ const getStartingXI = (players) => {
 
 export default function App() {
   const [isDarkMode, setIsDarkMode] = useState(true);
+  const colors = {
+    bg: isDarkMode ? '#171513' : '#f4efe2',
+    headerBg: isDarkMode ? '#1f1c19' : '#ebdcb9',
+    headerBorder: isDarkMode ? '#5c5346' : '#4e4537',
+    cardBg: isDarkMode ? '#22201d' : '#faf6eb',
+    cardBorder: isDarkMode ? '#5c5346' : '#4e4537',
+    textMain: isDarkMode ? '#ffffff' : '#2b261d',
+    textSub: isDarkMode ? '#cbd5e1' : '#7a6e5b',
+    inputBg: isDarkMode ? '#1f1c19' : '#fbf9f3',
+    inputBorder: isDarkMode ? '#5c5346' : '#4e4537',
+    primary: isDarkMode ? '#ffb77d' : '#854d0e',
+    primaryBorder: isDarkMode ? '#ffb77d' : '#a16207',
+    btnSecondaryBg: isDarkMode ? '#1f1c19' : '#ebdcb9',
+    shadowColor: isDarkMode ? '#000000' : '#4e4537',
+    navBg: isDarkMode ? '#1f1c19' : '#ebdcb9',
+    navBorder: isDarkMode ? '#5c5346' : '#4e4537',
+  };
   const styles = getStyles(isDarkMode);
   const [currentUser, setCurrentUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);

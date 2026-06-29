@@ -268,17 +268,14 @@ module.exports = async (req, res) => {
             Object.assign(bet, updatePayload);
           });
         } else {
-          // No team winners — refund everyone.
-          // STAKES: full refund including forfeit pool (can't keep real money).
-          // NORMAL: forfeit pool goes to kitty, active players refunded.
-          if (!isStakesCollection && forfeitTeamPool > 0) {
-            finalsKittyInflow += forfeitTeamPool;
-          }
+          // No team winners -> entire pool goes to kitty (for both normal and stakes)
+          const totalTeamPool = (placedBets.length * teamStake) + forfeitTeamPool;
+          finalsKittyInflow += totalTeamPool;
 
           teamLosers.forEach((bet) => {
             const updatePayload = {
-              teamBetResult: 'refunded',
-              amountLost: 0,
+              teamBetResult: 'lost',
+              amountLost: teamStake,
               amountWon: bet.amountWon || 0
             };
             transaction.update(bet.ref, updatePayload);
@@ -286,15 +283,23 @@ module.exports = async (req, res) => {
           });
         }
 
-        // --- Goals & Penalties Pool Settlement ---
+        // --- Unified Goals & Penalties Pool Settlement ---
         const endedInPenalties = (resultTeamAGoals === resultTeamBGoals) && (winner !== 'draw') && (stage !== 'group');
 
         // Split wagers into standard goal bets vs penalty shootout bets
         const goalBets = placedBets.filter(b => !b.winViaPenalties);
         const penaltyBets = placedBets.filter(b => !!b.winViaPenalties);
 
+        // Calculate unified pool: sum of goal wagers + penalty wagers + forfeit wagers
+        const totalWageredGoal = goalBets.length * goalStake;
+        const totalWageredPenalty = penaltyBets.length * penaltyStake;
+        const unifiedGoalPool = totalWageredGoal + totalWageredPenalty + forfeitGoalPool;
+
         if (endedInPenalties) {
-          // 1. All regular goal wagers are lost (since shootout occurred, regular score predictions fail)
+          // Shootout winners predicted shootout AND correct winning team
+          const shootoutWinners = penaltyBets.filter(b => b.teamPrediction === winner);
+
+          // Mark all regular goal wagers as lost
           goalBets.forEach((bet) => {
             const existingLost = bet.amountLost || 0;
             const updatePayload = {
@@ -306,25 +311,37 @@ module.exports = async (req, res) => {
             Object.assign(bet, updatePayload);
           });
 
-          // 2. Penalties pool wagers
-          const penaltiesWinners = penaltyBets.filter(b => b.teamPrediction === winner);
-          const penaltiesLosers = penaltyBets.filter(b => b.teamPrediction !== winner);
-          const totalPenaltyPool = (penaltyBets.length * penaltyStake);
+          // Mark wrong shootout predictors as lost
+          penaltyBets.forEach((bet) => {
+            if (bet.teamPrediction !== winner) {
+              const existingLost = bet.amountLost || 0;
+              const updatePayload = {
+                goalBetResult: 'lost',
+                amountLost: existingLost + penaltyStake,
+                amountWon: bet.amountWon || 0
+              };
+              transaction.update(bet.ref, updatePayload);
+              Object.assign(bet, updatePayload);
+            }
+          });
 
-          if (penaltiesWinners.length > 0) {
-            const sharePerPenaltyWinner = totalPenaltyPool / penaltiesWinners.length;
-            penaltiesWinners.forEach((bet) => {
+          if (shootoutWinners.length > 0) {
+            // Shootout winners split the entire unified goal/penalty pool
+            const sharePerWinner = unifiedGoalPool / shootoutWinners.length;
+            shootoutWinners.forEach((bet) => {
               const existingWon = bet.amountWon || 0;
               const updatePayload = {
                 goalBetResult: 'won',
-                amountWon: existingWon + sharePerPenaltyWinner,
+                amountWon: existingWon + sharePerWinner,
                 amountLost: 0
               };
               transaction.update(bet.ref, updatePayload);
               Object.assign(bet, updatePayload);
             });
-
-            penaltiesLosers.forEach((bet) => {
+          } else {
+            // No shootout winners -> whole pool goes to kitty
+            finalsKittyInflow += unifiedGoalPool;
+            penaltyBets.forEach((bet) => {
               const existingLost = bet.amountLost || 0;
               const updatePayload = {
                 goalBetResult: 'lost',
@@ -334,22 +351,11 @@ module.exports = async (req, res) => {
               transaction.update(bet.ref, updatePayload);
               Object.assign(bet, updatePayload);
             });
-          } else {
-            // No penalty winners - refund all penalty wagers
-            penaltyBets.forEach((bet) => {
-              const updatePayload = {
-                goalBetResult: 'refunded',
-                amountLost: 0,
-                amountWon: bet.amountWon || 0
-              };
-              transaction.update(bet.ref, updatePayload);
-              Object.assign(bet, updatePayload);
-            });
           }
         } else {
           // Match was decided in regular/ET (no shootout)
 
-          // 1. Penalty shootout predictors lose their penalty stake
+          // 1. All penalty shootout wagers are lost
           penaltyBets.forEach((bet) => {
             const existingLost = bet.amountLost || 0;
             const updatePayload = {
@@ -361,7 +367,7 @@ module.exports = async (req, res) => {
             Object.assign(bet, updatePayload);
           });
 
-          // 2. Regular goal bets resolved normally
+          // 2. Resolve regular goal predictions
           const goalWinners = [];
           const goalLosers = [];
 
@@ -373,10 +379,8 @@ module.exports = async (req, res) => {
             }
           });
 
-          const totalGoalPool = (goalBets.length * goalStake) + forfeitGoalPool;
-
           if (goalWinners.length > 0) {
-            const sharePerWinner = totalGoalPool / goalWinners.length;
+            const sharePerWinner = unifiedGoalPool / goalWinners.length;
 
             goalWinners.forEach((bet) => {
               const existingWon = bet.amountWon || 0;
@@ -412,14 +416,9 @@ module.exports = async (req, res) => {
             });
 
             if (partialWinners.length > 0) {
-              const sharePerPartialWinner = isStakesCollection
-                ? totalGoalPool / partialWinners.length
-                : (totalGoalPool * 0.5) / partialWinners.length;
-
-              if (!isStakesCollection) {
-                const kittyGoalShare = totalGoalPool * 0.5;
-                if (kittyGoalShare > 0) finalsKittyInflow += kittyGoalShare;
-              }
+              // Both modes split 50% with kitty for partial winners
+              const sharePerPartialWinner = (unifiedGoalPool * 0.5) / partialWinners.length;
+              finalsKittyInflow += unifiedGoalPool * 0.5;
 
               partialWinners.forEach((bet) => {
                 const existingWon = bet.amountWon || 0;
@@ -443,32 +442,19 @@ module.exports = async (req, res) => {
                 Object.assign(bet, updatePayload);
               });
             } else {
-              if (isStakesCollection) {
-                goalLosers.forEach((bet) => {
-                  const updatePayload = {
-                    goalBetResult: 'refunded',
-                    amountLost: 0,
-                    amountWon: bet.amountWon || 0
-                  };
-                  transaction.update(bet.ref, updatePayload);
-                  Object.assign(bet, updatePayload);
-                });
-              } else {
-                const activeKittyShare = (goalBets.length * goalStake) * 0.5;
-                if (forfeitGoalPool > 0 || activeKittyShare > 0) {
-                  finalsKittyInflow += forfeitGoalPool + activeKittyShare;
-                }
+              // No goal winners or partial winners -> entire pool goes to kitty
+              finalsKittyInflow += unifiedGoalPool;
 
-                goalLosers.forEach((bet) => {
-                  const existingLost = bet.amountLost || 0;
-                  const updatePayload = {
-                    goalBetResult: 'refunded_partial',
-                    amountLost: existingLost + (goalStake * 0.5),
-                    amountWon: bet.amountWon || 0
-                  };
-                  transaction.update(bet.ref, updatePayload);
-                  Object.assign(bet, updatePayload);
-                });
+              goalLosers.forEach((bet) => {
+                const existingLost = bet.amountLost || 0;
+                const updatePayload = {
+                  goalBetResult: 'lost',
+                  amountLost: existingLost + goalStake,
+                  amountWon: bet.amountWon || 0
+                };
+                transaction.update(bet.ref, updatePayload);
+                Object.assign(bet, updatePayload);
+              });
             }
           }
         }
@@ -561,7 +547,6 @@ module.exports = async (req, res) => {
             Object.assign(bet, updatePayload);
           });
         }
-      }
 
         return { finalsKittyInflow, teamWinners, goalWinners };
       };
