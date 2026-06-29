@@ -748,11 +748,16 @@ function App() {
     setBetsLoading(true);
     try {
       const list = [];
-      const betsQuery = query(collection(db, 'bets'), where('matchId', '==', String(matchId)));
-      const snapshot = await getDocs(betsQuery);
-      snapshot.forEach(doc => list.push({ id: doc.id, collectionName: 'bets', isStakes: false, ...doc.data() }));
+      const showNormal = matchesStakesFilter === 'all' || matchesStakesFilter === 'normal';
+      const showStakes = matchesStakesFilter === 'all' || matchesStakesFilter === 'stakes';
 
-      if (Number(matchId) >= 151) {
+      if (showNormal) {
+        const betsQuery = query(collection(db, 'bets'), where('matchId', '==', String(matchId)));
+        const snapshot = await getDocs(betsQuery);
+        snapshot.forEach(doc => list.push({ id: doc.id, collectionName: 'bets', isStakes: false, ...doc.data() }));
+      }
+
+      if (showStakes && Number(matchId) >= 151) {
         const stakesQuery = query(collection(db, 'stakes_bets'), where('matchId', '==', String(matchId)));
         const stakesSnapshot = await getDocs(stakesQuery);
         stakesSnapshot.forEach(doc => list.push({ id: doc.id, collectionName: 'stakes_bets', isStakes: true, ...doc.data() }));
@@ -1393,27 +1398,16 @@ function App() {
                 <div className="match-item-card" key={match.id}>
                   <div className="match-item-header">
                     <span className="match-stage-label">
-                      {match.stage === 'r32' ? (
-                        Number(match.matchId) <= 150 ? (
-                          <span style={{ color: 'var(--text-sub)' }}>r32 (NORMAL)</span>
-                        ) : (
-                          <>
-                            <span style={{ color: 'var(--text-sub)' }}>r32 (NORMAL)</span>
-                            <span style={{ color: 'var(--text-sub)', margin: '0 4px' }}>|</span>
-                            <span style={{ color: '#ff3d71', fontWeight: 'bold' }}>r32 (STAKES)</span>
-                          </>
-                        )
-                      ) : (
-                        Number(match.matchId) >= 151 ? (
-                          <>
-                            <span style={{ color: 'var(--text-sub)' }}>{match.stage} (NORMAL)</span>
-                            <span style={{ color: 'var(--text-sub)', margin: '0 4px' }}>|</span>
-                            <span style={{ color: '#ff3d71', fontWeight: 'bold' }}>{match.stage} (STAKES)</span>
-                          </>
-                        ) : (
-                          match.stage
-                        )
-                      )} (Match #{match.matchId})
+                      {(() => {
+                        const isStakesMode = matchesStakesFilter === 'stakes' || 
+                          (matchesStakesFilter === 'all' && Number(match.matchId) >= 151 && match.stage !== 'group');
+                        
+                        if (isStakesMode) {
+                          return <span style={{ color: '#ff3d71', fontWeight: 'bold' }}>{match.stage.toUpperCase()} (STAKES)</span>;
+                        } else {
+                          return <span style={{ color: 'var(--text-sub)' }}>{match.stage.toUpperCase()} (NORMAL)</span>;
+                        }
+                      })()} (Match #{match.matchId})
                     </span>
                     <span className={`badge ${match.status === 'upcoming' ? 'win' : (match.status === 'completed' ? 'info' : 'loss')}`}>
                       {match.status}
