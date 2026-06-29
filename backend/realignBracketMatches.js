@@ -31,28 +31,39 @@ const correctSequence = [
 async function realignMatches() {
   console.log('Starting realignment of Round of 32 matches...');
   for (const item of correctSequence) {
+    // 1. Realign Normal Match document
     const docRef = db.collection('matches').doc(item.matchId);
     const snap = await docRef.get();
-    
-    if (snap.exists) {
-      await docRef.update({
-        teamA: item.teamA,
-        teamB: item.teamB
-      });
-      console.log(`Updated Match #${item.matchId}: ${item.teamA} vs ${item.teamB}`);
-    } else {
-      await docRef.set({
-        matchId: item.matchId,
+    const matchData = {
+      matchId: item.matchId,
+      teamA: item.teamA,
+      teamB: item.teamB,
+      stage: 'r32',
+      status: snap.exists ? snap.data().status : 'upcoming',
+      kickoffTimeIST: snap.exists ? snap.data().kickoffTimeIST : admin.firestore.Timestamp.now()
+    };
+    await docRef.set(matchData);
+    console.log(`Updated Normal Match #${item.matchId}: ${item.teamA} vs ${item.teamB}`);
+
+    // 2. If it is Match 151 or higher, seed/realign its Stakes counterpart document
+    if (Number(item.matchId) >= 151) {
+      const stakesDocId = `${item.matchId}_stakes`;
+      const stakesDocRef = db.collection('matches').doc(stakesDocId);
+      const stakesSnap = await stakesDocRef.get();
+      
+      const stakesMatchData = {
+        matchId: stakesDocId,
         teamA: item.teamA,
         teamB: item.teamB,
         stage: 'r32',
-        status: 'upcoming',
-        kickoffTimeIST: admin.firestore.Timestamp.now()
-      });
-      console.log(`Created missing Match #${item.matchId}: ${item.teamA} vs ${item.teamB}`);
+        status: stakesSnap.exists ? stakesSnap.data().status : 'upcoming',
+        kickoffTimeIST: snap.exists ? snap.data().kickoffTimeIST : admin.firestore.Timestamp.now()
+      };
+      await stakesDocRef.set(stakesMatchData);
+      console.log(`Updated Stakes Match #${stakesDocId}: ${item.teamA} vs ${item.teamB}`);
     }
   }
-  console.log('Realignment complete.');
+  console.log('Realignment and Stakes seeding complete.');
 }
 
 realignMatches()

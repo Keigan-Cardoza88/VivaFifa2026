@@ -20,7 +20,7 @@ module.exports = async (req, res) => {
   const origin = req.headers.origin || '*';
   res.setHeader('Access-Control-Allow-Origin', origin);
   res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS, PATCH, DELETE, POST, PUT');
   res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization');
 
   if (req.method === 'OPTIONS') {
@@ -144,17 +144,22 @@ module.exports = async (req, res) => {
         users.push(u);
       });
 
+      const isStakesMatch = String(matchId).endsWith('_stakes');
+      const cleanMatchId = String(matchId).replace('_stakes', '');
+
       // Fetch existing bets (Normal)
-      const betsSnapshot = await transaction.get(db.collection('bets').where('matchId', '==', String(matchId)));
       const existingBets = {};
-      betsSnapshot.forEach((doc) => {
-        existingBets[doc.data().userId] = { id: doc.id, ref: doc.ref, ...doc.data() };
-      });
+      if (!isStakesMatch) {
+        const betsSnapshot = await transaction.get(db.collection('bets').where('matchId', '==', String(cleanMatchId)));
+        betsSnapshot.forEach((doc) => {
+          existingBets[doc.data().userId] = { id: doc.id, ref: doc.ref, ...doc.data() };
+        });
+      }
 
       // Fetch existing bets (Stakes)
       const stakesBets = {};
-      if (Number(matchId) >= 151) {
-        const stakesSnapshot = await transaction.get(db.collection('stakes_bets').where('matchId', '==', String(matchId)));
+      if (isStakesMatch) {
+        const stakesSnapshot = await transaction.get(db.collection('stakes_bets').where('matchId', '==', String(cleanMatchId)));
         stakesSnapshot.forEach((doc) => {
           stakesBets[doc.data().userId] = { id: doc.id, ref: doc.ref, ...doc.data() };
         });
@@ -573,16 +578,18 @@ module.exports = async (req, res) => {
         return { finalsKittyInflow, teamWinners, goalWinners };
       };
 
-      const normalResult = runSettlementForCollection('bets', existingBets, false);
-
+      let normalResult = { finalsKittyInflow: 0, teamWinners: [], goalWinners: [] };
       let stakesResult = { finalsKittyInflow: 0, teamWinners: [], goalWinners: [] };
-      if (Number(matchId) >= 151) {
+
+      if (!isStakesMatch) {
+        normalResult = runSettlementForCollection('bets', existingBets, false);
+      } else {
         stakesResult = runSettlementForCollection('stakes_bets', stakesBets, true);
       }
 
       const totalInflow = normalResult.finalsKittyInflow + stakesResult.finalsKittyInflow;
 
-      if (normalResult.finalsKittyInflow !== 0) {
+      if (!isStakesMatch && normalResult.finalsKittyInflow !== 0) {
         const kittyLogRef = db.collection('kitty').doc();
         const normalType = normalResult.teamWinners.length === 0 && normalResult.goalWinners.length === 0
           ? 'goalbet_unsolved'
@@ -598,7 +605,7 @@ module.exports = async (req, res) => {
         });
       }
 
-      if (Number(matchId) >= 151 && stakesResult.finalsKittyInflow !== 0) {
+      if (isStakesMatch && stakesResult.finalsKittyInflow !== 0) {
         const kittyLogRef = db.collection('kitty').doc();
         const stakesType = stakesResult.teamWinners.length === 0 && stakesResult.goalWinners.length === 0
           ? 'goalbet_unsolved'
@@ -606,7 +613,7 @@ module.exports = async (req, res) => {
         transaction.set(kittyLogRef, {
           kittyId: kittyLogRef.id,
           type: stakesType,
-          matchId: `${matchId}_stakes`,
+          matchId: String(matchId),
           amount: stakesResult.finalsKittyInflow,
           splitReferee: 0,
           splitFinals: stakesResult.finalsKittyInflow,
@@ -639,20 +646,34 @@ module.exports = async (req, res) => {
           refereeKittyInflow: 0,
           finalsKittyInflow: totalInflow,
           bets: backupParticipants.filter(user => !joinedAfterMatch(user, matchData)).map(user => {
-          const defaultBetId = `${user.uid}_${matchId}`;
-          const bet = existingBets[user.uid] || {
-            betId: defaultBetId,
-            userId: user.uid,
-            matchId: String(matchId),
-            teamPrediction: winner === 'teamA' ? 'teamB' : 'teamA',
-            goalsTeamA: -1,
-            goalsTeamB: -1,
-            isDefault: true,
-            teamBetResult: 'forfeited',
-            goalBetResult: 'forfeited',
-            amountWon: 0,
-            amountLost: totalStake
-          };
+          const defaultBetId = `${user.uid}_${cleanMatchId}`;
+          const bet = isStakesMatch
+            ? (stakesBets[user.uid] || {
+                betId: defaultBetId,
+                userId: user.uid,
+                matchId: String(cleanMatchId),
+                teamPrediction: winner === 'teamA' ? 'teamB' : 'teamA',
+                goalsTeamA: -1,
+                goalsTeamB: -1,
+                isDefault: true,
+                teamBetResult: 'lost', // Stakes: no forfeit penalty, just standard loss/lost
+                goalBetResult: 'lost',
+                amountWon: 0,
+                amountLost: 0
+              })
+            : (existingBets[user.uid] || {
+                betId: defaultBetId,
+                userId: user.uid,
+                matchId: String(cleanMatchId),
+                teamPrediction: winner === 'teamA' ? 'teamB' : 'teamA',
+                goalsTeamA: -1,
+                goalsTeamB: -1,
+                isDefault: true,
+                teamBetResult: 'forfeited',
+                goalBetResult: 'forfeited',
+                amountWon: 0,
+                amountLost: totalStake
+              });
           return {
             userName: user.name || 'Anonymous',
             userEmail: user.email,

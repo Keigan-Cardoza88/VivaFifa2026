@@ -907,7 +907,9 @@ function App() {
   const getSortedMatches = () => {
     let list = [...matches];
     if (matchesStakesFilter === 'stakes') {
-      list = list.filter(m => Number(m.matchId) >= 151);
+      list = list.filter(m => String(m.matchId).endsWith('_stakes'));
+    } else if (matchesStakesFilter === 'normal') {
+      list = list.filter(m => !String(m.matchId).endsWith('_stakes'));
     }
 
     if (matchesSortOrder === 'time-asc') {
@@ -915,9 +917,17 @@ function App() {
     } else if (matchesSortOrder === 'time-desc') {
       list.sort((a, b) => (b.kickoffTimeIST?.seconds || 0) - (a.kickoffTimeIST?.seconds || 0));
     } else if (matchesSortOrder === 'id-asc') {
-      list.sort((a, b) => Number(a.matchId) - Number(b.matchId));
+      list.sort((a, b) => {
+        const idA = parseInt(a.matchId) || 0;
+        const idB = parseInt(b.matchId) || 0;
+        return idA - idB;
+      });
     } else if (matchesSortOrder === 'id-desc') {
-      list.sort((a, b) => Number(b.matchId) - Number(a.matchId));
+      list.sort((a, b) => {
+        const idA = parseInt(a.matchId) || 0;
+        const idB = parseInt(b.matchId) || 0;
+        return idB - idA;
+      });
     } else if (matchesSortOrder === 'stage') {
       const stageOrder = { group: 1, r32: 2, r16: 3, qf: 4, sf: 5, third_place: 6, final: 7 };
       list.sort((a, b) => (stageOrder[a.stage] || 0) - (stageOrder[b.stage] || 0));
@@ -1125,14 +1135,6 @@ function App() {
 
       {/* Main Panel Content */}
       <main className="main-content">
-        {statusMessage.text && (
-          <div className={`badge ${statusMessage.type === 'success' ? 'win' : (statusMessage.type === 'info' ? 'info' : 'loss')}`} 
-               style={{ width: '100%', padding: '16px', borderRadius: '8px', marginBottom: '24px', textAlign: 'center', fontSize: '0.9rem' }}>
-            {statusMessage.text}
-            <button style={{ float: 'right', background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontWeight: 'bold' }} 
-                    onClick={() => setStatusMessage({ type: '', text: '' })}>X</button>
-          </div>
-        )}
 
         {/* TAB 1: DASHBOARD */}
         {activeTab === 'dashboard' && (
@@ -1301,15 +1303,15 @@ function App() {
                   <div className="match-item-header">
                     <span className="match-stage-label">
                       {(() => {
-                        const isStakesMode = matchesStakesFilter === 'stakes' || 
-                          (matchesStakesFilter === 'all' && Number(match.matchId) >= 151 && match.stage !== 'group');
+                        const isStakesMode = String(match.matchId).endsWith('_stakes');
+                        const displayId = String(match.matchId).replace('_stakes', '');
                         
                         if (isStakesMode) {
                           return <span style={{ color: '#ff3d71', fontWeight: 'bold' }}>{match.stage.toUpperCase()} (STAKES)</span>;
                         } else {
                           return <span style={{ color: 'var(--text-sub)' }}>{match.stage.toUpperCase()} (NORMAL)</span>;
                         }
-                      })()} (Match #{match.matchId})
+                      })()} (Match #{String(match.matchId).replace('_stakes', '')})
                     </span>
                     <span className={`badge ${match.status === 'upcoming' ? 'win' : (match.status === 'completed' ? 'info' : 'loss')}`}>
                       {match.status}
@@ -1627,6 +1629,15 @@ function App() {
                             </div>
                         </>
                       )}
+                    </div>
+                  )}
+                  {/* Contextual Status Toast */}
+                  {statusMessage.text && (statusMessage.text.includes(String(match.matchId)) || statusMessage.text.includes(String(match.matchId).replace('_stakes', ''))) && (
+                    <div className={`badge ${statusMessage.type === 'success' ? 'win' : (statusMessage.type === 'info' ? 'info' : 'loss')}`} 
+                         style={{ width: '100%', padding: '10px', borderRadius: '6px', marginTop: '12px', textAlign: 'center', fontSize: '0.8rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span>{statusMessage.text}</span>
+                      <button style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.9rem' }} 
+                              onClick={() => setStatusMessage({ type: '', text: '' })}>X</button>
                     </div>
                   )}
                 </div>
