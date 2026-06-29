@@ -2065,36 +2065,62 @@ function App() {
                   { key: 'r16_right', stage: 'r16', side: 'right', count: 4, title: 'Round of 16' },
                   { key: 'r32_right', stage: 'r32', side: 'right', count: 8, title: 'Round of 32' }
                 ].map((col) => {
-                  const renderMatchCard = (m) => {
-                    const isPlaceholder = String(m.id).startsWith('placeholder');
+                  const renderMatchCard = (m, matchIndex = 0) => {
+                    const isPlaceholder = String(m.id || m.matchId).startsWith('placeholder') || !m.matchId;
+                    // Map placeholders to their actual matchId based on standard index offsets
+                    let finalMatchId = m.matchId;
+                    if (isPlaceholder) {
+                      if (m.stage === 'final') {
+                        finalMatchId = '164';
+                      } else if (m.stage === 'third_place') {
+                        finalMatchId = '163';
+                      } else {
+                        // Dynamically calculate matching matchId based on stage and column offset index
+                        const matchIdOffsets = {
+                          r32: 149,
+                          r16: 151, // stakes stage r16: 151-158
+                          qf: 159,  // stakes stage qf: 159-162
+                          sf: 161,  // stakes stage sf: 161-162
+                        };
+                        const offset = matchIdOffsets[m.stage] || 149;
+                        finalMatchId = String(offset + matchIndex);
+                      }
+                    }
+
+                    const resolvedMatch = matches.find(realMatch => String(realMatch.matchId) === String(finalMatchId)) || {
+                      matchId: finalMatchId,
+                      teamA: m.teamA,
+                      teamB: m.teamB,
+                      status: 'upcoming',
+                      stage: m.stage
+                    };
+
                     return (
                       <div 
                         key={m.id}
                         onClick={() => {
-                          if (!isPlaceholder) {
-                            setEditingBracketMatch(m);
-                            setBracketTeamForm({ teamA: m.teamA || '', teamB: m.teamB || '' });
-                          }
+                          setEditingBracketMatch(resolvedMatch);
+                          setBracketTeamForm({ teamA: resolvedMatch.teamA || '', teamB: resolvedMatch.teamB || '' });
                         }}
                         style={{
                           backgroundColor: 'var(--card-bg)',
                           border: '2px solid var(--card-border)',
                           borderRadius: '8px',
                           padding: '12px',
-                          cursor: isPlaceholder ? 'default' : 'pointer',
+                          cursor: 'pointer',
                           display: 'flex',
                           flexDirection: 'column',
                           gap: '6px',
                           position: 'relative',
                           boxShadow: '2px 2px 0px var(--card-border)',
                           width: '180px',
-                          opacity: isPlaceholder ? 0.5 : 1
+                          opacity: 1
                         }}
-                        title={isPlaceholder ? 'Placeholder Match' : 'Click to Edit Teams'}
+                        title="Click to Edit Teams"
                       >
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', fontWeight: 'bold' }}>
-                          <span style={{ color: 'var(--text-sub)' }}>{isPlaceholder ? 'TBD' : `#${m.matchId}`}</span>
-                          {!isPlaceholder && <span style={{ color: 'var(--brazil-gold)', fontSize: '0.7rem' }}>✏️ Edit</span>}
+                          <span style={{ color: 'var(--text-sub)' }}>{`#${finalMatchId}`}</span>
+                          <span style={{ color: 'var(--brazil-gold)', fontSize: '0.7rem' }}>✏️ Edit</span>
                         </div>
                         <div style={{ fontSize: '0.85rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                           <span style={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
@@ -2177,7 +2203,7 @@ function App() {
                     <div key={col.key} style={{ display: 'flex', flexDirection: 'column', width: '200px', alignItems: 'center' }}>
                       <h4 style={{ fontSize: '0.9rem', fontWeight: 'bold', textTransform: 'uppercase', color: 'var(--brazil-gold)', marginBottom: '16px', textAlign: 'center' }}>{col.title}</h4>
                       <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-around', flexGrow: 1, height: '540px' }}>
-                        {displayMatches.map(m => renderMatchCard(m))}
+                        {displayMatches.map((m, idx) => renderMatchCard(m, idx))}
                       </div>
                     </div>
                   );
