@@ -157,8 +157,11 @@ module.exports = async (req, res) => {
         });
       }
 
+      // Check if already settled old
+      const isAlreadySettledOld = matchData.settledWithNewBonus || false;
+
       // Delete old kitty logs to prevent duplicates on resettlement
-      const kittySnapshot = await transaction.get(db.collection('kitty').where('matchId', '==', Number(matchId)));
+      const kittySnapshot = await transaction.get(db.collection('kitty').where('matchId', 'in', [String(matchId), `${matchId}_stakes`]));
       // Pre-fetch all kitty logs to sum up reserves (reads must happen before any writes/deletes)
       const allKittiesSnapshot = await transaction.get(db.collection('kitty'));
 
@@ -531,17 +534,18 @@ module.exports = async (req, res) => {
       }
       transaction.update(matchRef, updateFields);
 
-      // Write full settlement backup snapshot
-      const backupRef = db.collection('settlement_backups').doc(String(matchId));
-      const backupData = {
-        matchId: String(matchId),
-        settledAt: admin.firestore.Timestamp.now(),
-        resultTeamAGoals: Number(resultTeamAGoals),
-        resultTeamBGoals: Number(resultTeamBGoals),
-        winner,
-        refereeKittyInflow: 0,
-        finalsKittyInflow: totalInflow,
-        bets: participants.filter(user => !joinedAfterMatch(user, matchData)).map(user => {
+        // Define active participants list for backup
+        const backupParticipants = users.filter(u => u.role === 'participant' || ADMIN_EMAILS.includes(u.email));
+
+        const backupData = {
+          matchId: String(matchId),
+          settledAt: admin.firestore.Timestamp.now(),
+          resultTeamAGoals: Number(resultTeamAGoals),
+          resultTeamBGoals: Number(resultTeamBGoals),
+          winner,
+          refereeKittyInflow: 0,
+          finalsKittyInflow: totalInflow,
+          bets: backupParticipants.filter(user => !joinedAfterMatch(user, matchData)).map(user => {
           const defaultBetId = `${user.uid}_${matchId}`;
           const bet = existingBets[user.uid] || {
             betId: defaultBetId,
