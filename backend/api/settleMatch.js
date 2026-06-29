@@ -228,6 +228,18 @@ module.exports = async (req, res) => {
             }
             // Stakes: just skip — no penalty for not placing a bet
           } else {
+            // Auto-correct teamPrediction based on goals scoreline to heal any mismatch anomalies
+            if (!userBet.winViaPenalties && userBet.goalsTeamA !== undefined && userBet.goalsTeamB !== undefined) {
+              const numA = Number(userBet.goalsTeamA);
+              const numB = Number(userBet.goalsTeamB);
+              if (numA > numB) {
+                userBet.teamPrediction = 'teamA';
+              } else if (numB > numA) {
+                userBet.teamPrediction = 'teamB';
+              } else if (stage === 'group') {
+                userBet.teamPrediction = 'draw';
+              }
+            }
             userBet.amountWon = 0;
             userBet.amountLost = 0;
             placedBets.push(userBet);
@@ -785,6 +797,18 @@ async function rebuildLeaderboard() {
         const bet = isStakes ? userStakesBets[matchId] : userBets[matchId];
 
         if (bet) {
+          // Auto-correct teamPrediction based on goals scoreline to heal any mismatch anomalies
+          if (!bet.winViaPenalties && bet.goalsTeamA !== undefined && bet.goalsTeamB !== undefined) {
+            const numA = Number(bet.goalsTeamA);
+            const numB = Number(bet.goalsTeamB);
+            if (numA > numB) {
+              bet.teamPrediction = 'teamA';
+            } else if (numB > numA) {
+              bet.teamPrediction = 'teamB';
+            } else if (rawStage === 'group') {
+              bet.teamPrediction = 'draw';
+            }
+          }
           totalPredictions += 2; // Team + Goal predictions
           let matchTeamLost = teamStake;
           const activeGoalCost = bet.winViaPenalties ? penaltyStake : goalStake;

@@ -220,6 +220,28 @@ export default function App() {
   const [betSaving, setBetSaving] = useState(false);
   const [winViaPenalties, setWinViaPenalties] = useState(false);
 
+  const handleGoalsAChange = (val) => {
+    setGoalsA(val);
+    const numA = Number(val);
+    const numB = Number(goalsB);
+    if (!winViaPenalties && !isNaN(numA) && !isNaN(numB)) {
+      if (numA > numB) setTeamPrediction('teamA');
+      else if (numB > numA) setTeamPrediction('teamB');
+      else if (selectedMatch?.stage === 'group') setTeamPrediction('draw');
+    }
+  };
+
+  const handleGoalsBChange = (val) => {
+    setGoalsB(val);
+    const numA = Number(goalsA);
+    const numB = Number(val);
+    if (!winViaPenalties && !isNaN(numA) && !isNaN(numB)) {
+      if (numA > numB) setTeamPrediction('teamA');
+      else if (numB > numA) setTeamPrediction('teamB');
+      else if (selectedMatch?.stage === 'group') setTeamPrediction('draw');
+    }
+  };
+
   // Leaderboard toggle
   const [leaderboardType, setLeaderboardType] = useState('money');
   const [selectedStageTab, setSelectedStageTab] = useState('r32');
@@ -2601,7 +2623,7 @@ export default function App() {
                     style={[styles.scoreInput, winViaPenalties && { backgroundColor: isDarkMode ? '#22201d' : '#f0ebdc', color: colors.textSub }]}
                     keyboardType="numeric"
                     value={winViaPenalties ? '- -' : goalsA}
-                    onChangeText={setGoalsA}
+                    onChangeText={handleGoalsAChange}
                     editable={!winViaPenalties}
                   />
                 </View>
@@ -2612,7 +2634,7 @@ export default function App() {
                     style={[styles.scoreInput, winViaPenalties && { backgroundColor: isDarkMode ? '#22201d' : '#f0ebdc', color: colors.textSub }]}
                     keyboardType="numeric"
                     value={winViaPenalties ? '- -' : goalsB}
-                    onChangeText={setGoalsB}
+                    onChangeText={handleGoalsBChange}
                     editable={!winViaPenalties}
                   />
                 </View>
