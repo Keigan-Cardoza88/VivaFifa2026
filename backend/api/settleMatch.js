@@ -175,6 +175,16 @@ module.exports = async (req, res) => {
         let forfeitTeamPool = 0;
         let forfeitGoalPool = 0;
 
+        // Dynamic stakes configuration
+        const smSettings = settings.stakes_mode || {};
+        const stageStakes = isStakesCollection 
+          ? (smSettings[stage] || { team: 100, goal: 50, penalty: 50 })
+          : (settings.stakes[stage] || { team: 50, goal: 50, penalty: 50 });
+
+        const teamStake = stageStakes.team || 0;
+        const goalStake = stageStakes.goal || 0;
+        const penaltyStake = stageStakes.penalty !== undefined ? stageStakes.penalty : 50;
+
         const placedBets = [];
         const participants = users.filter(u => u.role === 'participant' || ADMIN_EMAILS.includes(u.email));
 
@@ -195,6 +205,9 @@ module.exports = async (req, res) => {
               const defaultBetId = `${user.uid}_${matchId}`;
               const defaultBetRef = db.collection(collectionName).doc(defaultBetId);
 
+              // Default forfeit uses normal teamStake + goalStake
+              const defaultForfeitCost = teamStake + goalStake;
+
               transaction.set(defaultBetRef, {
                 betId: defaultBetId,
                 userId: user.uid,
@@ -207,7 +220,7 @@ module.exports = async (req, res) => {
                 teamBetResult: 'forfeited',
                 goalBetResult: 'forfeited',
                 amountWon: 0,
-                amountLost: totalStake
+                amountLost: defaultForfeitCost
               });
 
               forfeitTeamPool += teamStake;
@@ -273,34 +286,16 @@ module.exports = async (req, res) => {
           });
         }
 
-        const goalWinners = [];
-        const goalLosers = [];
+        // --- Goals & Penalties Pool Settlement ---
+        const endedInPenalties = (resultTeamAGoals === resultTeamBGoals) && (winner !== 'draw') && (stage !== 'group');
 
-        placedBets.forEach((bet) => {
-          if (bet.goalsTeamA === Number(resultTeamAGoals) && bet.goalsTeamB === Number(resultTeamBGoals)) {
-            goalWinners.push(bet);
-          } else {
-            goalLosers.push(bet);
-          }
-        });
+        // Split wagers into standard goal bets vs penalty shootout bets
+        const goalBets = placedBets.filter(b => !b.winViaPenalties);
+        const penaltyBets = placedBets.filter(b => !!b.winViaPenalties);
 
-        const totalGoalPool = (placedBets.length * goalStake) + forfeitGoalPool;
-
-        if (goalWinners.length > 0) {
-          const sharePerWinner = totalGoalPool / goalWinners.length;
-
-          goalWinners.forEach((bet) => {
-            const existingWon = bet.amountWon || 0;
-            const updatePayload = {
-              goalBetResult: 'won',
-              amountWon: existingWon + sharePerWinner,
-              amountLost: 0
-            };
-            transaction.update(bet.ref, updatePayload);
-            Object.assign(bet, updatePayload);
-          });
-
-          goalLosers.forEach((bet) => {
+        if (endedInPenalties) {
+          // 1. All regular goal wagers are lost (since shootout occurred, regular score predictions fail)
+          goalBets.forEach((bet) => {
             const existingLost = bet.amountLost || 0;
             const updatePayload = {
               goalBetResult: 'lost',
@@ -310,42 +305,91 @@ module.exports = async (req, res) => {
             transaction.update(bet.ref, updatePayload);
             Object.assign(bet, updatePayload);
           });
-        } else {
-          const partialWinners = [];
-          const nonPartialLosers = [];
 
-          placedBets.forEach((bet) => {
-            if (bet.goalsTeamA === Number(resultTeamAGoals) || bet.goalsTeamB === Number(resultTeamBGoals)) {
-              partialWinners.push(bet);
-            } else {
-              nonPartialLosers.push(bet);
-            }
-          });
+          // 2. Penalties pool wagers
+          const penaltiesWinners = penaltyBets.filter(b => b.teamPrediction === winner);
+          const penaltiesLosers = penaltyBets.filter(b => b.teamPrediction !== winner);
+          const totalPenaltyPool = (penaltyBets.length * penaltyStake);
 
-          if (partialWinners.length > 0) {
-            // STAKES: partial winners get 100% of pool, kitty gets nothing.
-            // NORMAL: 50% to kitty, 50% shared among partials.
-            const sharePerPartialWinner = isStakesCollection
-              ? totalGoalPool / partialWinners.length
-              : (totalGoalPool * 0.5) / partialWinners.length;
-
-            if (!isStakesCollection) {
-              const kittyGoalShare = totalGoalPool * 0.5;
-              if (kittyGoalShare > 0) finalsKittyInflow += kittyGoalShare;
-            }
-
-            partialWinners.forEach((bet) => {
+          if (penaltiesWinners.length > 0) {
+            const sharePerPenaltyWinner = totalPenaltyPool / penaltiesWinners.length;
+            penaltiesWinners.forEach((bet) => {
               const existingWon = bet.amountWon || 0;
               const updatePayload = {
-                goalBetResult: 'won_partial',
-                amountWon: existingWon + sharePerPartialWinner,
+                goalBetResult: 'won',
+                amountWon: existingWon + sharePerPenaltyWinner,
                 amountLost: 0
               };
               transaction.update(bet.ref, updatePayload);
               Object.assign(bet, updatePayload);
             });
 
-            nonPartialLosers.forEach((bet) => {
+            penaltiesLosers.forEach((bet) => {
+              const existingLost = bet.amountLost || 0;
+              const updatePayload = {
+                goalBetResult: 'lost',
+                amountLost: existingLost + penaltyStake,
+                amountWon: bet.amountWon || 0
+              };
+              transaction.update(bet.ref, updatePayload);
+              Object.assign(bet, updatePayload);
+            });
+          } else {
+            // No penalty winners - refund all penalty wagers
+            penaltyBets.forEach((bet) => {
+              const updatePayload = {
+                goalBetResult: 'refunded',
+                amountLost: 0,
+                amountWon: bet.amountWon || 0
+              };
+              transaction.update(bet.ref, updatePayload);
+              Object.assign(bet, updatePayload);
+            });
+          }
+        } else {
+          // Match was decided in regular/ET (no shootout)
+
+          // 1. Penalty shootout predictors lose their penalty stake
+          penaltyBets.forEach((bet) => {
+            const existingLost = bet.amountLost || 0;
+            const updatePayload = {
+              goalBetResult: 'lost',
+              amountLost: existingLost + penaltyStake,
+              amountWon: bet.amountWon || 0
+            };
+            transaction.update(bet.ref, updatePayload);
+            Object.assign(bet, updatePayload);
+          });
+
+          // 2. Regular goal bets resolved normally
+          const goalWinners = [];
+          const goalLosers = [];
+
+          goalBets.forEach((bet) => {
+            if (bet.goalsTeamA === Number(resultTeamAGoals) && bet.goalsTeamB === Number(resultTeamBGoals)) {
+              goalWinners.push(bet);
+            } else {
+              goalLosers.push(bet);
+            }
+          });
+
+          const totalGoalPool = (goalBets.length * goalStake) + forfeitGoalPool;
+
+          if (goalWinners.length > 0) {
+            const sharePerWinner = totalGoalPool / goalWinners.length;
+
+            goalWinners.forEach((bet) => {
+              const existingWon = bet.amountWon || 0;
+              const updatePayload = {
+                goalBetResult: 'won',
+                amountWon: existingWon + sharePerWinner,
+                amountLost: 0
+              };
+              transaction.update(bet.ref, updatePayload);
+              Object.assign(bet, updatePayload);
+            });
+
+            goalLosers.forEach((bet) => {
               const existingLost = bet.amountLost || 0;
               const updatePayload = {
                 goalBetResult: 'lost',
@@ -356,37 +400,77 @@ module.exports = async (req, res) => {
               Object.assign(bet, updatePayload);
             });
           } else {
-            // No exact or partial goal winners.
-            // STAKES: full refund to everyone (forfeit pool returned too).
-            // NORMAL: 50% to kitty, 50% refund.
-            if (isStakesCollection) {
-              goalLosers.forEach((bet) => {
+            const partialWinners = [];
+            const nonPartialLosers = [];
+
+            goalBets.forEach((bet) => {
+              if (bet.goalsTeamA === Number(resultTeamAGoals) || bet.goalsTeamB === Number(resultTeamBGoals)) {
+                partialWinners.push(bet);
+              } else {
+                nonPartialLosers.push(bet);
+              }
+            });
+
+            if (partialWinners.length > 0) {
+              const sharePerPartialWinner = isStakesCollection
+                ? totalGoalPool / partialWinners.length
+                : (totalGoalPool * 0.5) / partialWinners.length;
+
+              if (!isStakesCollection) {
+                const kittyGoalShare = totalGoalPool * 0.5;
+                if (kittyGoalShare > 0) finalsKittyInflow += kittyGoalShare;
+              }
+
+              partialWinners.forEach((bet) => {
+                const existingWon = bet.amountWon || 0;
                 const updatePayload = {
-                  goalBetResult: 'refunded',
-                  amountLost: 0,
+                  goalBetResult: 'won_partial',
+                  amountWon: existingWon + sharePerPartialWinner,
+                  amountLost: 0
+                };
+                transaction.update(bet.ref, updatePayload);
+                Object.assign(bet, updatePayload);
+              });
+
+              nonPartialLosers.forEach((bet) => {
+                const existingLost = bet.amountLost || 0;
+                const updatePayload = {
+                  goalBetResult: 'lost',
+                  amountLost: existingLost + goalStake,
                   amountWon: bet.amountWon || 0
                 };
                 transaction.update(bet.ref, updatePayload);
                 Object.assign(bet, updatePayload);
               });
             } else {
-              const activeKittyShare = (placedBets.length * goalStake) * 0.5;
-              if (forfeitGoalPool > 0 || activeKittyShare > 0) {
-                finalsKittyInflow += forfeitGoalPool + activeKittyShare;
-              }
+              if (isStakesCollection) {
+                goalLosers.forEach((bet) => {
+                  const updatePayload = {
+                    goalBetResult: 'refunded',
+                    amountLost: 0,
+                    amountWon: bet.amountWon || 0
+                  };
+                  transaction.update(bet.ref, updatePayload);
+                  Object.assign(bet, updatePayload);
+                });
+              } else {
+                const activeKittyShare = (goalBets.length * goalStake) * 0.5;
+                if (forfeitGoalPool > 0 || activeKittyShare > 0) {
+                  finalsKittyInflow += forfeitGoalPool + activeKittyShare;
+                }
 
-              goalLosers.forEach((bet) => {
-                const existingLost = bet.amountLost || 0;
-                const updatePayload = {
-                  goalBetResult: 'refunded_partial',
-                  amountLost: existingLost + (goalStake * 0.5),
-                  amountWon: bet.amountWon || 0
-                };
-                transaction.update(bet.ref, updatePayload);
-                Object.assign(bet, updatePayload);
-              });
+                goalLosers.forEach((bet) => {
+                  const existingLost = bet.amountLost || 0;
+                  const updatePayload = {
+                    goalBetResult: 'refunded_partial',
+                    amountLost: existingLost + (goalStake * 0.5),
+                    amountWon: bet.amountWon || 0
+                  };
+                  transaction.update(bet.ref, updatePayload);
+                  Object.assign(bet, updatePayload);
+                });
+              }
             }
-          }
         }
 
         if (!isStakesCollection && stage === 'group') {
@@ -703,19 +787,21 @@ async function rebuildLeaderboard() {
             stageStakes = { team: 50, goal: 50 };
           }
         }
-        const teamStake = stageStakes.team;
-        const goalStake = stageStakes.goal;
+        const teamStake = stageStakes.team || 0;
+        const goalStake = stageStakes.goal || 0;
+        const penaltyStake = stageStakes.penalty !== undefined ? stageStakes.penalty : 50;
 
         const bet = isStakes ? userStakesBets[matchId] : userBets[matchId];
 
         if (bet) {
           totalPredictions += 2; // Team + Goal predictions
           let matchTeamLost = teamStake;
-          let matchGoalLost = goalStake;
+          const activeGoalCost = bet.winViaPenalties ? penaltyStake : goalStake;
+          let matchGoalLost = activeGoalCost;
 
           if (bet.isDefault) {
             matchTeamLost = teamStake;
-            matchGoalLost = goalStake;
+            matchGoalLost = activeGoalCost;
           } else {
             if (bet.teamBetResult === 'refunded') {
               matchTeamLost = 0;
@@ -723,7 +809,7 @@ async function rebuildLeaderboard() {
             if (bet.goalBetResult === 'refunded') {
               matchGoalLost = 0;
             } else if (bet.goalBetResult === 'refunded_partial') {
-              matchGoalLost = goalStake * 0.5;
+              matchGoalLost = activeGoalCost * 0.5;
             }
           }
           totalWon += bet.amountWon || 0;

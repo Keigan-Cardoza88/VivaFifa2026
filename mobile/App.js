@@ -201,6 +201,7 @@ export default function App() {
   const [betError, setBetError] = useState('');
   const [confirmModalVisible, setConfirmModalVisible] = useState(false);
   const [betSaving, setBetSaving] = useState(false);
+  const [winViaPenalties, setWinViaPenalties] = useState(false);
 
   // Leaderboard toggle
   const [leaderboardType, setLeaderboardType] = useState('money');
@@ -569,15 +570,17 @@ export default function App() {
   // Betting actions
   const handleOpenBet = (match) => {
     setSelectedMatch(match);
-    const existingBet = myBets[match.matchId];
+    const existingBet = activeTab === 'realstakes' ? myStakesBets[match.matchId] : myBets[match.matchId];
     if (existingBet) {
       setTeamPrediction(existingBet.teamPrediction);
-      setGoalsA(String(existingBet.goalsTeamA));
-      setGoalsB(String(existingBet.goalsTeamB));
+      setGoalsA(existingBet.winViaPenalties ? '' : String(existingBet.goalsTeamA));
+      setGoalsB(existingBet.winViaPenalties ? '' : String(existingBet.goalsTeamB));
+      setWinViaPenalties(existingBet.winViaPenalties || false);
     } else {
       setTeamPrediction('');
       setGoalsA('0');
       setGoalsB('0');
+      setWinViaPenalties(false);
     }
     setBetError('');
     setBetModalVisible(true);
@@ -592,6 +595,16 @@ export default function App() {
       setBetError('Please select a team prediction.');
       return;
     }
+
+    if (winViaPenalties) {
+      if (teamPrediction === 'draw') {
+        setBetError('A shootout cannot result in a Draw. Select a winning team.');
+        return;
+      }
+      setConfirmModalVisible(true);
+      return;
+    }
+
     if (isNaN(numA) || isNaN(numB) || numA < 0 || numB < 0) {
       setBetError('Goals must be non-negative integers.');
       return;
@@ -639,8 +652,9 @@ export default function App() {
         userId: currentUser.uid,
         matchId: selectedMatch.matchId,
         teamPrediction,
-        goalsTeamA: Number(goalsA),
-        goalsTeamB: Number(goalsB),
+        goalsTeamA: winViaPenalties ? -1 : Number(goalsA),
+        goalsTeamB: winViaPenalties ? -1 : Number(goalsB),
+        winViaPenalties: !!winViaPenalties,
         placedAt: new Date(),
         isDefault: false
       };
@@ -687,7 +701,7 @@ export default function App() {
           {bet ? (
             <View style={styles.betPlacedBadge}>
               <Text style={styles.betPlacedText}>
-                Bet Placed: {bet.teamPrediction === 'teamA' ? <>{getTeamFlag(match.teamA)} {match.teamA}</> : (bet.teamPrediction === 'teamB' ? <>{match.teamB} {getTeamFlag(match.teamB)}</> : 'Draw')} ({bet.goalsTeamA}-{bet.goalsTeamB})
+                Bet Placed: {bet.teamPrediction === 'teamA' ? <>{getTeamFlag(match.teamA)} {match.teamA}</> : (bet.teamPrediction === 'teamB' ? <>{match.teamB} {getTeamFlag(match.teamB)}</> : 'Draw')} {bet.winViaPenalties ? '(Penalties)' : `(${bet.goalsTeamA}-${bet.goalsTeamB})`}
               </Text>
             </View>
           ) : (
@@ -735,7 +749,7 @@ export default function App() {
                           {b.teamPrediction === 'teamA' ? getTeamFlag(match.teamA) : (b.teamPrediction === 'teamB' ? getTeamFlag(match.teamB) : 'Draw')} {b.teamPrediction === 'teamA' ? match.teamA : (b.teamPrediction === 'teamB' ? match.teamB : 'Draw')}
                         </Text>
                         <Text style={[styles.expandedBetsCell, { flex: 1, textAlign: 'center', fontWeight: '800', color: isDarkMode ? '#ffd700' : '#854d0e' }]}>
-                          {b.goalsTeamA < 0 ? 'N/A' : `${b.goalsTeamA} - ${b.goalsTeamB}`}
+                          {b.winViaPenalties ? 'Shootout' : (b.goalsTeamA < 0 ? 'N/A' : `${b.goalsTeamA} - ${b.goalsTeamB}`)}
                         </Text>
                       </View>
                     );
@@ -1525,7 +1539,7 @@ export default function App() {
                           <View style={{ flex: 1 }}>
                             <Text style={styles.historyBetLabel}>Your Prediction:</Text>
                             <Text style={styles.historyBetValue}>
-                              {bet.teamPrediction === 'teamA' ? <>{getTeamFlag(match.teamA)} {match.teamA}</> : (bet.teamPrediction === 'teamB' ? <>{match.teamB} {getTeamFlag(match.teamB)}</> : 'Draw')} ({bet.goalsTeamA}-{bet.goalsTeamB})
+                              {bet.teamPrediction === 'teamA' ? <>{getTeamFlag(match.teamA)} {match.teamA}</> : (bet.teamPrediction === 'teamB' ? <>{match.teamB} {getTeamFlag(match.teamB)}</> : 'Draw')} {bet.winViaPenalties ? '(Shootout)' : `(${bet.goalsTeamA}-${bet.goalsTeamB})`}
                             </Text>
                             <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
                               <View style={[styles.badge, bet.teamBetResult === 'won' || bet.teamBetResult === 'draw_win' ? styles.badgeWin : styles.badgeLoss]}>
@@ -1599,7 +1613,7 @@ export default function App() {
                                         {b.teamPrediction === 'teamA' ? getTeamFlag(match.teamA) : (b.teamPrediction === 'teamB' ? getTeamFlag(match.teamB) : 'Draw')} {b.teamPrediction === 'teamA' ? match.teamA : (b.teamPrediction === 'teamB' ? match.teamB : 'Draw')}
                                       </Text>
                                       <Text style={[styles.expandedBetsCell, { flex: 1.5, textAlign: 'center', fontWeight: '800', color: isDarkMode ? '#ffd700' : '#854d0e' }]}>
-                                        {b.goalsTeamA < 0 ? 'N/A' : `${b.goalsTeamA} - ${b.goalsTeamB}`}
+                                        {b.winViaPenalties ? 'Shootout' : (b.goalsTeamA < 0 ? 'N/A' : `${b.goalsTeamA} - ${b.goalsTeamB}`)}
                                       </Text>
                                       <Text style={[styles.expandedBetsCell, { flex: 1.1, textAlign: 'right', fontWeight: '800', color: teamNet >= 0 ? '#00e676' : '#ff3d71' }]}>
                                         {teamNet >= 0 ? '+' : ''}₹{Number(teamNet).toFixed(2)}
@@ -2369,7 +2383,7 @@ export default function App() {
                               <View style={{ flex: 1 }}>
                                 <Text style={styles.historyBetLabel}>Your Prediction:</Text>
                                 <Text style={styles.historyBetValue}>
-                                  {bet.teamPrediction === 'teamA' ? <>{getTeamFlag(match.teamA)} {match.teamA}</> : (bet.teamPrediction === 'teamB' ? <>{match.teamB} {getTeamFlag(match.teamB)}</> : 'Draw')} ({bet.goalsTeamA}-{bet.goalsTeamB})
+                                  {bet.teamPrediction === 'teamA' ? <>{getTeamFlag(match.teamA)} {match.teamA}</> : (bet.teamPrediction === 'teamB' ? <>{match.teamB} {getTeamFlag(match.teamB)}</> : 'Draw')} {bet.winViaPenalties ? '(Shootout)' : `(${bet.goalsTeamA}-${bet.goalsTeamB})`}
                                 </Text>
                                 <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
                                   <View style={[styles.badge, bet.teamBetResult === 'won' ? styles.badgeWin : styles.badgeLoss]}>
@@ -2441,7 +2455,7 @@ export default function App() {
                                             {b.teamPrediction === 'teamA' ? getTeamFlag(match.teamA) : (b.teamPrediction === 'teamB' ? getTeamFlag(match.teamB) : 'Draw')} {b.teamPrediction === 'teamA' ? match.teamA : (b.teamPrediction === 'teamB' ? match.teamB : 'Draw')}
                                           </Text>
                                           <Text style={[styles.expandedBetsCell, { flex: 1.5, textAlign: 'center', fontWeight: '800', color: isDarkMode ? '#ffd700' : '#854d0e' }]}>
-                                            {b.goalsTeamA < 0 ? 'N/A' : `${b.goalsTeamA} - ${b.goalsTeamB}`}
+                                            {b.winViaPenalties ? 'Shootout' : (b.goalsTeamA < 0 ? 'N/A' : `${b.goalsTeamA} - ${b.goalsTeamB}`)}
                                           </Text>
                                           <Text style={[styles.expandedBetsCell, { flex: 1.1, textAlign: 'right', fontWeight: '800', color: teamNet >= 0 ? '#00e676' : '#ff3d71' }]}>
                                             {teamNet >= 0 ? '+' : ''}₹{Number(teamNet).toFixed(2)}
@@ -2534,16 +2548,55 @@ export default function App() {
                 </TouchableOpacity>
               </View>
 
+              {selectedMatch.stage !== 'group' && (
+                <View style={{ marginVertical: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 4 }}>
+                  <Text style={{ color: colors.textMain, fontWeight: '700', fontSize: 13 }}>Win via Shootout (Penalties)?</Text>
+                  <TouchableOpacity
+                    style={{
+                      paddingVertical: 6,
+                      paddingHorizontal: 12,
+                      backgroundColor: winViaPenalties ? '#ff3d71' : (isDarkMode ? '#2d2720' : '#e6dfd0'),
+                      borderRadius: 8,
+                      borderWidth: 1.5,
+                      borderColor: winViaPenalties ? '#ff3d71' : colors.cardBorder,
+                    }}
+                    onPress={() => {
+                      const next = !winViaPenalties;
+                      setWinViaPenalties(next);
+                      if (next && teamPrediction === 'draw') {
+                        setTeamPrediction('');
+                      }
+                    }}
+                  >
+                    <Text style={{ color: winViaPenalties ? '#fff' : colors.textMain, fontWeight: '800', fontSize: 11 }}>
+                      {winViaPenalties ? 'YES' : 'NO'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+
               <Text style={styles.inputLabel}>Step 2: Predict Exact Scoreline</Text>
               <View style={styles.scoreInputRow}>
                 <View style={{ flex: 1, alignItems: 'center' }}>
                   <Text style={{ color: '#82776a', fontSize: 12, marginBottom: 4 }}>{getTeamFlag(selectedMatch.teamA)} {selectedMatch.teamA}</Text>
-                  <TextInput style={styles.scoreInput} keyboardType="numeric" value={goalsA} onChangeText={setGoalsA} />
+                  <TextInput
+                    style={[styles.scoreInput, winViaPenalties && { backgroundColor: isDarkMode ? '#22201d' : '#f0ebdc', color: colors.textSub }]}
+                    keyboardType="numeric"
+                    value={winViaPenalties ? '- -' : goalsA}
+                    onChangeText={setGoalsA}
+                    editable={!winViaPenalties}
+                  />
                 </View>
                 <Text style={styles.scoreDivider}>:</Text>
                 <View style={{ flex: 1, alignItems: 'center' }}>
                   <Text style={{ color: '#82776a', fontSize: 12, marginBottom: 4 }}>{selectedMatch.teamB} {getTeamFlag(selectedMatch.teamB)}</Text>
-                  <TextInput style={styles.scoreInput} keyboardType="numeric" value={goalsB} onChangeText={setGoalsB} />
+                  <TextInput
+                    style={[styles.scoreInput, winViaPenalties && { backgroundColor: isDarkMode ? '#22201d' : '#f0ebdc', color: colors.textSub }]}
+                    keyboardType="numeric"
+                    value={winViaPenalties ? '- -' : goalsB}
+                    onChangeText={setGoalsB}
+                    editable={!winViaPenalties}
+                  />
                 </View>
               </View>
 
@@ -2574,7 +2627,11 @@ export default function App() {
                 <Text style={styles.confirmText}>Outcome: <Text style={{ fontWeight: '800', color: isDarkMode ? '#ffb77d' : '#854d0e' }}>
                   {teamPrediction === 'teamA' ? <>{getTeamFlag(selectedMatch.teamA)} {selectedMatch.teamA}</> : (teamPrediction === 'teamB' ? <>{selectedMatch.teamB} {getTeamFlag(selectedMatch.teamB)}</> : 'Draw')}
                 </Text></Text>
-                <Text style={styles.confirmText}>Exact Score: <Text style={{ fontWeight: '800', color: isDarkMode ? '#ffb77d' : '#854d0e' }}>{goalsA} - {goalsB}</Text></Text>
+                {winViaPenalties ? (
+                  <Text style={styles.confirmText}>Method: <Text style={{ fontWeight: '800', color: '#ff3d71' }}>Win on Shootout (Penalties)</Text></Text>
+                ) : (
+                  <Text style={styles.confirmText}>Exact Score: <Text style={{ fontWeight: '800', color: isDarkMode ? '#ffb77d' : '#854d0e' }}>{goalsA} - {goalsB}</Text></Text>
+                )}
               </View>
 
               <View style={styles.modalBtnRow}>

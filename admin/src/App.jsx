@@ -1726,6 +1726,7 @@ function App() {
                           <th>Stage</th>
                           <th>Team Prediction Stake (Rs)</th>
                           <th>Goal Prediction Stake (Rs)</th>
+                          <th>Penalty Prediction Stake (Rs)</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1744,6 +1745,12 @@ function App() {
                               <input className="form-control" type="number" style={{ width: '120px', padding: '6px' }}
                                      value={globalSettings.stakes[stage].goal}
                                      onChange={e => handleUpdateStakes(stage, 'goal', e.target.value)}/>
+                            </td>
+                            <td>
+                              <input className="form-control" type="number" style={{ width: '120px', padding: '6px' }}
+                                     value={globalSettings.stakes[stage].penalty !== undefined ? globalSettings.stakes[stage].penalty : 50}
+                                     disabled={stage === 'group'}
+                                     onChange={e => handleUpdateStakes(stage, 'penalty', e.target.value)}/>
                             </td>
                           </tr>
                         ))}
@@ -1765,13 +1772,14 @@ function App() {
                           <th>Stage</th>
                           <th>Team Prediction Stake (Rs)</th>
                           <th>Goal Prediction Stake (Rs)</th>
+                          <th>Penalty Prediction Stake (Rs)</th>
                         </tr>
                       </thead>
                       <tbody>
                         {['r32', 'r16', 'qf', 'sf', 'final'].map((stage) => {
                           const sm = globalSettings.stakes_mode || {};
-                          const defaults = { r32: { team: 75, goal: 75 }, r16: { team: 100, goal: 100 }, qf: { team: 125, goal: 125 }, sf: { team: 150, goal: 150 }, final: { team: 200, goal: 200 } };
-                          const cur = sm[stage] || defaults[stage] || { team: 100, goal: 50 };
+                          const defaults = { r32: { team: 75, goal: 75, penalty: 50 }, r16: { team: 100, goal: 100, penalty: 50 }, qf: { team: 125, goal: 125, penalty: 50 }, sf: { team: 150, goal: 150, penalty: 50 }, final: { team: 200, goal: 200, penalty: 50 } };
+                          const cur = sm[stage] || defaults[stage] || { team: 100, goal: 50, penalty: 50 };
                           return (
                             <tr key={stage}>
                               <td><strong style={{ textTransform: 'uppercase', color: '#ff3d71' }}>{stage}</strong></td>
@@ -1784,6 +1792,11 @@ function App() {
                                 <input className="form-control" type="number" style={{ width: '120px', padding: '6px', borderColor: '#ff3d71' }}
                                        value={cur.goal}
                                        onChange={e => handleUpdateStakesMode(stage, 'goal', e.target.value)}/>
+                              </td>
+                              <td>
+                                <input className="form-control" type="number" style={{ width: '120px', padding: '6px', borderColor: '#ff3d71' }}
+                                       value={cur.penalty !== undefined ? cur.penalty : 50}
+                                       onChange={e => handleUpdateStakesMode(stage, 'penalty', e.target.value)}/>
                               </td>
                             </tr>
                           );
