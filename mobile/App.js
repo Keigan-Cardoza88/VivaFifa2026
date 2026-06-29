@@ -413,6 +413,8 @@ export default function App() {
     const unsubMatches = onSnapshot(qMatches, (snap) => {
       const list = [];
       snap.forEach(doc => {
+        // Exclude _stakes match documents — they are only used by the Stakes tab
+        if (String(doc.id).endsWith('_stakes')) return;
         const data = doc.data();
         const stage = data.stage || (Number(data.matchId) < 149 ? 'group' : 'r32');
         list.push({ id: doc.id, ...data, stage });

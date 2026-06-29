@@ -82,6 +82,18 @@ service cloud.firestore {
       // Users can place or edit their bets before lock time, as long as the match status is upcoming/open.
       allow create: if canPlaceBet(request.resource.data.matchId, request.resource.data);
       allow update: if canPlaceBet(request.resource.data.matchId, request.resource.data);
+    }
+
+    // Stakes bets rules
+    match /stakes_bets/{betId} {
+      allow read: if signedIn() && (
+        isAdmin() || 
+        resource.data.userId == request.auth.uid ||
+        get(/databases/$(database)/documents/matches/$(resource.data.matchId)).data.status in ['betting_closed', 'completed', 'live', 'postponed'] ||
+        request.time >= get(/databases/$(database)/documents/matches/$(resource.data.matchId)).data.kickoffTimeIST
+      );
+      allow create: if canPlaceBet(request.resource.data.matchId, request.resource.data);
+      allow update: if canPlaceBet(request.resource.data.matchId, request.resource.data);
       allow delete: if isAdmin();
     }
 
