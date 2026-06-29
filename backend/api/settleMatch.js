@@ -226,23 +226,32 @@ module.exports = async (req, res) => {
               forfeitTeamPool += teamStake;
               forfeitGoalPool += goalStake;
             }
-            // Stakes: just skip — no penalty for not placing a bet
           } else {
-            // Auto-correct teamPrediction based on goals scoreline to heal any mismatch anomalies
-            if (!userBet.winViaPenalties && userBet.goalsTeamA !== undefined && userBet.goalsTeamB !== undefined) {
-              const numA = Number(userBet.goalsTeamA);
-              const numB = Number(userBet.goalsTeamB);
-              if (numA > numB) {
-                userBet.teamPrediction = 'teamA';
-              } else if (numB > numA) {
-                userBet.teamPrediction = 'teamB';
-              } else if (stage === 'group') {
-                userBet.teamPrediction = 'draw';
-              }
-            }
             userBet.amountWon = 0;
             userBet.amountLost = 0;
             placedBets.push(userBet);
+          }
+        });
+
+        // 1. Auto-correct teamPrediction based on goals scoreline to heal any mismatch anomalies BEFORE team split
+        placedBets.forEach((userBet) => {
+          if (!userBet.winViaPenalties && userBet.goalsTeamA !== undefined && userBet.goalsTeamB !== undefined) {
+            const numA = Number(userBet.goalsTeamA);
+            const numB = Number(userBet.goalsTeamB);
+            let corrected = userBet.teamPrediction;
+            if (numA > numB) {
+              corrected = 'teamA';
+            } else if (numB > numA) {
+              corrected = 'teamB';
+            } else if (stage === 'group') {
+              corrected = 'draw';
+            }
+
+            if (corrected !== userBet.teamPrediction) {
+              userBet.teamPrediction = corrected;
+              // Write the corrected prediction to the database
+              transaction.update(userBet.ref, { teamPrediction: corrected });
+            }
           }
         });
 
