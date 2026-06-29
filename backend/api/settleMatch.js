@@ -645,49 +645,46 @@ module.exports = async (req, res) => {
           winner,
           refereeKittyInflow: 0,
           finalsKittyInflow: totalInflow,
-          bets: backupParticipants.filter(user => !joinedAfterMatch(user, matchData)).map(user => {
-          const defaultBetId = `${user.uid}_${cleanMatchId}`;
-          const bet = isStakesMatch
-            ? (stakesBets[user.uid] || {
-                betId: defaultBetId,
-                userId: user.uid,
-                matchId: String(cleanMatchId),
-                teamPrediction: winner === 'teamA' ? 'teamB' : 'teamA',
-                goalsTeamA: -1,
-                goalsTeamB: -1,
-                isDefault: true,
-                teamBetResult: 'lost', // Stakes: no forfeit penalty, just standard loss/lost
-                goalBetResult: 'lost',
-                amountWon: 0,
-                amountLost: 0
-              })
-            : (existingBets[user.uid] || {
-                betId: defaultBetId,
-                userId: user.uid,
-                matchId: String(cleanMatchId),
-                teamPrediction: winner === 'teamA' ? 'teamB' : 'teamA',
-                goalsTeamA: -1,
-                goalsTeamB: -1,
-                isDefault: true,
-                teamBetResult: 'forfeited',
-                goalBetResult: 'forfeited',
-                amountWon: 0,
-                amountLost: totalStake
-              });
-          return {
-            userName: user.name || 'Anonymous',
-            userEmail: user.email,
-            teamPrediction: bet.teamPrediction,
-            goalsTeamA: bet.goalsTeamA,
-            goalsTeamB: bet.goalsTeamB,
-            teamBetResult: bet.teamBetResult || 'lost',
-            goalBetResult: bet.goalBetResult || 'lost',
-            amountWon: bet.amountWon || 0,
-            amountLost: bet.amountLost || 0,
-            isDefault: bet.isDefault || false
-          };
-        })
-      };
+          bets: backupParticipants
+            .filter(user => {
+              if (joinedAfterMatch(user, matchData)) return false;
+              if (isStakesMatch) {
+                // For Stakes, only include users who actually placed a bet
+                return !!stakesBets[user.uid];
+              }
+              return true;
+            })
+            .map(user => {
+              const defaultBetId = `${user.uid}_${cleanMatchId}`;
+              const bet = isStakesMatch
+                ? stakesBets[user.uid]
+                : (existingBets[user.uid] || {
+                    betId: defaultBetId,
+                    userId: user.uid,
+                    matchId: String(cleanMatchId),
+                    teamPrediction: winner === 'teamA' ? 'teamB' : 'teamA',
+                    goalsTeamA: -1,
+                    goalsTeamB: -1,
+                    isDefault: true,
+                    teamBetResult: 'forfeited',
+                    goalBetResult: 'forfeited',
+                    amountWon: 0,
+                    amountLost: totalStake
+                  });
+              return {
+                userName: user.name || 'Anonymous',
+                userEmail: user.email,
+                teamPrediction: bet.teamPrediction,
+                goalsTeamA: bet.goalsTeamA,
+                goalsTeamB: bet.goalsTeamB,
+                teamBetResult: bet.teamBetResult || 'lost',
+                goalBetResult: bet.goalBetResult || 'lost',
+                amountWon: bet.amountWon || 0,
+                amountLost: bet.amountLost || 0,
+                isDefault: bet.isDefault || false
+              };
+            })
+        };
       transaction.set(backupRef, backupData);
       settlementBackup = {
         ...backupData,
