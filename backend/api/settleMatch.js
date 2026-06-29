@@ -727,6 +727,26 @@ async function rebuildLeaderboard() {
     { id: 'final_stakes', matchStage: 'final', isStakes: true }
   ];
 
+  // Pre-fetch all bets and stakes_bets at once to minimize database read queries
+  const allBetsSnapshot = await db.collection('bets').get();
+  const allStakesBetsSnapshot = await db.collection('stakes_bets').get();
+
+  const betsByUserId = {};
+  allBetsSnapshot.forEach((doc) => {
+    const data = doc.data();
+    const uid = data.userId;
+    if (!betsByUserId[uid]) betsByUserId[uid] = {};
+    betsByUserId[uid][data.matchId] = data;
+  });
+
+  const stakesBetsByUserId = {};
+  allStakesBetsSnapshot.forEach((doc) => {
+    const data = doc.data();
+    const uid = data.userId;
+    if (!stakesBetsByUserId[uid]) stakesBetsByUserId[uid] = {};
+    stakesBetsByUserId[uid][data.matchId] = data;
+  });
+
   for (const userDoc of usersSnapshot.docs) {
     const userId = userDoc.id;
     const userData = userDoc.data();
@@ -736,19 +756,8 @@ async function rebuildLeaderboard() {
       continue;
     }
 
-    // Fetch all bets placed by this user in normal
-    const betsSnapshot = await db.collection('bets').where('userId', '==', userId).get();
-    const userBets = {};
-    betsSnapshot.forEach((doc) => {
-      userBets[doc.data().matchId] = doc.data();
-    });
-
-    // Fetch all bets placed by this user in stakes
-    const stakesBetsSnapshot = await db.collection('stakes_bets').where('userId', '==', userId).get();
-    const userStakesBets = {};
-    stakesBetsSnapshot.forEach((doc) => {
-      userStakesBets[doc.data().matchId] = doc.data();
-    });
+    const userBets = betsByUserId[userId] || {};
+    const userStakesBets = stakesBetsByUserId[userId] || {};
 
     ALL_LEADERBOARD_STAGES.forEach((stageConfig) => {
       const stage = stageConfig.id;
