@@ -129,6 +129,9 @@ module.exports = async (req, res) => {
       return res.status(400).json({ error: 'Missing score results or winner' });
     }
 
+    // Pre-fetch all kitty logs outside the transaction to save transaction operations and avoid Quota Exceeded error
+    const allKittiesSnapshot = await db.collection('kitty').get();
+
     // 4. Run Settlement Transaction
     let settlementBackup = null;
     await db.runTransaction(async (transaction) => {
@@ -162,8 +165,6 @@ module.exports = async (req, res) => {
 
       // Delete old kitty logs to prevent duplicates on resettlement
       const kittySnapshot = await transaction.get(db.collection('kitty').where('matchId', 'in', [String(matchId), `${matchId}_stakes`]));
-      // Pre-fetch all kitty logs to sum up reserves (reads must happen before any writes/deletes)
-      const allKittiesSnapshot = await transaction.get(db.collection('kitty'));
 
       kittySnapshot.forEach((doc) => {
         transaction.delete(doc.ref);
