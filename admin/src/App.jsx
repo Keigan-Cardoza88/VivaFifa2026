@@ -165,7 +165,7 @@ function App() {
 
   // Bracket Editing States
   const [editingBracketMatch, setEditingBracketMatch] = useState(null);
-  const [bracketTeamForm, setBracketTeamForm] = useState({ teamA: '', teamB: '' });
+  const [bracketTeamForm, setBracketTeamForm] = useState({ teamA: '', teamB: '', matchId: '' });
 
   // Viewing and Overriding Bets
   const [viewingMatchBets, setViewingMatchBets] = useState(null);
@@ -629,15 +629,60 @@ function App() {
     if (!editingBracketMatch) return;
     setActionLoading(true);
     try {
-      const matchRef = doc(db, 'matches', String(editingBracketMatch.matchId || editingBracketMatch.id));
-      await updateDoc(matchRef, {
-        teamA: bracketTeamForm.teamA,
-        teamB: bracketTeamForm.teamB
-      });
+      const oldMatchId = String(editingBracketMatch.matchId || editingBracketMatch.id);
+      const newMatchId = String(bracketTeamForm.matchId || oldMatchId);
+      
+      const matchDocRef = doc(db, 'matches', oldMatchId);
+      const matchDoc = await getDoc(matchDocRef);
+      
+      const updatedData = {
+        teamA: bracketTeamForm.teamA || '',
+        teamB: bracketTeamForm.teamB || '',
+        matchId: newMatchId
+      };
+
+      if (oldMatchId !== newMatchId) {
+        // If match ID changed, write to new doc and delete the old one
+        const currentData = matchDoc.exists() ? matchDoc.data() : { stage: editingBracketMatch.stage, status: 'upcoming' };
+        await setDoc(doc(db, 'matches', newMatchId), {
+          ...currentData,
+          ...updatedData,
+          kickoffTimeIST: currentData.kickoffTimeIST || Timestamp.now()
+        });
+        await deleteDoc(matchDocRef);
+      } else {
+        // If match ID is the same, simply update or set the existing document
+        if (matchDoc.exists()) {
+          await updateDoc(matchDocRef, updatedData);
+        } else {
+          await setDoc(matchDocRef, {
+            ...updatedData,
+            stage: editingBracketMatch.stage,
+            status: 'upcoming',
+            kickoffTimeIST: Timestamp.now()
+          });
+        }
+      }
+      
       setEditingBracketMatch(null);
-      setStatusMessage({ type: 'success', text: `Bracket Match #${editingBracketMatch.matchId || editingBracketMatch.id} teams updated.` });
+      setStatusMessage({ type: 'success', text: `Bracket Match #${newMatchId} teams/ID updated successfully.` });
     } catch (err) {
       setStatusMessage({ type: 'error', text: `Failed to update bracket teams: ${err.message}` });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Bracket Quick Delete Match Document
+  const handleBracketDeleteMatch = async (matchId) => {
+    if (!window.confirm(`Are you sure you want to delete Match #${matchId} from the database? This slot will revert to empty TBD.`)) return;
+    setActionLoading(true);
+    try {
+      await deleteDoc(doc(db, 'matches', String(matchId)));
+      setEditingBracketMatch(null);
+      setStatusMessage({ type: 'success', text: `Match #${matchId} deleted successfully.` });
+    } catch (err) {
+      setStatusMessage({ type: 'error', text: `Failed to delete match: ${err.message}` });
     } finally {
       setActionLoading(false);
     }
@@ -2010,31 +2055,50 @@ function App() {
 
             {editingBracketMatch && (
               <div className="content-card" style={{ border: '2px solid var(--brazil-gold)', backgroundColor: 'var(--input-bg)' }}>
-                <h3 className="card-title">Edit Bracket Teams (Match #{editingBracketMatch.matchId || editingBracketMatch.id})</h3>
+                <h3 className="card-title">Edit Bracket Match Details</h3>
                 <form onSubmit={handleSaveBracketTeams}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', marginBottom: '16px' }}>
                     <div>
-                      <label className="form-label">Team A</label>
+                      <label className="form-label">Match ID (Number)</label>
                       <input 
                         className="form-control" 
                         type="text" 
+                        value={bracketTeamForm.matchId} 
+                        onChange={e => setBracketTeamForm({ ...bracketTeamForm, matchId: e.target.value })} 
+                      />
+                    </div>
+                    <div>
+                      <label className="form-label">Team A Name (Empty for TBD)</label>
+                      <input 
+                        className="form-control" 
+                        type="text" 
+                        placeholder="TBD"
                         value={bracketTeamForm.teamA} 
                         onChange={e => setBracketTeamForm({ ...bracketTeamForm, teamA: e.target.value })} 
                       />
                     </div>
                     <div>
-                      <label className="form-label">Team B</label>
+                      <label className="form-label">Team B Name (Empty for TBD)</label>
                       <input 
                         className="form-control" 
                         type="text" 
+                        placeholder="TBD"
                         value={bracketTeamForm.teamB} 
                         onChange={e => setBracketTeamForm({ ...bracketTeamForm, teamB: e.target.value })} 
                       />
                     </div>
                   </div>
-                  <div style={{ display: 'flex', gap: '12px' }}>
+                  <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                     <button className="btn btn-success" type="submit" disabled={actionLoading}>
-                      Save Placement
+                      Save Changes
+                    </button>
+                    <button 
+                      className="btn btn-danger" 
+                      type="button" 
+                      onClick={() => handleBracketDeleteMatch(editingBracketMatch.matchId || editingBracketMatch.id)}
+                      disabled={actionLoading}
+                    >
+                      Delete Match Card
                     </button>
                     <button className="btn btn-secondary" type="button" onClick={() => setEditingBracketMatch(null)}>
                       Cancel
@@ -2100,7 +2164,11 @@ function App() {
                         key={m.id}
                         onClick={() => {
                           setEditingBracketMatch(resolvedMatch);
-                          setBracketTeamForm({ teamA: resolvedMatch.teamA || '', teamB: resolvedMatch.teamB || '' });
+                          setBracketTeamForm({ 
+                            teamA: resolvedMatch.teamA || '', 
+                            teamB: resolvedMatch.teamB || '',
+                            matchId: resolvedMatch.matchId || ''
+                          });
                         }}
                         style={{
                           backgroundColor: 'var(--card-bg)',
