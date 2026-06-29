@@ -163,6 +163,10 @@ function App() {
   const [editingMatch, setEditingMatch] = useState(null);
   const [editMatchForm, setEditMatchForm] = useState({ teamA: '', teamB: '', stage: 'group', kickoffTime: '' });
 
+  // Bracket Editing States
+  const [editingBracketMatch, setEditingBracketMatch] = useState(null);
+  const [bracketTeamForm, setBracketTeamForm] = useState({ teamA: '', teamB: '' });
+
   // Viewing and Overriding Bets
   const [viewingMatchBets, setViewingMatchBets] = useState(null);
   const [matchBetsData, setMatchBetsData] = useState([]);
@@ -619,6 +623,26 @@ function App() {
     }
   };
 
+  // Bracket Team Quick Updates
+  const handleSaveBracketTeams = async (e) => {
+    e.preventDefault();
+    if (!editingBracketMatch) return;
+    setActionLoading(true);
+    try {
+      const matchRef = doc(db, 'matches', String(editingBracketMatch.matchId || editingBracketMatch.id));
+      await updateDoc(matchRef, {
+        teamA: bracketTeamForm.teamA,
+        teamB: bracketTeamForm.teamB
+      });
+      setEditingBracketMatch(null);
+      setStatusMessage({ type: 'success', text: `Bracket Match #${editingBracketMatch.matchId || editingBracketMatch.id} teams updated.` });
+    } catch (err) {
+      setStatusMessage({ type: 'error', text: `Failed to update bracket teams: ${err.message}` });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   // L. Delete User from Database
   const handleDeleteUser = async (userId) => {
     if (!window.confirm("Are you sure you want to delete this user? All their leaderboard data and bets will be removed.")) return;
@@ -1040,6 +1064,11 @@ function App() {
                   {users.filter(u => u.role === 'pending').length}
                 </span>
               )}
+            </a>
+          </li>
+          <li className="menu-item">
+            <a className={`menu-link ${activeTab === 'bracket' ? 'active' : ''}`} onClick={() => { setActiveTab('bracket'); setIsSidebarOpen(false); }}>
+              Bracket Layout
             </a>
           </li>
           <li className="menu-item">
@@ -1974,6 +2003,193 @@ function App() {
                 </form>
               </div>
             </>
+          </div>
+        )}
+
+        {/* TAB 7: BRACKET EDITOR */}
+        {activeTab === 'bracket' && (
+          <div>
+            <div className="page-header">
+              <h2 className="page-title">Tournament Bracket Editor</h2>
+              <p className="page-subtitle">Directly update teams in bracket stages (Round of 32 to Finals).</p>
+            </div>
+
+            {editingBracketMatch && (
+              <div className="content-card" style={{ border: '2px solid var(--brazil-gold)', backgroundColor: 'var(--input-bg)' }}>
+                <h3 className="card-title">Edit Bracket Teams (Match #{editingBracketMatch.matchId || editingBracketMatch.id})</h3>
+                <form onSubmit={handleSaveBracketTeams}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+                    <div>
+                      <label className="form-label">Team A</label>
+                      <input 
+                        className="form-control" 
+                        type="text" 
+                        value={bracketTeamForm.teamA} 
+                        onChange={e => setBracketTeamForm({ ...bracketTeamForm, teamA: e.target.value })} 
+                      />
+                    </div>
+                    <div>
+                      <label className="form-label">Team B</label>
+                      <input 
+                        className="form-control" 
+                        type="text" 
+                        value={bracketTeamForm.teamB} 
+                        onChange={e => setBracketTeamForm({ ...bracketTeamForm, teamB: e.target.value })} 
+                      />
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: '12px' }}>
+                    <button className="btn btn-success" type="submit" disabled={actionLoading}>
+                      Save Placement
+                    </button>
+                    <button className="btn btn-secondary" type="button" onClick={() => setEditingBracketMatch(null)}>
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            <div 
+              style={{ 
+                overflowX: 'auto', 
+                padding: '24px', 
+                backgroundColor: 'rgba(0,0,0,0.15)', 
+                borderRadius: '12px', 
+                border: '1px solid var(--card-border)' 
+              }}
+            >
+              <div style={{ display: 'flex', gap: '24px', minWidth: '1800px' }}>
+                {[
+                  { key: 'r32_left', stage: 'r32', side: 'left', count: 8, title: 'Round of 32' },
+                  { key: 'r16_left', stage: 'r16', side: 'left', count: 4, title: 'Round of 16' },
+                  { key: 'qf_left', stage: 'qf', side: 'left', count: 2, title: 'Quarter-Finals' },
+                  { key: 'sf_left', stage: 'sf', side: 'left', count: 1, title: 'Semi-Finals' },
+                  { key: 'final', stage: 'final', side: 'center', count: 1, title: 'Finals' },
+                  { key: 'sf_right', stage: 'sf', side: 'right', count: 1, title: 'Semi-Finals' },
+                  { key: 'qf_right', stage: 'qf', side: 'right', count: 2, title: 'Quarter-Finals' },
+                  { key: 'r16_right', stage: 'r16', side: 'right', count: 4, title: 'Round of 16' },
+                  { key: 'r32_right', stage: 'r32', side: 'right', count: 8, title: 'Round of 32' }
+                ].map((col) => {
+                  const renderMatchCard = (m) => {
+                    const isPlaceholder = String(m.id).startsWith('placeholder');
+                    return (
+                      <div 
+                        key={m.id}
+                        onClick={() => {
+                          if (!isPlaceholder) {
+                            setEditingBracketMatch(m);
+                            setBracketTeamForm({ teamA: m.teamA || '', teamB: m.teamB || '' });
+                          }
+                        }}
+                        style={{
+                          backgroundColor: 'var(--card-bg)',
+                          border: '2px solid var(--card-border)',
+                          borderRadius: '8px',
+                          padding: '12px',
+                          cursor: isPlaceholder ? 'default' : 'pointer',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '6px',
+                          position: 'relative',
+                          boxShadow: '2px 2px 0px var(--card-border)',
+                          width: '180px',
+                          opacity: isPlaceholder ? 0.5 : 1
+                        }}
+                        title={isPlaceholder ? 'Placeholder Match' : 'Click to Edit Teams'}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', fontWeight: 'bold' }}>
+                          <span style={{ color: 'var(--text-sub)' }}>{isPlaceholder ? 'TBD' : `#${m.matchId}`}</span>
+                          {!isPlaceholder && <span style={{ color: 'var(--brazil-gold)', fontSize: '0.7rem' }}>✏️ Edit</span>}
+                        </div>
+                        <div style={{ fontSize: '0.85rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <span style={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                            {isPlaceholder ? null : getTeamFlag(m.teamA)} {m.teamA || 'TBD'}
+                          </span>
+                          {m.status === 'completed' && <span style={{ fontSize: '0.8rem', opacity: 0.8 }}>{m.resultTeamAGoals}</span>}
+                        </div>
+                        <div style={{ borderTop: '1px dashed var(--card-border)', margin: '2px 0' }} />
+                        <div style={{ fontSize: '0.85rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <span style={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                            {isPlaceholder ? null : getTeamFlag(m.teamB)} {m.teamB || 'TBD'}
+                          </span>
+                          {m.status === 'completed' && <span style={{ fontSize: '0.8rem', opacity: 0.8 }}>{m.resultTeamBGoals}</span>}
+                        </div>
+                        {m.stage === 'third_place' && (
+                          <div style={{ fontSize: '0.65rem', backgroundColor: 'var(--active-blue)', color: '#fff', padding: '2px 4px', borderRadius: '4px', textAlign: 'center', marginTop: '4px' }}>
+                            3rd Place Playoff
+                          </div>
+                        )}
+                      </div>
+                    );
+                  };
+
+                  if (col.stage === 'final') {
+                    const finalMatch = matches.find(m => m.stage === 'final') || {
+                      id: 'placeholder_final',
+                      teamA: 'TBD',
+                      teamB: 'TBD',
+                      status: 'upcoming',
+                      stage: 'final'
+                    };
+                    const thirdPlaceMatch = matches.find(m => m.stage === 'third_place') || {
+                      id: 'placeholder_third_place',
+                      teamA: 'TBD',
+                      teamB: 'TBD',
+                      status: 'upcoming',
+                      stage: 'third_place'
+                    };
+
+                    return (
+                      <div key={col.key} style={{ display: 'flex', flexDirection: 'column', width: '200px', alignItems: 'center', justifyContent: 'space-between', height: '600px' }}>
+                        <h4 style={{ fontSize: '0.9rem', fontWeight: 'bold', textTransform: 'uppercase', color: 'var(--brazil-gold)', marginBottom: '16px' }}>{col.title}</h4>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '40px', justifyContent: 'center', flexGrow: 1 }}>
+                          <div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text-sub)', textAlign: 'center', marginBottom: '4px' }}>Finals</div>
+                            {renderMatchCard(finalMatch)}
+                          </div>
+                          <div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text-sub)', textAlign: 'center', marginBottom: '4px' }}>3rd Place</div>
+                            {renderMatchCard(thirdPlaceMatch)}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  const stageMatches = matches.filter(m => m.stage === col.stage);
+                  stageMatches.sort((a, b) => Number(a.matchId) - Number(b.matchId));
+
+                  let colMatches = [];
+                  if (col.side === 'left') {
+                    colMatches = stageMatches.slice(0, col.count);
+                  } else {
+                    colMatches = stageMatches.slice(stageMatches.length - col.count);
+                  }
+
+                  const placeholdersNeeded = col.count - colMatches.length;
+                  const displayMatches = [...colMatches];
+                  for (let idx = 0; idx < placeholdersNeeded; idx++) {
+                    displayMatches.push({
+                      id: `placeholder_${col.key}_${idx}`,
+                      teamA: 'TBD',
+                      teamB: 'TBD',
+                      status: 'upcoming',
+                      stage: col.stage
+                    });
+                  }
+
+                  return (
+                    <div key={col.key} style={{ display: 'flex', flexDirection: 'column', width: '200px', alignItems: 'center' }}>
+                      <h4 style={{ fontSize: '0.9rem', fontWeight: 'bold', textTransform: 'uppercase', color: 'var(--brazil-gold)', marginBottom: '16px', textAlign: 'center' }}>{col.title}</h4>
+                      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-around', flexGrow: 1, height: '540px' }}>
+                        {displayMatches.map(m => renderMatchCard(m))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         )}
       </main>
