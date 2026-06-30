@@ -174,6 +174,7 @@ function App() {
   const [matchBetsData, setMatchBetsData] = useState([]);
   const [betsLoading, setBetsLoading] = useState(false);
   const [overrideBetForm, setOverrideBetForm] = useState({ userId: '', teamPrediction: '', goalsTeamA: '', goalsTeamB: '', mode: 'normal' });
+  const [overrideIsShootout, setOverrideIsShootout] = useState(false);
   const [matchesSortOrder, setMatchesSortOrder] = useState('time-asc');
 
   // Finalists admin state
@@ -814,8 +815,11 @@ function App() {
   // Q. Override Bet for User
   const handleOverrideBetSubmit = async (e, matchId) => {
     e.preventDefault();
-    if (!overrideBetForm.userId || !overrideBetForm.teamPrediction || overrideBetForm.goalsTeamA === '' || overrideBetForm.goalsTeamB === '') {
-      return alert('Please fill in all override bet fields.');
+    if (!overrideBetForm.userId || !overrideBetForm.teamPrediction) {
+      return alert('Please select a user and winner pick.');
+    }
+    if (!overrideIsShootout && (overrideBetForm.goalsTeamA === '' || overrideBetForm.goalsTeamB === '')) {
+      return alert('Please enter predicted goals.');
     }
     setActionLoading(true);
     try {
@@ -829,8 +833,9 @@ function App() {
         userId: overrideBetForm.userId,
         matchId: String(matchId),
         teamPrediction: overrideBetForm.teamPrediction,
-        goalsTeamA: Number(overrideBetForm.goalsTeamA),
-        goalsTeamB: Number(overrideBetForm.goalsTeamB),
+        goalsTeamA: overrideIsShootout ? -1 : Number(overrideBetForm.goalsTeamA),
+        goalsTeamB: overrideIsShootout ? -1 : Number(overrideBetForm.goalsTeamB),
+        winViaPenalties: overrideIsShootout,
         placedAt: Timestamp.now(),
         isDefault: false,
         isOverride: true
@@ -839,6 +844,7 @@ function App() {
       await setDoc(betRef, newBet);
       setStatusMessage({ type: 'success', text: `Bet overridden for user ${overrideBetForm.userId}.` });
       setOverrideBetForm({ userId: '', teamPrediction: '', goalsTeamA: '', goalsTeamB: '', mode: 'normal' });
+      setOverrideIsShootout(false);
       await handleViewBets(matchId); // reload bets
     } catch (err) {
       setStatusMessage({ type: 'error', text: `Failed to override bet: ${err.message}` });
@@ -1617,18 +1623,41 @@ function App() {
                                     {match.stage === 'group' && <option value="draw">Draw</option>}
                                   </select>
                                 </div>
-                                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                                  <input className="form-control" type="number" min="0" placeholder={`${match.teamA} goals`} required
-                                         style={{ flex: 1, fontSize: '0.75rem', padding: '6px' }}
-                                         value={overrideBetForm.goalsTeamA} onChange={e => setOverrideBetForm({ ...overrideBetForm, goalsTeamA: e.target.value })}/>
-                                  <span style={{ color: 'var(--text-sub)' }}>:</span>
-                                  <input className="form-control" type="number" min="0" placeholder={`${match.teamB} goals`} required
-                                         style={{ flex: 1, fontSize: '0.75rem', padding: '6px' }}
-                                         value={overrideBetForm.goalsTeamB} onChange={e => setOverrideBetForm({ ...overrideBetForm, goalsTeamB: e.target.value })}/>
-                                  <button className="btn btn-primary" type="submit" style={{ fontSize: '0.75rem', padding: '6px 12px' }} disabled={actionLoading}>
-                                    Save Override
-                                  </button>
-                                </div>
+                                {match.stage !== 'group' && (
+                                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+                                     <input 
+                                       type="checkbox" 
+                                       id="override-shootout-check" 
+                                       checked={overrideIsShootout} 
+                                       onChange={e => setOverrideIsShootout(e.target.checked)} 
+                                     />
+                                     <label htmlFor="override-shootout-check" style={{ fontSize: '0.75rem', color: 'var(--brazil-gold)', cursor: 'pointer', fontWeight: 'bold', userSelect: 'none' }}>
+                                       ⚽ Win via Shootout (Penalties)?
+                                     </label>
+                                   </div>
+                                 )}
+
+                                 {!overrideIsShootout ? (
+                                   <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                     <input className="form-control" type="number" min="0" placeholder={`${match.teamA} goals`} required={!overrideIsShootout}
+                                            style={{ flex: 1, fontSize: '0.75rem', padding: '6px' }}
+                                            value={overrideBetForm.goalsTeamA} onChange={e => setOverrideBetForm({ ...overrideBetForm, goalsTeamA: e.target.value })}/>
+                                     <span style={{ color: 'var(--text-sub)' }}>:</span>
+                                     <input className="form-control" type="number" min="0" placeholder={`${match.teamB} goals`} required={!overrideIsShootout}
+                                            style={{ flex: 1, fontSize: '0.75rem', padding: '6px' }}
+                                            value={overrideBetForm.goalsTeamB} onChange={e => setOverrideBetForm({ ...overrideBetForm, goalsTeamB: e.target.value })}/>
+                                     <button className="btn btn-primary" type="submit" style={{ fontSize: '0.75rem', padding: '6px 12px' }} disabled={actionLoading}>
+                                       Save Override
+                                     </button>
+                                   </div>
+                                 ) : (
+                                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.1)', padding: '8px 12px', borderRadius: '6px' }}>
+                                     <span style={{ fontSize: '0.75rem', color: 'var(--text-sub)' }}>Shootout selected (scores not required)</span>
+                                     <button className="btn btn-primary" type="submit" style={{ fontSize: '0.75rem', padding: '6px 12px' }} disabled={actionLoading}>
+                                       Save Override
+                                     </button>
+                                   </div>
+                                 )}
                               </form>
                             </div>
                         </>
