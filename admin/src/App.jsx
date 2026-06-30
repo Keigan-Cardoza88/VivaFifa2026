@@ -1605,7 +1605,7 @@ function App() {
                                   <select className="form-control" style={{ fontSize: '0.75rem', padding: '6px' }} required
                                           value={overrideBetForm.userId} onChange={e => setOverrideBetForm({ ...overrideBetForm, userId: e.target.value })}>
                                     <option value="">Select User...</option>
-                                    {users.filter(u => u.role === 'participant' && isUserEligibleForMatch(u, match)).map(u => (
+                                    {users.filter(u => (u.role === 'participant' || u.role === 'admin') && isUserEligibleForMatch(u, match)).map(u => (
                                       <option key={u.id} value={u.id}>{u.name} ({u.email})</option>
                                     ))}
                                   </select>
