@@ -1803,16 +1803,40 @@ export default function App() {
                     );
                   };
 
+                  const getMatchIdForPosition = (stage, side, index) => {
+                    if (stage === 'r32') {
+                      return side === 'left' ? String(149 + index) : String(157 + index);
+                    }
+                    if (stage === 'r16') {
+                      return side === 'left' ? String(165 + index) : String(169 + index);
+                    }
+                    if (stage === 'qf') {
+                      return side === 'left' ? String(173 + index) : String(175 + index);
+                    }
+                    if (stage === 'sf') {
+                      return side === 'left' ? String(177 + index) : String(178 + index);
+                    }
+                    if (stage === 'final') {
+                      return String(179);
+                    }
+                    if (stage === 'third_place') {
+                      return String(180);
+                    }
+                    return 'unknown';
+                  };
+
                   if (col.stage === 'final') {
-                    const finalMatch = bracketMatches.find(m => m.stage === 'final') || {
-                      id: 'placeholder_final',
+                    const finalMatchId = getMatchIdForPosition('final');
+                    const finalMatch = bracketMatches.find(m => String(m.matchId) === finalMatchId) || {
+                      matchId: finalMatchId,
                       teamA: 'TBD',
                       teamB: 'TBD',
                       status: 'upcoming',
                       stage: 'final'
                     };
-                    const thirdPlaceMatch = bracketMatches.find(m => m.stage === 'third_place') || {
-                      id: 'placeholder_third_place',
+                    const thirdPlaceMatchId = getMatchIdForPosition('third_place');
+                    const thirdPlaceMatch = bracketMatches.find(m => String(m.matchId) === thirdPlaceMatchId) || {
+                      matchId: thirdPlaceMatchId,
                       teamA: 'TBD',
                       teamB: 'TBD',
                       status: 'upcoming',
@@ -1836,21 +1860,12 @@ export default function App() {
                     );
                   }
 
-                  const stageMatches = bracketMatches.filter(m => m.stage === col.stage);
-                  stageMatches.sort((a, b) => Number(a.matchId) - Number(b.matchId));
-
-                  let colMatches = [];
-                  if (col.side === 'left') {
-                    colMatches = stageMatches.slice(0, col.count);
-                  } else {
-                    colMatches = stageMatches.slice(stageMatches.length - col.count);
-                  }
-
-                  const placeholdersNeeded = col.count - colMatches.length;
-                  const displayMatches = [...colMatches];
-                  for (let idx = 0; idx < placeholdersNeeded; idx++) {
-                    displayMatches.push({
-                      id: `placeholder_${col.key}_${idx}`,
+                  const displayMatches = [];
+                  for (let idx = 0; idx < col.count; idx++) {
+                    const finalMatchId = getMatchIdForPosition(col.stage, col.side, idx);
+                    const found = bracketMatches.find(m => String(m.matchId) === finalMatchId);
+                    displayMatches.push(found || {
+                      matchId: finalMatchId,
                       teamA: 'TBD',
                       teamB: 'TBD',
                       status: 'upcoming',
@@ -1866,6 +1881,7 @@ export default function App() {
                       </View>
                     </View>
                   );
+
                 })}
               </View>
             </ScrollView>
