@@ -819,8 +819,7 @@ function App() {
     }
     setActionLoading(true);
     try {
-      const mode = Number(matchId) >= 151 ? (overrideBetForm.mode || 'normal') : 'normal';
-      const collectionName = mode === 'stakes' ? 'stakes_bets' : 'bets';
+      const collectionName = 'bets';
 
       const betId = `${overrideBetForm.userId}_${matchId}`;
       const betRef = doc(db, collectionName, betId);
@@ -838,7 +837,7 @@ function App() {
       };
 
       await setDoc(betRef, newBet);
-      setStatusMessage({ type: 'success', text: `Bet (${mode.toUpperCase()}) overridden for user ${overrideBetForm.userId}.` });
+      setStatusMessage({ type: 'success', text: `Bet overridden for user ${overrideBetForm.userId}.` });
       setOverrideBetForm({ userId: '', teamPrediction: '', goalsTeamA: '', goalsTeamB: '', mode: 'normal' });
       await handleViewBets(matchId); // reload bets
     } catch (err) {
@@ -899,30 +898,14 @@ function App() {
     }
   };
 
-  const isUserEligibleForMatch = (u, match, forcedMode = null) => {
+  const isUserEligibleForMatch = (u, match) => {
     if (!u) return false;
-    
-    // Determine active filter state or default split
-    const mode = forcedMode || (matchesStakesFilter === 'stakes' ? 'stakes' : (matchesStakesFilter === 'normal' ? 'normal' : null));
-    const isStakes = mode === 'stakes' || 
-                     (mode === null && match?.stage === 'r32' && Number(match?.matchId) > 150);
-                     
-    if (isStakes) {
-      if (!match?.kickoffTimeIST) return true;
-      const joinedAt = u.approvedAt || u.joinedAt;
-      if (!joinedAt) return true;
-      const joinedTime = joinedAt.seconds * 1000;
-      const kickoffTime = match.kickoffTimeIST.seconds * 1000;
-      return joinedTime <= kickoffTime;
-    } else {
-      if (u.isLateEntry || u.entryFee === 1500) return false;
-      if (!match?.kickoffTimeIST) return true;
-      const joinedAt = u.approvedAt || u.joinedAt;
-      if (!joinedAt) return true;
-      const joinedTime = joinedAt.seconds * 1000;
-      const kickoffTime = match.kickoffTimeIST.seconds * 1000;
-      return joinedTime <= kickoffTime;
-    }
+    if (!match?.kickoffTimeIST) return true;
+    const joinedAt = u.approvedAt || u.joinedAt;
+    if (!joinedAt) return true;
+    const joinedTime = joinedAt.seconds * 1000;
+    const kickoffTime = match.kickoffTimeIST.seconds * 1000;
+    return joinedTime <= kickoffTime;
   };
 
   const getSortedMatches = () => {
@@ -1618,21 +1601,11 @@ function App() {
                           <div style={{ marginTop: '16px', padding: '12px', backgroundColor: 'rgba(19, 27, 46, 0.4)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
                               <h5 style={{ fontSize: '0.8rem', marginBottom: '8px', color: 'var(--brazil-gold)' }}>Override/Place Bet for User</h5>
                               <form onSubmit={(e) => handleOverrideBetSubmit(e, match.matchId)}>
-                                {Number(match.matchId) >= 151 && (
-                                  <div style={{ marginBottom: '8px' }}>
-                                    <label style={{ fontSize: '0.7rem', color: 'var(--text-sub)', display: 'block', marginBottom: '4px' }}>Bet Mode:</label>
-                                    <select className="form-control" style={{ fontSize: '0.75rem', padding: '6px', width: '100%' }} required
-                                            value={overrideBetForm.mode} onChange={e => setOverrideBetForm({ ...overrideBetForm, mode: e.target.value })}>
-                                      <option value="normal">Normal (Standard)</option>
-                                      <option value="stakes">Stakes (Real Money)</option>
-                                    </select>
-                                  </div>
-                                )}
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
                                   <select className="form-control" style={{ fontSize: '0.75rem', padding: '6px' }} required
                                           value={overrideBetForm.userId} onChange={e => setOverrideBetForm({ ...overrideBetForm, userId: e.target.value })}>
                                     <option value="">Select User...</option>
-                                    {users.filter(u => u.role === 'participant' && isUserEligibleForMatch(u, match, Number(match.matchId) >= 151 ? (overrideBetForm.mode || 'normal') : 'normal')).map(u => (
+                                    {users.filter(u => u.role === 'participant' && isUserEligibleForMatch(u, match)).map(u => (
                                       <option key={u.id} value={u.id}>{u.name} ({u.email})</option>
                                     ))}
                                   </select>
