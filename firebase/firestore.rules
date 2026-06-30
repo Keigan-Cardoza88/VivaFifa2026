@@ -97,6 +97,15 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // Finalist Picks rules (one-time placement, no edits after)
+    match /finalist_picks/{userId} {
+      allow read: if isRegistered();
+      allow create: if signedIn() && isUserDoc(userId) &&
+        get(/databases/$(database)/documents/settings/global).data.finalistsOpen == true;
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
     // Leaderboard rules
     match /leaderboard/{userId} {
       allow read: if isRegistered();

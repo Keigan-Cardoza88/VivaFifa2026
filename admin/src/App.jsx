@@ -174,6 +174,12 @@ function App() {
   const [overrideBetForm, setOverrideBetForm] = useState({ userId: '', teamPrediction: '', goalsTeamA: '', goalsTeamB: '', mode: 'normal' });
   const [matchesSortOrder, setMatchesSortOrder] = useState('time-asc');
 
+  // Finalists admin state
+  const [finalistPicks, setFinalistPicks] = useState([]);
+  const [finalistActual, setFinalistActual] = useState(['', '']);
+  const [finalistSettling, setFinalistSettling] = useState(false);
+  const [finalistStatusMsg, setFinalistStatusMsg] = useState('');
+
   // 1. Monitor Auth State
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -249,12 +255,20 @@ function App() {
       setLeaderboard(list);
     });
 
+    // Listen to finalist picks
+    const unsubFinalists = onSnapshot(collection(db, 'finalist_picks'), (snap) => {
+      const list = [];
+      snap.forEach(d => list.push({ id: d.id, ...d.data() }));
+      setFinalistPicks(list);
+    });
+
     return () => {
       unsubMatches();
       unsubUsers();
       unsubSettings();
       unsubKitty();
       unsubLeaderboard();
+      unsubFinalists();
     };
   }, [user]);
 
@@ -1105,10 +1119,11 @@ function App() {
             </a>
           </li>
           <li className="menu-item">
-            <a className={`menu-link ${activeTab === 'stakes' ? 'active' : ''}`} onClick={() => { setActiveTab('stakes'); setIsSidebarOpen(false); }}>
-              Stakes & Prizes
+            <a className={`menu-link ${activeTab === 'finalists' ? 'active' : ''}`} onClick={() => { setActiveTab('finalists'); setIsSidebarOpen(false); }}>
+              🏆 Finalists
             </a>
           </li>
+
           <li className="menu-item">
             <a className={`menu-link ${activeTab === 'kitty' ? 'active' : ''}`} onClick={() => { setActiveTab('kitty'); setIsSidebarOpen(false); }}>
               Kitty & Logs
@@ -1271,16 +1286,6 @@ function App() {
                 </div>
                 
                 <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span className="form-label" style={{ marginBottom: 0, whiteSpace: 'nowrap', color: 'var(--text-sub)' }}>Stakes Filter:</span>
-                    <select className="form-control" style={{ width: '220px', padding: '6px', borderColor: matchesStakesFilter === 'stakes' ? '#ff3d71' : 'var(--border)' }} value={matchesStakesFilter}
-                            onChange={e => setMatchesStakesFilter(e.target.value)}>
-                      <option value="all">All Matches</option>
-                      <option value="normal">Normal Matches</option>
-                      <option value="stakes" style={{ color: '#ff3d71', fontWeight: 'bold' }}>Stakes Section Matches</option>
-                    </select>
-                  </div>
-
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <span className="form-label" style={{ marginBottom: 0, whiteSpace: 'nowrap', color: 'var(--text-sub)' }}>Rearrange Matches:</span>
                     <select className="form-control" style={{ width: '220px', padding: '6px' }} value={matchesSortOrder}
@@ -1813,52 +1818,7 @@ function App() {
                   </div>
                 </div>
 
-                {/* STAKES MODE BET PRICES — real money, separate from normal */}
-                <div className="content-card" style={{ borderColor: '#ff3d71', borderWidth: '2px' }}>
-                  <h3 className="card-title" style={{ color: '#ff3d71' }}>⚡ Stakes Mode Bet Prices (Real Money) (Rs)</h3>
-                  <p style={{ fontSize: '0.8rem', color: 'var(--text-sub)', marginBottom: '16px' }}>
-                    These prices apply only to real-money Stakes Mode (matches #151+). Fully independent from normal mode prices above.
-                  </p>
-                  <div className="table-responsive">
-                    <table className="scoreboard-table">
-                      <thead>
-                        <tr>
-                          <th>Stage</th>
-                          <th>Team Prediction Stake (Rs)</th>
-                          <th>Goal Prediction Stake (Rs)</th>
-                          <th>Penalty Prediction Stake (Rs)</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {['r32', 'r16', 'qf', 'sf', 'final'].map((stage) => {
-                          const sm = globalSettings.stakes_mode || {};
-                          const defaults = { r32: { team: 75, goal: 75, penalty: 50 }, r16: { team: 100, goal: 100, penalty: 50 }, qf: { team: 125, goal: 125, penalty: 50 }, sf: { team: 150, goal: 150, penalty: 50 }, final: { team: 200, goal: 200, penalty: 50 } };
-                          const cur = sm[stage] || defaults[stage] || { team: 100, goal: 50, penalty: 50 };
-                          return (
-                            <tr key={stage}>
-                              <td><strong style={{ textTransform: 'uppercase', color: '#ff3d71' }}>{stage}</strong></td>
-                              <td>
-                                <input className="form-control" type="number" style={{ width: '120px', padding: '6px', borderColor: '#ff3d71' }}
-                                       value={cur.team}
-                                       onChange={e => handleUpdateStakesMode(stage, 'team', e.target.value)}/>
-                              </td>
-                              <td>
-                                <input className="form-control" type="number" style={{ width: '120px', padding: '6px', borderColor: '#ff3d71' }}
-                                       value={cur.goal}
-                                       onChange={e => handleUpdateStakesMode(stage, 'goal', e.target.value)}/>
-                              </td>
-                              <td>
-                                <input className="form-control" type="number" style={{ width: '120px', padding: '6px', borderColor: '#ff3d71' }}
-                                       value={cur.penalty !== undefined ? cur.penalty : 50}
-                                       onChange={e => handleUpdateStakesMode(stage, 'penalty', e.target.value)}/>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
+
 
                 <div className="content-card">
                   <h3 className="card-title">Prize Money Distribution Weights (%)</h3>
@@ -2249,6 +2209,191 @@ function App() {
             </div>
           </div>
         )}
+        {/* FINALISTS TAB */}
+        {activeTab === 'finalists' && (() => {
+          const r32Teams = [...new Set(
+            matches
+              .filter(m => Number(m.matchId) >= 149 && Number(m.matchId) <= 164)
+              .flatMap(m => [m.teamA, m.teamB].filter(Boolean))
+          )].sort();
+
+          const isOpen = globalSettings?.finalistsOpen === true;
+          const isSettled = globalSettings?.finalistsSettled === true;
+          const actualFinalists = globalSettings?.actualFinalists || [];
+
+          const toggleOpen = async () => {
+            try {
+              await setDoc(doc(db, 'settings', 'global'), { finalistsOpen: !isOpen }, { merge: true });
+            } catch (e) { console.error(e); }
+          };
+
+          const handleSettle = async () => {
+            if (!finalistActual[0] || !finalistActual[1]) {
+              return setFinalistStatusMsg('Please select both actual finalists.');
+            }
+            if (finalistActual[0] === finalistActual[1]) {
+              return setFinalistStatusMsg('Both finalists must be different teams.');
+            }
+            setFinalistSettling(true);
+            setFinalistStatusMsg('');
+            try {
+              const token = await user.getIdToken();
+              const res = await fetch(`${API_BASE}/api/settleFinalists`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ action: 'settle', actualFinalists: finalistActual })
+              });
+              const data = await res.json();
+              if (res.ok) {
+                setFinalistStatusMsg(`✅ Settled! ${data.results?.length || 0} players processed.`);
+              } else {
+                setFinalistStatusMsg(`❌ Error: ${data.error}`);
+              }
+            } catch (e) {
+              setFinalistStatusMsg(`❌ Failed: ${e.message}`);
+            } finally {
+              setFinalistSettling(false);
+            }
+          };
+
+          return (
+            <div>
+              <h2 style={{ fontSize: '1.4rem', fontWeight: 900, color: 'var(--brazil-gold)', marginBottom: '4px' }}>🏆 Finalists Admin</h2>
+              <p style={{ color: 'var(--text-sub)', fontSize: '0.85rem', marginBottom: '24px' }}>Manage the finalist picks feature — open/close placement, view all picks, and settle prizes.</p>
+
+              {/* Status + Open/Close Toggle */}
+              <div className="card" style={{ marginBottom: '20px', padding: '20px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                  <div>
+                    <div style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-main)' }}>Placement Window</div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-sub)', marginTop: '2px' }}>Controls whether players can submit their finalist picks.</div>
+                  </div>
+                  <button
+                    className={`badge ${isOpen ? 'win' : 'loss'}`}
+                    style={{ fontSize: '0.85rem', fontWeight: 800, padding: '8px 20px', cursor: 'pointer', border: 'none' }}
+                    onClick={toggleOpen}
+                  >
+                    {isOpen ? '🟢 OPEN — Click to Close' : '🔴 CLOSED — Click to Open'}
+                  </button>
+                </div>
+                <div style={{ display: 'flex', gap: '16px' }}>
+                  <div style={{ padding: '10px 16px', borderRadius: '8px', background: 'var(--surface-alt)', flex: 1 }}>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--text-sub)', textTransform: 'uppercase', fontWeight: 700 }}>Picks Placed</div>
+                    <div style={{ fontSize: '1.4rem', fontWeight: 900, color: 'var(--brazil-gold)' }}>{finalistPicks.length}</div>
+                  </div>
+                  <div style={{ padding: '10px 16px', borderRadius: '8px', background: 'var(--surface-alt)', flex: 1 }}>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--text-sub)', textTransform: 'uppercase', fontWeight: 700 }}>Status</div>
+                    <div style={{ fontSize: '1rem', fontWeight: 900, color: isSettled ? '#00e676' : (isOpen ? '#ffd700' : 'var(--text-sub)') }}>
+                      {isSettled ? '✅ Settled' : (isOpen ? '🟢 Open' : '🔴 Closed')}
+                    </div>
+                  </div>
+                  {isSettled && actualFinalists.length === 2 && (
+                    <div style={{ padding: '10px 16px', borderRadius: '8px', background: 'var(--surface-alt)', flex: 2 }}>
+                      <div style={{ fontSize: '0.7rem', color: 'var(--text-sub)', textTransform: 'uppercase', fontWeight: 700 }}>Actual Finalists</div>
+                      <div style={{ fontSize: '1rem', fontWeight: 900, color: '#ffd700' }}>{actualFinalists.join(' vs ')}</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Settle Section */}
+              {!isSettled && (
+                <div className="card" style={{ marginBottom: '20px', padding: '20px', borderColor: '#ffd700', borderWidth: '1px' }}>
+                  <h3 style={{ fontSize: '1rem', fontWeight: 800, color: '#ffd700', marginBottom: '14px' }}>🏅 Settle Finalist Prizes</h3>
+                  <p style={{ color: 'var(--text-sub)', fontSize: '0.82rem', marginBottom: '14px' }}>Select the 2 actual finalists of FIFA 2026. This will award ₹1000 (Top Pick) and ₹500 (Dark Horse) to eligible players.</p>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '16px' }}>
+                    <div>
+                      <label style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-sub)', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>🥇 Finalist 1</label>
+                      <select
+                        value={finalistActual[0]}
+                        onChange={e => setFinalistActual([e.target.value, finalistActual[1]])}
+                        style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', background: 'var(--input-bg)', border: '1.5px solid var(--input-border)', color: 'var(--text-main)', fontWeight: 700, fontSize: '0.85rem' }}
+                      >
+                        <option value=''>— Select Team —</option>
+                        {r32Teams.map(t => <option key={t} value={t}>{t}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-sub)', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>🥈 Finalist 2</label>
+                      <select
+                        value={finalistActual[1]}
+                        onChange={e => setFinalistActual([finalistActual[0], e.target.value])}
+                        style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', background: 'var(--input-bg)', border: '1.5px solid var(--input-border)', color: 'var(--text-main)', fontWeight: 700, fontSize: '0.85rem' }}
+                      >
+                        <option value=''>— Select Team —</option>
+                        {r32Teams.filter(t => t !== finalistActual[0]).map(t => <option key={t} value={t}>{t}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                  {finalistStatusMsg && (
+                    <div style={{ padding: '10px 14px', borderRadius: '8px', background: finalistStatusMsg.startsWith('✅') ? 'rgba(0,230,118,0.1)' : 'rgba(255,61,113,0.1)', color: finalistStatusMsg.startsWith('✅') ? '#00e676' : '#ff3d71', fontWeight: 700, fontSize: '0.85rem', marginBottom: '12px' }}>
+                      {finalistStatusMsg}
+                    </div>
+                  )}
+                  <button
+                    onClick={handleSettle}
+                    disabled={finalistSettling}
+                    style={{ padding: '12px 28px', background: '#ffd700', color: '#000', fontWeight: 900, borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '0.9rem', opacity: finalistSettling ? 0.6 : 1 }}
+                  >
+                    {finalistSettling ? 'Settling...' : '⚡ Settle & Distribute Prizes'}
+                  </button>
+                </div>
+              )}
+
+              {/* All Picks Table */}
+              <div className="card" style={{ padding: '20px' }}>
+                <h3 style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '14px' }}>All Finalist Picks ({finalistPicks.length})</h3>
+                {finalistPicks.length === 0 ? (
+                  <p style={{ color: 'var(--text-sub)', fontSize: '0.85rem', fontStyle: 'italic' }}>No picks placed yet.</p>
+                ) : (
+                  <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                      <thead>
+                        <tr style={{ borderBottom: '1.5px solid var(--card-border)' }}>
+                          <th style={{ padding: '8px 10px', textAlign: 'left', color: 'var(--text-sub)', fontWeight: 800, textTransform: 'uppercase', fontSize: '0.7rem' }}>Player</th>
+                          <th style={{ padding: '8px 10px', textAlign: 'left', color: '#ffd700', fontWeight: 800, textTransform: 'uppercase', fontSize: '0.7rem' }}>🥇 Top Pick (₹1000)</th>
+                          <th style={{ padding: '8px 10px', textAlign: 'left', color: '#8b5cf6', fontWeight: 800, textTransform: 'uppercase', fontSize: '0.7rem' }}>🎯 Dark Horse (₹500)</th>
+                          {isSettled && <th style={{ padding: '8px 10px', textAlign: 'right', color: '#00e676', fontWeight: 800, textTransform: 'uppercase', fontSize: '0.7rem' }}>Prize</th>}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {finalistPicks.map(p => {
+                          const u = users.find(u => u.id === p.userId) || { name: p.userId };
+                          const prize = isSettled
+                            ? ((actualFinalists.includes(p.primaryPick) ? 1000 : 0) + (actualFinalists.includes(p.secondaryPick) ? 500 : 0))
+                            : null;
+                          return (
+                            <tr key={p.id} style={{ borderBottom: '0.5px solid var(--card-border)' }}>
+                              <td style={{ padding: '10px 10px', color: 'var(--text-main)', fontWeight: 700 }}>{u.name}</td>
+                              <td style={{ padding: '10px 10px' }}>
+                                <span style={{ color: isSettled ? (actualFinalists.includes(p.primaryPick) ? '#00e676' : '#ff3d71') : 'var(--text-main)', fontWeight: 800 }}>
+                                  {getTeamFlag(p.primaryPick)} {p.primaryPick}
+                                  {isSettled && (actualFinalists.includes(p.primaryPick) ? ' ✅' : ' ❌')}
+                                </span>
+                              </td>
+                              <td style={{ padding: '10px 10px' }}>
+                                <span style={{ color: isSettled ? (actualFinalists.includes(p.secondaryPick) ? '#00e676' : '#ff3d71') : 'var(--text-main)', fontWeight: 800 }}>
+                                  {getTeamFlag(p.secondaryPick)} {p.secondaryPick}
+                                  {isSettled && (actualFinalists.includes(p.secondaryPick) ? ' ✅' : ' ❌')}
+                                </span>
+                              </td>
+                              {isSettled && (
+                                <td style={{ padding: '10px 10px', textAlign: 'right', fontWeight: 900, color: prize > 0 ? '#00e676' : 'var(--text-sub)' }}>
+                                  {prize > 0 ? `+₹${prize}` : '—'}
+                                </td>
+                              )}
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })()}
+
       </main>
     </div>
   );

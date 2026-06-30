@@ -29,7 +29,8 @@ import {
   query,
   where,
   orderBy,
-  onSnapshot
+  onSnapshot,
+  Timestamp
 } from 'firebase/firestore';
 import * as WebBrowser from 'expo-web-browser';
 import * as Google from 'expo-auth-session/providers/google';
@@ -264,6 +265,14 @@ export default function App() {
   const [selectedTeamName, setSelectedTeamName] = useState('Mexico');
   const [teamsViewMode, setTeamsViewMode] = useState('roster');
   const [expandedMatchBets, setExpandedMatchBets] = useState([]);
+
+  // Finalists state
+  const [myFinalistPick, setMyFinalistPick] = useState(null);
+  const [allFinalistPicks, setAllFinalistPicks] = useState([]);
+  const [finalistPrimary, setFinalistPrimary] = useState('');
+  const [finalistSecondary, setFinalistSecondary] = useState('');
+  const [finalistSaving, setFinalistSaving] = useState(false);
+  const [finalistError, setFinalistError] = useState('');
   useEffect(() => {
     if (Platform.OS === 'web') {
       const checkVersion = async () => {
@@ -494,6 +503,23 @@ export default function App() {
       unsubUsers();
     };
   }, [currentUser, userProfile, selectedStageTab]);
+
+  // Load finalist picks (my pick + all picks for winners display)
+  useEffect(() => {
+    if (!currentUser || !userProfile) return;
+    // My pick
+    const myPickRef = doc(db, 'finalist_picks', currentUser.uid);
+    const unsubMy = onSnapshot(myPickRef, (snap) => {
+      setMyFinalistPick(snap.exists() ? snap.data() : null);
+    });
+    // All picks (for winners display)
+    const unsubAll = onSnapshot(collection(db, 'finalist_picks'), (snap) => {
+      const list = [];
+      snap.forEach(d => list.push({ id: d.id, ...d.data() }));
+      setAllFinalistPicks(list);
+    });
+    return () => { unsubMy(); unsubAll(); };
+  }, [currentUser, userProfile]);
 
   const firstUpcomingMatch = matches.find(m => m.status === 'upcoming');
   const openUpcomingMatches = matches.filter(m => m.status === 'upcoming');
@@ -2048,488 +2074,223 @@ export default function App() {
           </View>
         )}
 
-        {/* TAB 6: REAL STAKES */}
-        {activeTab === 'realstakes' && (
-          <View style={{ padding: 16 }}>
-            {/* Sub-Tab Selector within Stakes */}
-            <View style={{ flexDirection: 'row', borderBottomWidth: 2, borderBottomColor: isDarkMode ? 'rgba(255,61,113,0.15)' : 'rgba(255,61,113,0.1)', marginBottom: 12 }}>
-              <TouchableOpacity
-                style={{
-                  flex: 1,
-                  paddingVertical: 12,
-                  alignItems: 'center',
-                  borderBottomWidth: stakesSubTab === 'leaderboard' ? 3 : 0,
-                  borderBottomColor: '#ff3d71',
-                  marginBottom: -2,
-                }}
-                onPress={() => setStakesSubTab('leaderboard')}
-              >
-                <Text style={{ 
-                  fontSize: 14, 
-                  fontWeight: '800', 
-                  color: stakesSubTab === 'leaderboard' ? '#ff3d71' : (isDarkMode ? '#a1a1aa' : '#71717a'),
-                  letterSpacing: 0.5,
-                }}>
-                  Leaderboard
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={{
-                  flex: 1,
-                  paddingVertical: 12,
-                  alignItems: 'center',
-                  borderBottomWidth: stakesSubTab === 'matches' ? 3 : 0,
-                  borderBottomColor: '#ff3d71',
-                  marginBottom: -2,
-                }}
-                onPress={() => setStakesSubTab('matches')}
-              >
-                <Text style={{ 
-                  fontSize: 14, 
-                  fontWeight: '800', 
-                  color: stakesSubTab === 'matches' ? '#ff3d71' : (isDarkMode ? '#a1a1aa' : '#71717a'),
-                  letterSpacing: 0.5,
-                }}>
-                  Matches
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={{
-                  flex: 1,
-                  paddingVertical: 12,
-                  alignItems: 'center',
-                  borderBottomWidth: stakesSubTab === 'history' ? 3 : 0,
-                  borderBottomColor: '#ff3d71',
-                  marginBottom: -2,
-                }}
-                onPress={() => setStakesSubTab('history')}
-              >
-                <Text style={{ 
-                  fontSize: 14, 
-                  fontWeight: '800', 
-                  color: stakesSubTab === 'history' ? '#ff3d71' : (isDarkMode ? '#a1a1aa' : '#71717a'),
-                  letterSpacing: 0.5,
-                }}>
-                  History
-                </Text>
-              </TouchableOpacity>
-            </View>
 
-            {/* Stakes Stage Switcher */}
-            <View style={{ marginBottom: 16 }}>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingHorizontal: 4 }}>
-                {[
-                  { id: 'r32', label: 'Round of 32' },
-                  { id: 'r16_stakes', label: 'Round of 16' },
-                  { id: 'qf_stakes', label: 'Quarter-Finals' },
-                  { id: 'sf_stakes', label: 'Semi-Finals' },
-                  { id: 'final_stakes', label: 'Finals' }
-                ].map((stg) => (
-                  <TouchableOpacity
-                    key={stg.id}
-                    style={[
-                      styles.stageTabBtn,
-                      { borderColor: '#ff3d71' },
-                      stakesStageTab === stg.id && { backgroundColor: '#ff3d71', borderColor: '#ff3d71' }
-                    ]}
-                    onPress={() => setStakesStageTab(stg.id)}
-                  >
-                    <Text style={[styles.stageTabText, { color: stakesStageTab === stg.id ? '#ffffff' : '#ff3d71' }]}>{stg.label}</Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </View>
 
-            {stakesSubTab === 'leaderboard' && (
-              <View>
-                {/* Sub-section: Standings */}
-                <Text style={{ fontSize: 15, fontWeight: '800', color: '#ff3d71', marginBottom: 12, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                  {({
-                    'r32': 'Round of 32',
-                    'r16_stakes': 'Round of 16',
-                    'qf_stakes': 'Quarter-Finals',
-                    'sf_stakes': 'Semi-Finals',
-                    'final_stakes': 'Finals'
-                  }[stakesStageTab] || 'Stakes')} Standings
-                </Text>
+        {/* TAB: FINALISTS */}
+        {activeTab === 'finalists' && (() => {
+          const r32Teams = [...new Set(
+            matches
+              .filter(m => Number(m.matchId) >= 149 && Number(m.matchId) <= 164)
+              .flatMap(m => [m.teamA, m.teamB].filter(Boolean))
+          )].sort();
 
-                {/* Toggle Row (Red Theme) */}
-                <View style={{ flexDirection: 'row', gap: 10, marginBottom: 16 }}>
-                  <TouchableOpacity
-                    style={{
-                      flex: 1,
-                      paddingVertical: 10,
-                      alignItems: 'center',
-                      borderRadius: 8,
-                      borderWidth: 1.5,
-                      borderColor: '#ff3d71',
-                      backgroundColor: stakesLeaderboardType === 'money' ? '#ff3d71' : 'transparent',
-                    }}
-                    onPress={() => setStakesLeaderboardType('money')}
-                  >
-                    <Text style={{ fontSize: 13, fontWeight: '800', color: stakesLeaderboardType === 'money' ? '#ffffff' : '#ff3d71' }}>
-                      Money (Net Profit)
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={{
-                      flex: 1,
-                      paddingVertical: 10,
-                      alignItems: 'center',
-                      borderRadius: 8,
-                      borderWidth: 1.5,
-                      borderColor: '#ff3d71',
-                      backgroundColor: stakesLeaderboardType === 'accuracy' ? '#ff3d71' : 'transparent',
-                    }}
-                    onPress={() => setStakesLeaderboardType('accuracy')}
-                  >
-                    <Text style={{ fontSize: 13, fontWeight: '800', color: stakesLeaderboardType === 'accuracy' ? '#ffffff' : '#ff3d71' }}>
-                      Accuracy (%)
-                    </Text>
-                  </TouchableOpacity>
-                </View>
+          const isOpen = settings?.finalistsOpen === true;
+          const isSettled = settings?.finalistsSettled === true;
+          const actualFinalists = settings?.actualFinalists || [];
+          const alreadyPlaced = !!myFinalistPick;
 
-                {/* Leaderboard Table (Red Theme) */}
-                <View style={[styles.tableCard, { borderColor: '#ff3d71', borderWidth: 1 }]}>
-                  <View style={[styles.tableHeaderRow, { borderBottomColor: 'rgba(255, 61, 113, 0.3)' }]}>
-                    <Text style={[styles.tableHeadCell, { flex: 1 }]}>Rank</Text>
-                    <Text style={[styles.tableHeadCell, { flex: 3 }]}>Name</Text>
-                    {stakesLeaderboardType === 'money' ? (
-                      <Text style={[styles.tableHeadCell, { flex: 2, textAlign: 'right' }]}>Profit (₹)</Text>
-                    ) : (
-                      <Text style={[styles.tableHeadCell, { flex: 2, textAlign: 'right' }]}>Accuracy</Text>
-                    )}
+          const handleSubmitFinalist = async () => {
+            setFinalistError('');
+            if (!finalistPrimary || !finalistSecondary) {
+              return setFinalistError('Please select both picks.');
+            }
+            if (finalistPrimary === finalistSecondary) {
+              return setFinalistError('Your two picks must be different teams.');
+            }
+            setFinalistSaving(true);
+            try {
+              await setDoc(doc(db, 'finalist_picks', currentUser.uid), {
+                userId: currentUser.uid,
+                primaryPick: finalistPrimary,
+                secondaryPick: finalistSecondary,
+                placedAt: Timestamp.now()
+              });
+            } catch (err) {
+              setFinalistError(err.message || 'Failed to save picks.');
+            } finally {
+              setFinalistSaving(false);
+            }
+          };
+
+          return (
+            <View style={{ paddingBottom: 24 }}>
+              <Text style={{ fontSize: 22, fontWeight: '900', color: colors.primary, marginBottom: 4, letterSpacing: 0.5 }}>🏆 Finalists</Text>
+              <Text style={{ fontSize: 12, color: colors.textSub, marginBottom: 20, fontWeight: '600' }}>Pick the 2 teams you think will reach the FIFA 2026 Final</Text>
+
+              {/* Winners Section - shown after settlement */}
+              {isSettled && actualFinalists.length === 2 && (
+                <View style={[styles.glassCard, { marginBottom: 20, padding: 16, borderColor: '#ffd700', borderWidth: 1.5 }]}>
+                  <Text style={{ fontSize: 14, fontWeight: '900', color: '#ffd700', marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.8 }}>🎉 Tournament Finalists Revealed!</Text>
+                  <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 16, marginBottom: 14 }}>
+                    {actualFinalists.map(team => (
+                      <View key={team} style={{ alignItems: 'center', backgroundColor: 'rgba(255,215,0,0.1)', borderRadius: 10, padding: 10, flex: 1, borderWidth: 1, borderColor: '#ffd700' }}>
+                        {getTeamFlag(team)}
+                        <Text style={{ color: '#ffd700', fontWeight: '900', fontSize: 13, marginTop: 4 }}>{team}</Text>
+                      </View>
+                    ))}
                   </View>
-
-                  {(() => {
-                    // Map stakes tab IDs (e.g. 'r16_stakes') to real Firestore stage values ('r16')
-                    const stageKeyMap = { r32: 'r32', r16_stakes: 'r16', qf_stakes: 'qf', sf_stakes: 'sf', final_stakes: 'final' };
-                    const realStage = stageKeyMap[stakesStageTab] || stakesStageTab;
-                    const filteredDocs = allLeaderboardDocs.filter(d => d.stage === realStage);
-                    const sorted = [...filteredDocs].sort((a, b) => {
-                      if (stakesLeaderboardType === 'money') {
-                        return (b.netProfit || 0) - (a.netProfit || 0);
-                      } else {
-                        const accA = a.accuracyPercent || 0;
-                        const accB = b.accuracyPercent || 0;
-                        if (accB !== accA) {
-                          return accB - accA;
-                        }
-                        return (b.correctPredictions || 0) - (a.correctPredictions || 0);
-                      }
-                    });
-
-                    if (sorted.length === 0) {
+                  <Text style={{ fontSize: 12, fontWeight: '800', color: colors.textSub, marginBottom: 8, textTransform: 'uppercase' }}>Prize Winners</Text>
+                  {allFinalistPicks
+                    .filter(p => actualFinalists.includes(p.primaryPick) || actualFinalists.includes(p.secondaryPick))
+                    .sort((a, b) => {
+                      const scoreA = (actualFinalists.includes(a.primaryPick) ? 1000 : 0) + (actualFinalists.includes(a.secondaryPick) ? 500 : 0);
+                      const scoreB = (actualFinalists.includes(b.primaryPick) ? 1000 : 0) + (actualFinalists.includes(b.secondaryPick) ? 500 : 0);
+                      return scoreB - scoreA;
+                    })
+                    .map(p => {
+                      const prize = (actualFinalists.includes(p.primaryPick) ? 1000 : 0) + (actualFinalists.includes(p.secondaryPick) ? 500 : 0);
+                      const u = allUsers[p.userId] || { name: p.userId };
                       return (
-                        <Text style={{ color: isDarkMode ? '#cbd5e1' : '#7a6e5b', fontSize: 13, padding: 16, textAlign: 'center' }}>
-                          No data loaded yet for this stage. Settle a match to generate standings.
-                        </Text>
-                      );
-                    }
-
-                    return sorted.map((player, idx) => {
-                      const isMe = player.userId === currentUser.uid;
-                      return (
-                        <View
-                          style={[
-                            styles.tableDataRow,
-                            { borderBottomColor: 'rgba(255, 61, 113, 0.15)' },
-                            isMe && {
-                              backgroundColor: isDarkMode ? 'rgba(255, 61, 113, 0.08)' : 'rgba(255, 61, 113, 0.05)',
-                              borderColor: '#ff3d71',
-                              borderWidth: 1,
-                              borderRadius: 6,
-                            }
-                          ]}
-                          key={player.userId}
-                        >
-                          <Text style={[styles.tableCell, { flex: 1, fontWeight: '800' }]}>
-                            {idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx + 1}`}
-                          </Text>
-                          <Text style={[styles.tableCell, { flex: 3, fontWeight: '700' }]}>{player.userName}</Text>
-                          {stakesLeaderboardType === 'money' ? (
-                            <Text style={[styles.tableCell, { flex: 2, textAlign: 'right', fontWeight: '800', color: player.netProfit >= 0 ? '#00e676' : '#ff3d71' }]}>
-                              ₹{Number(player.netProfit).toFixed(2)}
-                            </Text>
-                          ) : (
-                            <Text style={[styles.tableCell, { flex: 2, textAlign: 'right', fontWeight: '800', color: '#ff3d71' }]}>
-                              {Number(player.accuracyPercent).toFixed(2)}%
-                            </Text>
-                          )}
+                        <View key={p.id} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6, borderBottomWidth: 0.5, borderBottomColor: colors.cardBorder }}>
+                          <Text style={{ color: colors.textMain, fontWeight: '700', fontSize: 13 }}>{u.name}</Text>
+                          <Text style={{ color: '#00e676', fontWeight: '900', fontSize: 13 }}>+₹{prize}</Text>
                         </View>
                       );
+                    })
+                  }
+                  {allFinalistPicks.filter(p => actualFinalists.includes(p.primaryPick) || actualFinalists.includes(p.secondaryPick)).length === 0 && (
+                    <Text style={{ color: colors.textSub, fontSize: 12, fontStyle: 'italic' }}>No one predicted the finalists correctly.</Text>
+                  )}
+                </View>
+              )}
+
+              {/* My Picks - Locked State */}
+              {alreadyPlaced && (
+                <View style={[styles.glassCard, { marginBottom: 16, padding: 16, borderColor: colors.primaryBorder, borderWidth: 1.5 }]}>
+                  <Text style={{ fontSize: 13, fontWeight: '900', color: colors.primary, marginBottom: 12, textTransform: 'uppercase', letterSpacing: 0.6 }}>🔒 Your Locked Picks</Text>
+                  <View style={{ flexDirection: 'row', gap: 12, marginBottom: 8 }}>
+                    <View style={{ flex: 1, backgroundColor: isDarkMode ? 'rgba(255,183,125,0.08)' : 'rgba(133,77,14,0.06)', borderRadius: 10, padding: 12, borderWidth: 1, borderColor: isDarkMode ? 'rgba(255,183,125,0.25)' : 'rgba(133,77,14,0.2)', alignItems: 'center' }}>
+                      <Text style={{ fontSize: 10, fontWeight: '800', color: colors.textSub, textTransform: 'uppercase', marginBottom: 4 }}>🥇 Top Pick · ₹1000</Text>
+                      {getTeamFlag(myFinalistPick.primaryPick)}
+                      <Text style={{ color: colors.textMain, fontWeight: '900', fontSize: 14, marginTop: 4, textAlign: 'center' }}>{myFinalistPick.primaryPick}</Text>
+                      {isSettled && (
+                        <Text style={{ fontSize: 11, fontWeight: '800', marginTop: 4, color: actualFinalists.includes(myFinalistPick.primaryPick) ? '#00e676' : '#ff3d71' }}>
+                          {actualFinalists.includes(myFinalistPick.primaryPick) ? '✅ +₹1000' : '❌ Miss'}
+                        </Text>
+                      )}
+                    </View>
+                    <View style={{ flex: 1, backgroundColor: isDarkMode ? 'rgba(255,183,125,0.05)' : 'rgba(133,77,14,0.04)', borderRadius: 10, padding: 12, borderWidth: 1, borderColor: isDarkMode ? 'rgba(255,183,125,0.15)' : 'rgba(133,77,14,0.12)', alignItems: 'center' }}>
+                      <Text style={{ fontSize: 10, fontWeight: '800', color: colors.textSub, textTransform: 'uppercase', marginBottom: 4 }}>🎯 Dark Horse · ₹500</Text>
+                      {getTeamFlag(myFinalistPick.secondaryPick)}
+                      <Text style={{ color: colors.textMain, fontWeight: '900', fontSize: 14, marginTop: 4, textAlign: 'center' }}>{myFinalistPick.secondaryPick}</Text>
+                      {isSettled && (
+                        <Text style={{ fontSize: 11, fontWeight: '800', marginTop: 4, color: actualFinalists.includes(myFinalistPick.secondaryPick) ? '#00e676' : '#ff3d71' }}>
+                          {actualFinalists.includes(myFinalistPick.secondaryPick) ? '✅ +₹500' : '❌ Miss'}
+                        </Text>
+                      )}
+                    </View>
+                  </View>
+                  <Text style={{ fontSize: 11, color: colors.textSub, fontStyle: 'italic', textAlign: 'center' }}>Picks are locked — no edits allowed</Text>
+                </View>
+              )}
+
+              {/* Placement Form */}
+              {!alreadyPlaced && isOpen && (
+                <View style={[styles.glassCard, { padding: 16, marginBottom: 16 }]}>
+                  <Text style={{ fontSize: 13, fontWeight: '900', color: colors.primary, marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 }}>Place Your Finalist Picks</Text>
+                  <Text style={{ fontSize: 11, color: colors.textSub, marginBottom: 14, fontWeight: '600' }}>Pick once. Locked immediately after. Window closes before Match 8 is settled.</Text>
+
+                  <Text style={{ fontSize: 12, fontWeight: '800', color: colors.textSub, marginBottom: 6, textTransform: 'uppercase' }}>🥇 Top Pick — ₹1000 Prize</Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 14 }} contentContainerStyle={{ gap: 8, paddingBottom: 4 }}>
+                    {r32Teams.map(team => (
+                      <TouchableOpacity
+                        key={`primary_${team}`}
+                        style={[
+                          { paddingVertical: 8, paddingHorizontal: 12, borderRadius: 20, borderWidth: 1.5, borderColor: colors.inputBorder, backgroundColor: colors.btnSecondaryBg },
+                          finalistPrimary === team && { backgroundColor: colors.primary, borderColor: colors.primary }
+                        ]}
+                        onPress={() => setFinalistPrimary(team)}
+                      >
+                        <Text style={{ fontSize: 12, fontWeight: '800', color: finalistPrimary === team ? (isDarkMode ? '#000' : '#fff') : colors.textMain }}>
+                          {team}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+
+                  <Text style={{ fontSize: 12, fontWeight: '800', color: colors.textSub, marginBottom: 6, textTransform: 'uppercase' }}>🎯 Dark Horse — ₹500 Prize</Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }} contentContainerStyle={{ gap: 8, paddingBottom: 4 }}>
+                    {r32Teams.map(team => (
+                      <TouchableOpacity
+                        key={`secondary_${team}`}
+                        style={[
+                          { paddingVertical: 8, paddingHorizontal: 12, borderRadius: 20, borderWidth: 1.5, borderColor: colors.inputBorder, backgroundColor: colors.btnSecondaryBg, opacity: team === finalistPrimary ? 0.4 : 1 },
+                          finalistSecondary === team && team !== finalistPrimary && { backgroundColor: isDarkMode ? '#8b5cf6' : '#7c3aed', borderColor: isDarkMode ? '#8b5cf6' : '#7c3aed' }
+                        ]}
+                        onPress={() => { if (team !== finalistPrimary) setFinalistSecondary(team); }}
+                      >
+                        <Text style={{ fontSize: 12, fontWeight: '800', color: finalistSecondary === team && team !== finalistPrimary ? '#fff' : colors.textMain }}>
+                          {team}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+
+                  {/* Preview */}
+                  {(finalistPrimary || finalistSecondary) && (
+                    <View style={{ flexDirection: 'row', gap: 10, marginBottom: 12 }}>
+                      <View style={{ flex: 1, padding: 8, borderRadius: 8, backgroundColor: isDarkMode ? 'rgba(255,183,125,0.06)' : 'rgba(133,77,14,0.04)', borderWidth: 1, borderColor: colors.cardBorder, alignItems: 'center' }}>
+                        <Text style={{ fontSize: 9, color: colors.textSub, fontWeight: '700', textTransform: 'uppercase' }}>Top Pick</Text>
+                        <Text style={{ color: colors.primary, fontWeight: '900', fontSize: 13, marginTop: 2 }}>{finalistPrimary || '—'}</Text>
+                      </View>
+                      <View style={{ flex: 1, padding: 8, borderRadius: 8, backgroundColor: isDarkMode ? 'rgba(139,92,246,0.06)' : 'rgba(124,58,237,0.04)', borderWidth: 1, borderColor: colors.cardBorder, alignItems: 'center' }}>
+                        <Text style={{ fontSize: 9, color: colors.textSub, fontWeight: '700', textTransform: 'uppercase' }}>Dark Horse</Text>
+                        <Text style={{ color: isDarkMode ? '#8b5cf6' : '#7c3aed', fontWeight: '900', fontSize: 13, marginTop: 2 }}>{finalistSecondary || '—'}</Text>
+                      </View>
+                    </View>
+                  )}
+
+                  {finalistError ? <Text style={{ color: '#ff3d71', fontSize: 12, fontWeight: '700', marginBottom: 8, textAlign: 'center' }}>{finalistError}</Text> : null}
+
+                  <TouchableOpacity
+                    style={{ backgroundColor: colors.primary, paddingVertical: 14, borderRadius: 10, alignItems: 'center', opacity: finalistSaving ? 0.6 : 1 }}
+                    onPress={handleSubmitFinalist}
+                    disabled={finalistSaving}
+                  >
+                    <Text style={{ color: isDarkMode ? '#000' : '#fff', fontWeight: '900', fontSize: 15, letterSpacing: 0.5 }}>
+                      {finalistSaving ? 'Locking Picks...' : '🔒 Lock in My Finalists'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+
+              {/* Closed State */}
+              {!alreadyPlaced && !isOpen && (
+                <View style={[styles.glassCard, { padding: 20, alignItems: 'center' }]}>
+                  <Text style={{ fontSize: 28, marginBottom: 8 }}>🔒</Text>
+                  <Text style={{ fontSize: 14, fontWeight: '900', color: colors.textMain, marginBottom: 4 }}>Placement Window Closed</Text>
+                  <Text style={{ fontSize: 12, color: colors.textSub, fontWeight: '600', textAlign: 'center' }}>The finalist picks window has been locked by the referee. Check back after the tournament ends for results.</Text>
+                </View>
+              )}
+
+              {/* Community Picks Overview */}
+              {alreadyPlaced && !isSettled && allFinalistPicks.length > 0 && (
+                <View style={[styles.glassCard, { padding: 14, marginTop: 4 }]}>
+                  <Text style={{ fontSize: 12, fontWeight: '800', color: colors.textSub, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 }}>📊 Group Picks ({allFinalistPicks.length} placed)</Text>
+                  {(() => {
+                    const teamCounts = {};
+                    allFinalistPicks.forEach(p => {
+                      teamCounts[p.primaryPick] = (teamCounts[p.primaryPick] || 0) + 2;
+                      teamCounts[p.secondaryPick] = (teamCounts[p.secondaryPick] || 0) + 1;
                     });
+                    return Object.entries(teamCounts)
+                      .sort((a, b) => b[1] - a[1])
+                      .slice(0, 6)
+                      .map(([team, count]) => (
+                        <View key={team} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5, borderBottomWidth: 0.5, borderBottomColor: colors.cardBorder }}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                            {getTeamFlag(team)}
+                            <Text style={{ color: colors.textMain, fontWeight: '700', fontSize: 12 }}>{team}</Text>
+                          </View>
+                          <Text style={{ color: colors.primary, fontWeight: '800', fontSize: 12 }}>{count} pts</Text>
+                        </View>
+                      ));
                   })()}
                 </View>
-              </View>
-            )}
-
-            {stakesSubTab === 'matches' && (
-              <View>
-                <Text style={{ fontSize: 15, fontWeight: '800', color: '#ff3d71', marginBottom: 12, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                  {({
-                    'r32': 'Round of 32',
-                    'r16_stakes': 'Round of 16',
-                    'qf_stakes': 'Quarter-Finals',
-                    'sf_stakes': 'Semi-Finals',
-                    'final_stakes': 'Finals'
-                  }[stakesStageTab] || 'Stakes')} Fixtures
-                </Text>
-                {(() => {
-                  const mapStakesStage = {
-                    'r32': 'r32',
-                    'r16_stakes': 'r16',
-                    'qf_stakes': 'qf',
-                    'sf_stakes': 'sf',
-                    'final_stakes': 'final'
-                  }[stakesStageTab];
-                  
-                  const filteredMatches = matches.filter(m => {
-                    if (stakesStageTab === 'r32') {
-                      return m.stage === 'r32' && Number(m.matchId) > 150;
-                    }
-                    if (stakesStageTab === 'final_stakes') {
-                      return m.stage === 'final' || m.stage === 'third_place';
-                    }
-                    return m.stage === mapStakesStage;
-                  });
-
-                  if (filteredMatches.length === 0) {
-                    return (
-                      <Text style={{ color: isDarkMode ? '#cbd5e1' : '#7a6e5b', fontSize: 13, padding: 16, textAlign: 'center' }}>
-                        No match fixtures loaded yet for this stage.
-                      </Text>
-                    );
-                  }
-                  return filteredMatches.map(m => renderMatchCard(m));
-                })()}
-              </View>
-            )}
-
-            {stakesSubTab === 'history' && (
-              <View>
-                <Text style={{ fontSize: 15, fontWeight: '800', color: '#ff3d71', marginBottom: 12, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                  {({
-                    'r32': 'Round of 32',
-                    'r16_stakes': 'Round of 16',
-                    'qf_stakes': 'Quarter-Finals',
-                    'sf_stakes': 'Semi-Finals',
-                    'final_stakes': 'Finals'
-                  }[stakesStageTab] || 'Stakes')} Settled Matches
-                </Text>
-
-                {/* Sort Chips Row */}
-                <View style={styles.sortContainer}>
-                  <Text style={styles.sortLabel}>Sort By:</Text>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.sortChipsScroll}>
-                    <TouchableOpacity
-                      style={[styles.sortChip, historySort === 'latest' && styles.sortChipActive]}
-                      onPress={() => setHistorySort('latest')}
-                    >
-                      <Text style={[styles.sortChipText, historySort === 'latest' && styles.sortChipTextActive]}>📅 Latest</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[styles.sortChip, historySort === 'earliest' && styles.sortChipActive]}
-                      onPress={() => setHistorySort('earliest')}
-                    >
-                      <Text style={[styles.sortChipText, historySort === 'earliest' && styles.sortChipTextActive]}>📅 Earliest</Text>
-                    </TouchableOpacity>
-                  </ScrollView>
-                </View>
-
-                {(() => {
-                  const mapStakesStage = {
-                    'r32': 'r32',
-                    'r16_stakes': 'r16',
-                    'qf_stakes': 'qf',
-                    'sf_stakes': 'sf',
-                    'final_stakes': 'final'
-                  }[stakesStageTab];
-
-                  const settled = matches.filter(m => {
-                    const isMatchSettled = m.status === 'completed' || m.status === 'postponed';
-                    if (!isMatchSettled) return false;
-                    
-                    // Match filters: R32 matchId > 150, Finals/Third Place for final_stakes, else exact stage match
-                    if (stakesStageTab === 'r32') {
-                      return m.stage === 'r32' && Number(m.matchId) > 150;
-                    }
-                    if (stakesStageTab === 'final_stakes') {
-                      return m.stage === 'final' || m.stage === 'third_place';
-                    }
-                    return m.stage === mapStakesStage;
-                  });
-
-                  settled.sort((a, b) => {
-                    if (historySort === 'latest') {
-                      return (b.kickoffTimeIST?.seconds || 0) - (a.kickoffTimeIST?.seconds || 0);
-                    }
-                    if (historySort === 'earliest') {
-                      return (a.kickoffTimeIST?.seconds || 0) - (b.kickoffTimeIST?.seconds || 0);
-                    }
-                    return 0;
-                  });
-
-                  if (settled.length === 0) {
-                    return (
-                      <Text style={{ color: isDarkMode ? '#cbd5e1' : '#7a6e5b', fontSize: 13, padding: 16, textAlign: 'center' }}>
-                        No settled matches for this stage.
-                      </Text>
-                    );
-                  }
-
-                  return settled.map((match) => {
-                    const bet = myStakesBets[match.matchId];
-                    const isPostponed = match.status === 'postponed';
-                    const isExpanded = expandedMatchId === match.matchId;
-
-                    const stage = match.stage;
-                    let stageStakes = settings?.stakes?.[stage] || {
-                      group: { team: 100, goal: 50 },
-                      r32: { team: 75, goal: 75 },
-                      r16: { team: 100, goal: 100 },
-                      qf: { team: 125, goal: 125 },
-                      sf: { team: 150, goal: 150 },
-                      third_place: { team: 150, goal: 150 },
-                      final: { team: 200, goal: 200 }
-                    }[stage] || { team: 100, goal: 50 };
-
-
-                    // Filter player predictions to only those who actually placed a bet in Stakes (no defaults)
-                    const eligibleExpandedMatchBets = expandedMatchBets.filter(b =>
-                      !b.isDefault && isUserEligibleForMatch(allUsers[b.userId], match)
-                    );
-
-                    const toggleExpand = () => {
-                      if (isExpanded) {
-                        setExpandedMatchId(null);
-                      } else {
-                        setExpandedMatchId(match.matchId);
-                      }
-                    };
-
-                    // For Stakes, a player who did not place a bet has no profit loss (net is 0)
-                    const userNet = isPostponed ? 0 : (bet ? ((bet.amountWon || 0) - (bet.amountLost || 0)) : 0);
-
-                    return (
-                      <View key={match.id}>
-                        <TouchableOpacity style={[styles.historyCard, styles.glassCard, { borderColor: '#ff3d71', borderWidth: 1 }]} onPress={toggleExpand}>
-                          <View style={styles.matchHeaderRow}>
-                            <Text style={[styles.matchStage, { color: '#ff3d71' }]}>{match.stage.toUpperCase()} (STAKES)</Text>
-                            <Text style={styles.matchTime}>{isExpanded ? '▼ Hide Details' : '▶ Show Details'}</Text>
-                          </View>
-                          <View style={styles.matchTeamsContainer}>
-                            <Text style={styles.matchTeamText}>{getTeamFlag(match.teamA)} {match.teamA}</Text>
-                            <Text style={styles.scoreText}>
-                              {isPostponed ? 'P-P' : `${match.resultTeamAGoals} - ${match.resultTeamBGoals}`}
-                            </Text>
-                            <Text style={styles.matchTeamText}>{match.teamB} {getTeamFlag(match.teamB)}</Text>
-                          </View>
-                          <View style={styles.historyBetRow}>
-                            {bet ? (
-                              <View style={{ flex: 1 }}>
-                                <Text style={styles.historyBetLabel}>Your Prediction:</Text>
-                                <Text style={styles.historyBetValue}>
-                                  {bet.teamPrediction === 'teamA' ? <>{getTeamFlag(match.teamA)} {match.teamA}</> : (bet.teamPrediction === 'teamB' ? <>{match.teamB} {getTeamFlag(match.teamB)}</> : 'Draw')} {bet.winViaPenalties ? '(Shootout)' : `(${bet.goalsTeamA}-${bet.goalsTeamB})`}
-                                </Text>
-                                <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
-                                  <View style={[styles.badge, bet.teamBetResult === 'won' ? styles.badgeWin : styles.badgeLoss]}>
-                                    <Text style={styles.badgeText}>Team: {bet.teamBetResult ? bet.teamBetResult.toUpperCase() : 'LOST'}</Text>
-                                  </View>
-                                  <View style={[
-                                    styles.badge,
-                                    bet.goalBetResult === 'won' || bet.goalBetResult === 'won_partial'
-                                      ? styles.badgeWin
-                                      : styles.badgeLoss
-                                  ]}>
-                                    <Text style={styles.badgeText}>Goal: {bet.goalBetResult && bet.goalBetResult !== 'refunded' ? bet.goalBetResult.toUpperCase() : 'LOST'}</Text>
-                                  </View>
-                                </View>
-                              </View>
-                            ) : (
-                              <Text style={[styles.historyNoBet, { color: '#82776a' }]}>Did not participate (No bet placed)</Text>
-                            )}
-
-                            <View style={{ alignItems: 'flex-end' }}>
-                              <Text style={{ fontSize: 11, color: '#94a3b8' }}>Net Profit</Text>
-                              <Text style={[styles.payoutText, isPostponed ? { color: '#94a3b8' } : (userNet >= 0 ? { color: '#00e676' } : { color: '#ff3d71' })]}>
-                                {isPostponed ? '' : (userNet >= 0 ? '+' : '')}₹{Number(userNet).toFixed(2)}
-                              </Text>
-                            </View>
-                          </View>
-
-                          {isExpanded && (
-                            <View style={styles.expandedBetsContainer}>
-                              <View style={styles.expandedBetsDivider} />
-                              <Text style={styles.expandedBetsTitle}>All Participating Predictions</Text>
-                              {eligibleExpandedMatchBets.length === 0 ? (
-                                <Text style={styles.expandedBetsEmpty}>No predictions placed by any player</Text>
-                              ) : (
-                                <ScrollView
-                                  horizontal
-                                  showsHorizontalScrollIndicator={false}
-                                  contentContainerStyle={[styles.bracketHorizontalScrollContent, { minWidth: '100%', paddingRight: 0 }]}>
-                                  <View style={[styles.expandedBetsTable, { minWidth: 620 }]}>
-                                    <View style={styles.expandedBetsHeader}>
-                                      <Text style={[styles.expandedBetsHeadCell, { flex: 2.2 }]}>Player</Text>
-                                      <Text style={[styles.expandedBetsHeadCell, { flex: 2 }]}>Prediction</Text>
-                                      <Text style={[styles.expandedBetsHeadCell, { flex: 1.5, textAlign: 'center' }]}>Goals</Text>
-                                      <Text style={[styles.expandedBetsHeadCell, { flex: 1.1, textAlign: 'right' }]}>Team</Text>
-                                      <Text style={[styles.expandedBetsHeadCell, { flex: 1.1, textAlign: 'right' }]}>Goal</Text>
-                                      <Text style={[styles.expandedBetsHeadCell, { flex: 1.3, textAlign: 'right' }]}>Net</Text>
-                                    </View>
-                                    {eligibleExpandedMatchBets.map((b) => {
-                                      const u = allUsers[b.userId] || { name: 'Player' };
-                                      // Call with true for isStakes
-                                      const matchPayouts = computeMatchBetPayouts(eligibleExpandedMatchBets, match, true);
-                                      const teamNet = isPostponed ? 0 : (
-                                        b.teamBetResult === 'won'
-                                          ? matchPayouts.teamSharePerWinner
-                                          : (b.teamBetResult === 'refunded' ? 0 : -matchPayouts.teamStake)
-                                      );
-                                      const goalNet = isPostponed ? 0 : (
-                                        (b.goalBetResult === 'won' || b.goalBetResult === 'won_partial')
-                                          ? (matchPayouts.goalSharePerWinner - matchPayouts.goalStake)
-                                          : (b.goalBetResult === 'refunded' ? 0 : -matchPayouts.goalStake)
-                                      );
-                                      const net = isPostponed ? 0 : (teamNet + goalNet);
-                                      return (
-                                        <View style={styles.expandedBetsRow} key={b.betId}>
-                                          <Text style={[styles.expandedBetsCell, { flex: 2.2, fontWeight: '700' }]} numberOfLines={1}>
-                                            {u.name}
-                                          </Text>
-                                          <Text style={[styles.expandedBetsCell, { flex: 2 }]}>
-                                            {b.teamPrediction === 'teamA' ? getTeamFlag(match.teamA) : (b.teamPrediction === 'teamB' ? getTeamFlag(match.teamB) : 'Draw')} {b.teamPrediction === 'teamA' ? match.teamA : (b.teamPrediction === 'teamB' ? match.teamB : 'Draw')}
-                                          </Text>
-                                          <Text style={[styles.expandedBetsCell, { flex: 1.5, textAlign: 'center', fontWeight: '800', color: isDarkMode ? '#ffd700' : '#854d0e' }]}>
-                                            {b.winViaPenalties ? 'Shootout' : (b.goalsTeamA < 0 ? 'N/A' : `${b.goalsTeamA} - ${b.goalsTeamB}`)}
-                                          </Text>
-                                          <Text style={[styles.expandedBetsCell, { flex: 1.1, textAlign: 'right', fontWeight: '800', color: teamNet >= 0 ? '#00e676' : '#ff3d71' }]}>
-                                            {teamNet >= 0 ? '+' : ''}₹{Number(teamNet).toFixed(2)}
-                                          </Text>
-                                          <Text style={[styles.expandedBetsCell, { flex: 1.1, textAlign: 'right', fontWeight: '800', color: goalNet >= 0 ? '#00e676' : '#ff3d71' }]}>
-                                            {goalNet >= 0 ? '+' : ''}₹{Number(goalNet).toFixed(2)}
-                                          </Text>
-                                          <Text style={[styles.expandedBetsCell, { flex: 1.3, textAlign: 'right', fontWeight: '800', color: isPostponed ? '#94a3b8' : (net >= 0 ? '#00e676' : '#ff3d71') }]}>
-                                            {isPostponed ? '' : (net >= 0 ? '+' : '')}₹{Number(net).toFixed(2)}
-                                          </Text>
-                                        </View>
-                                      );
-                                    })}
-                                  </View>
-                                </ScrollView>
-                              )}
-                            </View>
-                          )}
-                        </TouchableOpacity>
-                      </View>
-                    );
-                  });
-                })()}
-              </View>
-            )}
-          </View>
-        )}
+              )}
+            </View>
+          );
+        })()}
 
       </ScrollView>
 
@@ -2550,11 +2311,8 @@ export default function App() {
         <TouchableOpacity style={[styles.tabItem, activeTab === 'teams' && styles.tabActive]} onPress={() => setActiveTab('teams')}>
           <Text style={styles.tabText}>Teams</Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tabItem, activeTab === 'realstakes' && styles.tabActive]}
-          onPress={() => { setStakesWarningVisible(true); }}
-        >
-          <Text style={[styles.tabText, { color: '#ff3d71', fontWeight: 'bold' }]}>Stakes</Text>
+        <TouchableOpacity style={[styles.tabItem, activeTab === 'finalists' && styles.tabActive]} onPress={() => setActiveTab('finalists')}>
+          <Text style={[styles.tabText, { color: activeTab === 'finalists' ? colors.primary : colors.textSub }]}>🏆</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[styles.tabItem, activeTab === 'profile' && styles.tabActive]} onPress={() => setActiveTab('profile')}>
           <Text style={styles.tabText}>Profile</Text>
