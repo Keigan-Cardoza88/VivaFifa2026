@@ -1600,7 +1600,7 @@ export default function App() {
                   }
                 };
 
-                const userNet = isPostponed ? 0 : (bet ? ((bet.amountWon || 0) - (bet.amountLost || 0)) : -totalStake);
+                const userNet = isPostponed ? 0 : (bet ? ((bet.amountWon || 0) - totalStake) : -totalStake);
 
                 return (
                   <View key={match.id}>
@@ -1642,7 +1642,7 @@ export default function App() {
                         )}
 
                         <View style={{ alignItems: 'flex-end' }}>
-                          <Text style={{ fontSize: 11, color: '#94a3b8' }}>Gross Payout</Text>
+                          <Text style={{ fontSize: 11, color: '#94a3b8' }}>Net Profit</Text>
                           <Text style={[styles.payoutText, isPostponed ? { color: '#94a3b8' } : (userNet >= 0 ? { color: '#00e676' } : { color: '#ff3d71' })]}>
                             {isPostponed ? '' : (userNet >= 0 ? '+' : '')}₹{Number(userNet).toFixed(2)}
                           </Text>
