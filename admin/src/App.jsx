@@ -2222,14 +2222,14 @@ function App() {
                   };
 
                   if (col.stage === 'final') {
-                    const finalMatch = matches.find(m => m.stage === 'final') || {
+                    const finalMatch = bracketMatches.find(m => m.stage === 'final') || {
                       id: 'placeholder_final',
                       teamA: 'TBD',
                       teamB: 'TBD',
                       status: 'upcoming',
                       stage: 'final'
                     };
-                    const thirdPlaceMatch = matches.find(m => m.stage === 'third_place') || {
+                    const thirdPlaceMatch = bracketMatches.find(m => m.stage === 'third_place') || {
                       id: 'placeholder_third_place',
                       teamA: 'TBD',
                       teamB: 'TBD',
@@ -2254,7 +2254,7 @@ function App() {
                     );
                   }
 
-                  const stageMatches = matches.filter(m => m.stage === col.stage);
+                  const stageMatches = bracketMatches.filter(m => m.stage === col.stage);
                   stageMatches.sort((a, b) => Number(a.matchId) - Number(b.matchId));
 
                   let colMatches = [];

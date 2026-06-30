@@ -130,5 +130,11 @@ service cloud.firestore {
       allow read: if signedIn();
       allow write: if isAdmin();
     }
+
+    // Bracket Matches rules
+    match /bracket_matches/{matchId} {
+      allow read: if isRegistered();
+      allow write: if isAdmin();
+    }
   }
 }
