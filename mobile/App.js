@@ -1642,7 +1642,7 @@ export default function App() {
                         )}
 
                         <View style={{ alignItems: 'flex-end' }}>
-                          <Text style={{ fontSize: 11, color: '#94a3b8' }}>Net Profit</Text>
+                          <Text style={{ fontSize: 11, color: '#94a3b8' }}>Gross Payout</Text>
                           <Text style={[styles.payoutText, isPostponed ? { color: '#94a3b8' } : (userNet >= 0 ? { color: '#00e676' } : { color: '#ff3d71' })]}>
                             {isPostponed ? '' : (userNet >= 0 ? '+' : '')}₹{Number(userNet).toFixed(2)}
                           </Text>
