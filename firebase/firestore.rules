@@ -41,12 +41,17 @@ service cloud.firestore {
           !resourceData.isDefault &&
           get(/databases/$(database)/documents/matches/$(matchId)).data.status in ['upcoming', 'betting_open'] &&
           (
-            // If team A wins, goal A > goal B
-            (resourceData.teamPrediction == 'teamA' && resourceData.goalsTeamA > resourceData.goalsTeamB) ||
-            // If team B wins, goal B > goal A
-            (resourceData.teamPrediction == 'teamB' && resourceData.goalsTeamB > resourceData.goalsTeamA) ||
-            // If draw, goal A == goal B
-            (resourceData.teamPrediction == 'draw' && resourceData.goalsTeamA == resourceData.goalsTeamB)
+            // Shootout bets
+            (resourceData.winViaPenalties == true && resourceData.goalsTeamA == -1 && resourceData.goalsTeamB == -1 && resourceData.teamPrediction in ['teamA', 'teamB']) ||
+            // Standard bets
+            (
+              (!resourceData.winViaPenalties || resourceData.winViaPenalties == false) &&
+              (
+                (resourceData.teamPrediction == 'teamA' && resourceData.goalsTeamA > resourceData.goalsTeamB) ||
+                (resourceData.teamPrediction == 'teamB' && resourceData.goalsTeamB > resourceData.goalsTeamA) ||
+                (resourceData.teamPrediction == 'draw' && resourceData.goalsTeamA == resourceData.goalsTeamB)
+              )
+            )
           )
         )
       );
@@ -70,14 +75,7 @@ service cloud.firestore {
 
     // Bets rules
     match /bets/{betId} {
-      // Users can read their own bets.
-      // Users can only read other users' bets after the match has kicked off or status is closed/completed/postponed
-      allow read: if signedIn() && (
-        isAdmin() || 
-        resource.data.userId == request.auth.uid ||
-        get(/databases/$(database)/documents/matches/$(resource.data.matchId)).data.status in ['betting_closed', 'completed', 'live', 'postponed'] ||
-        request.time >= get(/databases/$(database)/documents/matches/$(resource.data.matchId)).data.kickoffTimeIST
-      );
+      allow read: if signedIn();
       
       // Users can place or edit their bets before lock time, as long as the match status is upcoming/open.
       allow create: if canPlaceBet(request.resource.data.matchId, request.resource.data);
@@ -86,12 +84,7 @@ service cloud.firestore {
 
     // Stakes bets rules
     match /stakes_bets/{betId} {
-      allow read: if signedIn() && (
-        isAdmin() || 
-        resource.data.userId == request.auth.uid ||
-        get(/databases/$(database)/documents/matches/$(resource.data.matchId)).data.status in ['betting_closed', 'completed', 'live', 'postponed'] ||
-        request.time >= get(/databases/$(database)/documents/matches/$(resource.data.matchId)).data.kickoffTimeIST
-      );
+      allow read: if signedIn();
       allow create: if canPlaceBet(request.resource.data.matchId, request.resource.data);
       allow update: if canPlaceBet(request.resource.data.matchId, request.resource.data);
       allow delete: if isAdmin();
