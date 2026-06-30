@@ -93,7 +93,7 @@ module.exports = async (req, res) => {
       }
     };
 
-    let stageStakes = settings.stakes[stage] || { team: 50, goal: 50 };
+    let stageStakes = (settings.stakes && settings.stakes[stage]) || { team: 50, goal: 50 };
     if (stage === 'group' && Number(matchId) < 45) {
       stageStakes = { team: 50, goal: 50 };
     }
@@ -185,7 +185,7 @@ module.exports = async (req, res) => {
         const smSettings = settings.stakes_mode || {};
         const stageStakes = isStakesCollection 
           ? (smSettings[stage] || { team: 100, goal: 50, penalty: 50 })
-          : (settings.stakes[stage] || { team: 50, goal: 50, penalty: 50 });
+          : ((settings.stakes && settings.stakes[stage]) || { team: 50, goal: 50, penalty: 50 });
 
         const teamStake = stageStakes.team || 0;
         const goalStake = stageStakes.goal || 0;
