@@ -203,6 +203,7 @@ export default function App() {
   const [leaderboardMoney, setLeaderboardMoney] = useState([]);
   const [leaderboardAccuracy, setLeaderboardAccuracy] = useState([]);
   const [settings, setSettings] = useState(null);
+  const [bracketMatches, setBracketMatches] = useState([]);
 
   // Join Request Registration
   const [nameInput, setNameInput] = useState('');
@@ -451,6 +452,14 @@ export default function App() {
 
     const unsubSettings = onSnapshot(doc(db, 'settings', 'global'), (snap) => {
       if (snap.exists()) setSettings(snap.data());
+    });
+
+    const unsubBracket = onSnapshot(collection(db, 'bracket_matches'), (snap) => {
+      const list = [];
+      snap.forEach(doc => {
+        list.push({ id: doc.id, ...doc.data() });
+      });
+      setBracketMatches(list);
     });
 
     const qLeaderboard = query(collection(db, 'leaderboard'));
@@ -1795,14 +1804,14 @@ export default function App() {
                   };
 
                   if (col.stage === 'final') {
-                    const finalMatch = matches.find(m => m.stage === 'final') || {
+                    const finalMatch = bracketMatches.find(m => m.stage === 'final') || {
                       id: 'placeholder_final',
                       teamA: 'TBD',
                       teamB: 'TBD',
                       status: 'upcoming',
                       stage: 'final'
                     };
-                    const thirdPlaceMatch = matches.find(m => m.stage === 'third_place') || {
+                    const thirdPlaceMatch = bracketMatches.find(m => m.stage === 'third_place') || {
                       id: 'placeholder_third_place',
                       teamA: 'TBD',
                       teamB: 'TBD',
@@ -1827,7 +1836,7 @@ export default function App() {
                     );
                   }
 
-                  const stageMatches = matches.filter(m => m.stage === col.stage);
+                  const stageMatches = bracketMatches.filter(m => m.stage === col.stage);
                   stageMatches.sort((a, b) => Number(a.matchId) - Number(b.matchId));
 
                   let colMatches = [];

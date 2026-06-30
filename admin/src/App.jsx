@@ -130,7 +130,7 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState(null);
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [selectedStageTab, setSelectedStageTab] = useState('r32');
+  const [selectedStageTab, setSelectedStageTab] = useState('group');
   const [leaderboard, setLeaderboard] = useState([]);
   const [matchesStakesFilter, setMatchesStakesFilter] = useState('all');
   const [isDarkMode, setIsDarkMode] = useState(() => {
@@ -155,6 +155,7 @@ function App() {
 
   // Forms states
   const [scoreInput, setScoreInput] = useState({ matchId: '', teamAGoals: 0, teamBGoals: 0, winner: '' });
+  const [isShootout, setIsShootout] = useState(false);
   const [selectedMatch, setSelectedMatch] = useState(null);
   const [statusMessage, setStatusMessage] = useState({ type: '', text: '' });
   const [actionLoading, setActionLoading] = useState(false);
@@ -165,7 +166,8 @@ function App() {
 
   // Bracket Editing States
   const [editingBracketMatch, setEditingBracketMatch] = useState(null);
-  const [bracketTeamForm, setBracketTeamForm] = useState({ teamA: '', teamB: '', matchId: '' });
+  const [bracketMatches, setBracketMatches] = useState([]);
+  const [bracketTeamForm, setBracketTeamForm] = useState({ teamA: '', teamB: '', matchId: '', resultTeamAGoals: '', resultTeamBGoals: '', status: 'upcoming', winner: '' });
 
   // Viewing and Overriding Bets
   const [viewingMatchBets, setViewingMatchBets] = useState(null);
@@ -262,6 +264,13 @@ function App() {
       setFinalistPicks(list);
     });
 
+    // Listen to decoupled bracket matches
+    const unsubBracket = onSnapshot(collection(db, 'bracket_matches'), (snap) => {
+      const list = [];
+      snap.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
+      setBracketMatches(list);
+    });
+
     return () => {
       unsubMatches();
       unsubUsers();
@@ -269,6 +278,7 @@ function App() {
       unsubKitty();
       unsubLeaderboard();
       unsubFinalists();
+      unsubBracket();
     };
   }, [user]);
 
@@ -644,30 +654,27 @@ function App() {
     setActionLoading(true);
     try {
       const matchId = String(editingBracketMatch.matchId || editingBracketMatch.id);
-      const matchDocRef = doc(db, 'matches', matchId);
+      const matchDocRef = doc(db, 'bracket_matches', matchId);
       const matchDoc = await getDoc(matchDocRef);
       
       const updatedData = {
+        matchId,
         teamA: bracketTeamForm.teamA || '',
-        teamB: bracketTeamForm.teamB || ''
+        teamB: bracketTeamForm.teamB || '',
+        resultTeamAGoals: bracketTeamForm.resultTeamAGoals === '' ? null : Number(bracketTeamForm.resultTeamAGoals),
+        resultTeamBGoals: bracketTeamForm.resultTeamBGoals === '' ? null : Number(bracketTeamForm.resultTeamBGoals),
+        status: bracketTeamForm.status,
+        winner: bracketTeamForm.winner || '',
+        stage: editingBracketMatch.stage,
+        kickoffTimeIST: editingBracketMatch.kickoffTimeIST || Timestamp.now()
       };
 
-      if (matchDoc.exists()) {
-        await updateDoc(matchDocRef, updatedData);
-      } else {
-        await setDoc(matchDocRef, {
-          ...updatedData,
-          matchId,
-          stage: editingBracketMatch.stage,
-          status: 'upcoming',
-          kickoffTimeIST: Timestamp.now()
-        });
-      }
+      await setDoc(matchDocRef, updatedData);
       
       setEditingBracketMatch(null);
-      setStatusMessage({ type: 'success', text: `Bracket Match #${matchId} teams updated successfully.` });
+      setStatusMessage({ type: 'success', text: `Bracket Match #${matchId} updated successfully.` });
     } catch (err) {
-      setStatusMessage({ type: 'error', text: `Failed to update bracket teams: ${err.message}` });
+      setStatusMessage({ type: 'error', text: `Failed to update bracket match: ${err.message}` });
     } finally {
       setActionLoading(false);
     }
@@ -1163,18 +1170,12 @@ function App() {
             <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '12px', marginBottom: '16px' }}>
               {[
                 { id: 'group', label: 'Group Stage' },
-                { id: 'r32_normal', label: 'Round of 32 (Normal)' },
-                { id: 'r32', label: 'STAKES (Round of 32)' },
-                { id: 'r16', label: 'Round of 16 (Normal)' },
-                { id: 'r16_stakes', label: 'STAKES (Round of 16)' },
-                { id: 'qf', label: 'Quarter-Finals (Normal)' },
-                { id: 'qf_stakes', label: 'STAKES (Quarter-Finals)' },
-                { id: 'sf', label: 'Semi-Finals (Normal)' },
-                { id: 'sf_stakes', label: 'STAKES (Semi-Finals)' },
-                { id: 'final', label: 'Finals (Normal)' },
-                { id: 'final_stakes', label: 'STAKES (Finals)' }
+                { id: 'r32_normal', label: 'Round of 32' },
+                { id: 'r16', label: 'Round of 16' },
+                { id: 'qf', label: 'Quarter-Finals' },
+                { id: 'sf', label: 'Semi-Finals' },
+                { id: 'final', label: 'Finals' }
               ].map((stg) => {
-                const isStakes = stg.id === 'r32' || stg.id.endsWith('_stakes');
                 return (
                   <button
                     key={stg.id}
@@ -1182,13 +1183,7 @@ function App() {
                     style={{
                       whiteSpace: 'nowrap',
                       padding: '8px 16px',
-                      fontSize: '0.8rem',
-                      ...(isStakes ? {
-                        borderColor: '#ff3d71',
-                        borderWidth: '1.5px',
-                        color: selectedStageTab === stg.id ? '#ffffff' : '#ff3d71',
-                        backgroundColor: selectedStageTab === stg.id ? '#ff3d71' : 'transparent',
-                      } : {})
+                      fontSize: '0.8rem'
                     }}
                     onClick={() => setSelectedStageTab(stg.id)}
                   >
@@ -1343,6 +1338,7 @@ function App() {
                             <button className="btn btn-primary" style={{ width: '100%', padding: '6px 8px', fontSize: '0.75rem' }}
                                     onClick={() => {
                                       setSelectedMatch(match);
+                                      setIsShootout(false);
                                       setScoreInput({ matchId: match.matchId, teamAGoals: 0, teamBGoals: 0, winner: '' });
                                     }}>
                               Settle
@@ -1358,6 +1354,7 @@ function App() {
                                 <button className="btn btn-primary" style={{ padding: '4px 8px', fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '4px', backgroundColor: 'var(--win-green)', border: 'none' }}
                                         onClick={() => {
                                           setSelectedMatch(match);
+                                          setIsShootout(match.resultTeamAGoals === match.resultTeamBGoals && match.winner !== 'draw' && match.stage !== 'group');
                                           setScoreInput({
                                             matchId: match.matchId,
                                             teamAGoals: match.resultTeamAGoals !== undefined ? match.resultTeamAGoals : 0,
@@ -1421,52 +1418,81 @@ function App() {
                       <div className="content-card" style={{ marginTop: '16px', border: '1px solid var(--brazil-gold)', padding: '12px', borderRadius: '6px' }}>
                         <h4 style={{ fontSize: '0.85rem', marginBottom: '12px', color: 'var(--brazil-gold)' }}>Settle Match #{match.matchId}</h4>
                         <form onSubmit={handleSettleMatch}>
-                          <div style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
-                            <div style={{ flex: 1 }}>
-                              <label className="form-label" style={{ fontSize: '0.75rem' }}>{match.teamA} Goals</label>
-                              <input className="form-control" type="number" min="0" required style={{ padding: '4px 8px', fontSize: '0.8rem' }}
-                                     value={scoreInput.teamAGoals} onChange={e => {
-                                       const val = e.target.value;
-                                       const otherVal = scoreInput.teamBGoals;
-                                       let newWinner = scoreInput.winner;
-                                       if (val !== '' && otherVal !== '') {
-                                         const goalsA = Number(val);
-                                         const goalsB = Number(otherVal);
-                                         if (match.stage === 'group') {
-                                           if (goalsA > goalsB) newWinner = 'teamA';
-                                           else if (goalsB > goalsA) newWinner = 'teamB';
-                                           else newWinner = 'draw';
-                                         } else {
-                                           if (goalsA > goalsB) newWinner = 'teamA';
-                                           else if (goalsB > goalsA) newWinner = 'teamB';
-                                         }
-                                       }
-                                       setScoreInput({ ...scoreInput, teamAGoals: val, winner: newWinner });
-                                     }}/>
+                          {match.stage !== 'group' && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px', padding: '4px' }}>
+                              <input 
+                                type="checkbox" 
+                                id="shootout-check" 
+                                checked={isShootout} 
+                                style={{ transform: 'scale(1.2)', cursor: 'pointer' }}
+                                onChange={e => {
+                                  const checked = e.target.checked;
+                                  setIsShootout(checked);
+                                  if (checked) {
+                                    setScoreInput({ ...scoreInput, teamAGoals: 0, teamBGoals: 0 });
+                                  }
+                                }} 
+                              />
+                              <label htmlFor="shootout-check" style={{ fontSize: '0.8rem', fontWeight: '800', color: 'var(--brazil-gold)', cursor: 'pointer', userSelect: 'none' }}>
+                                ⚽ Ended in Shootout (Penalties)?
+                              </label>
                             </div>
-                            <div style={{ flex: 1 }}>
-                              <label className="form-label" style={{ fontSize: '0.75rem' }}>{match.teamB} Goals</label>
-                              <input className="form-control" type="number" min="0" required style={{ padding: '4px 8px', fontSize: '0.8rem' }}
-                                     value={scoreInput.teamBGoals} onChange={e => {
-                                       const val = e.target.value;
-                                       const otherVal = scoreInput.teamAGoals;
-                                       let newWinner = scoreInput.winner;
-                                       if (val !== '' && otherVal !== '') {
-                                         const goalsA = Number(otherVal);
-                                         const goalsB = Number(val);
-                                         if (match.stage === 'group') {
-                                           if (goalsA > goalsB) newWinner = 'teamA';
-                                           else if (goalsB > goalsA) newWinner = 'teamB';
-                                           else newWinner = 'draw';
-                                         } else {
-                                           if (goalsA > goalsB) newWinner = 'teamA';
-                                           else if (goalsB > goalsA) newWinner = 'teamB';
+                          )}
+
+                          {!isShootout && (
+                            <div style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
+                              <div style={{ flex: 1 }}>
+                                <label className="form-label" style={{ fontSize: '0.75rem' }}>{match.teamA} Goals</label>
+                                <input className="form-control" type="number" min="0" required={!isShootout} style={{ padding: '4px 8px', fontSize: '0.8rem' }}
+                                       value={scoreInput.teamAGoals} onChange={e => {
+                                         const val = e.target.value;
+                                         const otherVal = scoreInput.teamBGoals;
+                                         let newWinner = scoreInput.winner;
+                                         if (val !== '' && otherVal !== '') {
+                                           const goalsA = Number(val);
+                                           const goalsB = Number(otherVal);
+                                           if (match.stage === 'group') {
+                                             if (goalsA > goalsB) newWinner = 'teamA';
+                                             else if (goalsB > goalsA) newWinner = 'teamB';
+                                             else newWinner = 'draw';
+                                           } else {
+                                             if (goalsA > goalsB) newWinner = 'teamA';
+                                             else if (goalsB > goalsA) newWinner = 'teamB';
+                                           }
                                          }
-                                       }
-                                       setScoreInput({ ...scoreInput, teamBGoals: val, winner: newWinner });
-                                     }}/>
+                                         setScoreInput({ ...scoreInput, teamAGoals: val, winner: newWinner });
+                                       }}/>
+                              </div>
+                              <div style={{ flex: 1 }}>
+                                <label className="form-label" style={{ fontSize: '0.75rem' }}>{match.teamB} Goals</label>
+                                <input className="form-control" type="number" min="0" required={!isShootout} style={{ padding: '4px 8px', fontSize: '0.8rem' }}
+                                       value={scoreInput.teamBGoals} onChange={e => {
+                                         const val = e.target.value;
+                                         const otherVal = scoreInput.teamAGoals;
+                                         let newWinner = scoreInput.winner;
+                                         if (val !== '' && otherVal !== '') {
+                                           const goalsA = Number(otherVal);
+                                           const goalsB = Number(val);
+                                           if (match.stage === 'group') {
+                                             if (goalsA > goalsB) newWinner = 'teamA';
+                                             else if (goalsB > goalsA) newWinner = 'teamB';
+                                             else newWinner = 'draw';
+                                           } else {
+                                             if (goalsA > goalsB) newWinner = 'teamA';
+                                             else if (goalsB > goalsA) newWinner = 'teamB';
+                                           }
+                                         }
+                                         setScoreInput({ ...scoreInput, teamBGoals: val, winner: newWinner });
+                                       }}/>
+                              </div>
                             </div>
-                          </div>
+                          )}
+
+                          {isShootout && (
+                            <div style={{ backgroundColor: 'rgba(255, 183, 125, 0.15)', border: '1px solid var(--brazil-gold)', borderRadius: '6px', padding: '8px 10px', fontSize: '0.75rem', color: 'var(--text-main)', marginBottom: '12px', lineHeight: '1.4' }}>
+                              ⚡ <strong>Shootout Mode Active:</strong> Score is automatically submitted as 0-0. Please choose the shootout winner below.
+                            </div>
+                          )}
                           <div className="form-group" style={{ marginBottom: '12px' }}>
                             <label className="form-label" style={{ fontSize: '0.75rem' }}>Winner</label>
                             <select className="form-control" required style={{ padding: '4px 8px', fontSize: '0.8rem' }}
@@ -2001,9 +2027,9 @@ function App() {
 
             {editingBracketMatch && (
               <div className="content-card" style={{ border: '2px solid var(--brazil-gold)', backgroundColor: 'var(--input-bg)' }}>
-                <h3 className="card-title">Edit Bracket Teams (Match #{editingBracketMatch.matchId || editingBracketMatch.id})</h3>
+                <h3 className="card-title">Edit Bracket Match #{editingBracketMatch.matchId || editingBracketMatch.id}</h3>
                 <form onSubmit={handleSaveBracketTeams}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '12px' }}>
                     <div>
                       <label className="form-label">Team A Name (Empty for TBD)</label>
                       <input 
@@ -2023,6 +2049,56 @@ function App() {
                         value={bracketTeamForm.teamB} 
                         onChange={e => setBracketTeamForm({ ...bracketTeamForm, teamB: e.target.value })} 
                       />
+                    </div>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '12px' }}>
+                    <div>
+                      <label className="form-label">Team A Goals</label>
+                      <input 
+                        className="form-control" 
+                        type="number" 
+                        min="0"
+                        placeholder="Goals"
+                        value={bracketTeamForm.resultTeamAGoals} 
+                        onChange={e => setBracketTeamForm({ ...bracketTeamForm, resultTeamAGoals: e.target.value })} 
+                      />
+                    </div>
+                    <div>
+                      <label className="form-label">Team B Goals</label>
+                      <input 
+                        className="form-control" 
+                        type="number" 
+                        min="0"
+                        placeholder="Goals"
+                        value={bracketTeamForm.resultTeamBGoals} 
+                        onChange={e => setBracketTeamForm({ ...bracketTeamForm, resultTeamBGoals: e.target.value })} 
+                      />
+                    </div>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+                    <div>
+                      <label className="form-label">Status</label>
+                      <select 
+                        className="form-control"
+                        value={bracketTeamForm.status} 
+                        onChange={e => setBracketTeamForm({ ...bracketTeamForm, status: e.target.value })} 
+                      >
+                        <option value="upcoming">upcoming</option>
+                        <option value="completed">completed</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="form-label">Winner</label>
+                      <select 
+                        className="form-control"
+                        value={bracketTeamForm.winner} 
+                        onChange={e => setBracketTeamForm({ ...bracketTeamForm, winner: e.target.value })} 
+                      >
+                        <option value="">TBD</option>
+                        <option value="teamA">Team A</option>
+                        <option value="teamB">Team B</option>
+                        <option value="draw">Draw</option>
+                      </select>
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
@@ -2080,7 +2156,7 @@ function App() {
                       }
                     }
 
-                    const resolvedMatch = matches.find(realMatch => String(realMatch.matchId) === String(finalMatchId)) || {
+                    const resolvedMatch = bracketMatches.find(realMatch => String(realMatch.matchId) === String(finalMatchId)) || {
                       matchId: finalMatchId,
                       teamA: m.teamA,
                       teamB: m.teamB,
@@ -2096,7 +2172,11 @@ function App() {
                           setBracketTeamForm({ 
                             teamA: resolvedMatch.teamA || '', 
                             teamB: resolvedMatch.teamB || '',
-                            matchId: resolvedMatch.matchId || ''
+                            matchId: resolvedMatch.matchId || '',
+                            resultTeamAGoals: resolvedMatch.resultTeamAGoals !== undefined && resolvedMatch.resultTeamAGoals !== null ? String(resolvedMatch.resultTeamAGoals) : '',
+                            resultTeamBGoals: resolvedMatch.resultTeamBGoals !== undefined && resolvedMatch.resultTeamBGoals !== null ? String(resolvedMatch.resultTeamBGoals) : '',
+                            status: resolvedMatch.status || 'upcoming',
+                            winner: resolvedMatch.winner || ''
                           });
                         }}
                         style={{
@@ -2121,18 +2201,18 @@ function App() {
                         </div>
                         <div style={{ fontSize: '0.85rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                           <span style={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
-                            {isPlaceholder ? null : getTeamFlag(m.teamA)} {m.teamA || 'TBD'}
+                            {isPlaceholder ? null : getTeamFlag(resolvedMatch.teamA)} {resolvedMatch.teamA || 'TBD'}
                           </span>
-                          {m.status === 'completed' && <span style={{ fontSize: '0.8rem', opacity: 0.8 }}>{m.resultTeamAGoals}</span>}
+                          {resolvedMatch.status === 'completed' && <span style={{ fontSize: '0.8rem', opacity: 0.8 }}>{resolvedMatch.resultTeamAGoals}</span>}
                         </div>
                         <div style={{ borderTop: '1px dashed var(--card-border)', margin: '2px 0' }} />
                         <div style={{ fontSize: '0.85rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                           <span style={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
-                            {isPlaceholder ? null : getTeamFlag(m.teamB)} {m.teamB || 'TBD'}
+                            {isPlaceholder ? null : getTeamFlag(resolvedMatch.teamB)} {resolvedMatch.teamB || 'TBD'}
                           </span>
-                          {m.status === 'completed' && <span style={{ fontSize: '0.8rem', opacity: 0.8 }}>{m.resultTeamBGoals}</span>}
+                          {resolvedMatch.status === 'completed' && <span style={{ fontSize: '0.8rem', opacity: 0.8 }}>{resolvedMatch.resultTeamBGoals}</span>}
                         </div>
-                        {m.stage === 'third_place' && (
+                        {resolvedMatch.stage === 'third_place' && (
                           <div style={{ fontSize: '0.65rem', backgroundColor: 'var(--active-blue)', color: '#fff', padding: '2px 4px', borderRadius: '4px', textAlign: 'center', marginTop: '4px' }}>
                             3rd Place Playoff
                           </div>
