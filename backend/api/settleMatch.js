@@ -816,9 +816,9 @@ async function rebuildLeaderboard() {
         let stageStakes;
         if (isStakes) {
           const smSettings = settings.stakes_mode || {};
-          stageStakes = smSettings[rawStage] || settings.stakes[rawStage] || { team: 50, goal: 50 };
+          stageStakes = smSettings[rawStage] || (settings.stakes && settings.stakes[rawStage]) || { team: 50, goal: 50 };
         } else {
-          stageStakes = settings.stakes[rawStage] || { team: 50, goal: 50 };
+          stageStakes = (settings.stakes && settings.stakes[rawStage]) || { team: 50, goal: 50 };
           if (rawStage === 'group' && Number(matchId) < 45) {
             stageStakes = { team: 50, goal: 50 };
           }
