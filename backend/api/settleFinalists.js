@@ -1,5 +1,8 @@
 let db, auth, admin;
 
+const TOP_PICK_PRIZE = 10000;
+const DARK_HORSE_PRIZE = 5000;
+
 const ADMIN_EMAILS = [
   'cardoza.kian@gmail.com',
   'cardoza.keigs@gmail.com',
@@ -61,12 +64,13 @@ module.exports = async (req, res) => {
       const primaryWon = actualFinalists.includes(pick.primaryPick);
       const secondaryWon = actualFinalists.includes(pick.secondaryPick);
 
-      const primaryPrize = primaryWon ? 1000 : 0;
-      const secondaryPrize = secondaryWon ? 500 : 0;
+      const primaryPrize = primaryWon ? TOP_PICK_PRIZE : 0;
+      const secondaryPrize = secondaryWon ? DARK_HORSE_PRIZE : 0;
       const totalPrize = primaryPrize + secondaryPrize;
 
       // Update leaderboard
       const leaderboardRef = db.collection('leaderboard').doc(userId);
+      const finalLeaderboardRef = db.collection('leaderboard').doc(`${userId}_final_leaderboard`);
       const leaderboardSnap = await leaderboardRef.get();
 
       if (leaderboardSnap.exists) {
@@ -84,6 +88,18 @@ module.exports = async (req, res) => {
             finalistPrize: totalPrize,
             finalistsSettled: true
           });
+          batch.set(finalLeaderboardRef, {
+            userId,
+            stage: 'final_leaderboard',
+            netProfit: totalPrize,
+            totalWon: totalPrize,
+            totalLost: 0,
+            correctPredictions: 0,
+            totalPredictions: 0,
+            accuracyPercent: 0,
+            finalistPrize: totalPrize,
+            finalistsSettled: true
+          }, { merge: true });
 
           results.push({
             userId,

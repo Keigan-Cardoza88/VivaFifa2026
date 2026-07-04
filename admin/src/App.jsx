@@ -28,6 +28,9 @@ const ADMIN_EMAILS = [
 
 const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:3000' : 'https://vivafifa2026.vercel.app';
 
+const TOP_PICK_PRIZE = 10000;
+const DARK_HORSE_PRIZE = 5000;
+
 const getTeamFlag = (teamName) => {
   if (!teamName) return '';
   const codes = {
@@ -2397,7 +2400,7 @@ function App() {
               {!isSettled && (
                 <div className="card" style={{ marginBottom: '20px', padding: '20px', borderColor: '#ffd700', borderWidth: '1px' }}>
                   <h3 style={{ fontSize: '1rem', fontWeight: 800, color: '#ffd700', marginBottom: '14px' }}>🏅 Settle Finalist Prizes</h3>
-                  <p style={{ color: 'var(--text-sub)', fontSize: '0.82rem', marginBottom: '14px' }}>Select the 2 actual finalists of FIFA 2026. This will award ₹1000 (Top Pick) and ₹500 (Dark Horse) to eligible players.</p>
+                  <p style={{ color: 'var(--text-sub)', fontSize: '0.82rem', marginBottom: '14px' }}>Select the 2 actual finalists of FIFA 2026. This will award ₹{TOP_PICK_PRIZE.toLocaleString()} (Top Pick) and ₹{DARK_HORSE_PRIZE.toLocaleString()} (Dark Horse) to eligible players.</p>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '16px' }}>
                     <div>
                       <label style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-sub)', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>🥇 Finalist 1</label>
@@ -2448,8 +2451,8 @@ function App() {
                       <thead>
                         <tr style={{ borderBottom: '1.5px solid var(--card-border)' }}>
                           <th style={{ padding: '8px 10px', textAlign: 'left', color: 'var(--text-sub)', fontWeight: 800, textTransform: 'uppercase', fontSize: '0.7rem' }}>Player</th>
-                          <th style={{ padding: '8px 10px', textAlign: 'left', color: '#ffd700', fontWeight: 800, textTransform: 'uppercase', fontSize: '0.7rem' }}>🥇 Top Pick (₹1000)</th>
-                          <th style={{ padding: '8px 10px', textAlign: 'left', color: '#8b5cf6', fontWeight: 800, textTransform: 'uppercase', fontSize: '0.7rem' }}>🎯 Dark Horse (₹500)</th>
+                          <th style={{ padding: '8px 10px', textAlign: 'left', color: '#ffd700', fontWeight: 800, textTransform: 'uppercase', fontSize: '0.7rem' }}>🥇 Top Pick (₹{TOP_PICK_PRIZE.toLocaleString()})</th>
+                          <th style={{ padding: '8px 10px', textAlign: 'left', color: '#8b5cf6', fontWeight: 800, textTransform: 'uppercase', fontSize: '0.7rem' }}>🎯 Dark Horse (₹{DARK_HORSE_PRIZE.toLocaleString()})</th>
                           {isSettled && <th style={{ padding: '8px 10px', textAlign: 'right', color: '#00e676', fontWeight: 800, textTransform: 'uppercase', fontSize: '0.7rem' }}>Prize</th>}
                         </tr>
                       </thead>
@@ -2457,7 +2460,7 @@ function App() {
                         {finalistPicks.map(p => {
                           const u = users.find(u => u.id === p.userId) || { name: p.userId };
                           const prize = isSettled
-                            ? ((actualFinalists.includes(p.primaryPick) ? 1000 : 0) + (actualFinalists.includes(p.secondaryPick) ? 500 : 0))
+                            ? ((actualFinalists.includes(p.primaryPick) ? TOP_PICK_PRIZE : 0) + (actualFinalists.includes(p.secondaryPick) ? DARK_HORSE_PRIZE : 0))
                             : null;
                           return (
                             <tr key={p.id} style={{ borderBottom: '0.5px solid var(--card-border)' }}>

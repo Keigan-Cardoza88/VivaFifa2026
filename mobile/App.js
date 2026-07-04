@@ -49,6 +49,9 @@ const API_BASE = Platform.OS === 'web'
   ? (window.location.hostname === 'localhost' ? 'http://localhost:3000' : 'https://vivafifa2026.vercel.app')
   : 'https://vivafifa2026.vercel.app';
 
+const TOP_PICK_PRIZE = 10000;
+const DARK_HORSE_PRIZE = 5000;
+
 const getTeamFlag = (teamName) => {
   if (!teamName) return null;
   const codes = {
@@ -1401,7 +1404,8 @@ export default function App() {
                   { id: 'r16', label: 'Round of 16' },
                   { id: 'qf', label: 'Quarter-Finals' },
                   { id: 'sf', label: 'Semi-Finals' },
-                  { id: 'final', label: 'Finals' }
+                  { id: 'final', label: 'Finals' },
+                  { id: 'final_leaderboard', label: 'Final Leaderboard' }
                 ].map((stg) => (
                   <TouchableOpacity
                     key={stg.id}
@@ -1417,53 +1421,107 @@ export default function App() {
               </ScrollView>
             </View>
 
-            <View style={styles.toggleRow}>
-              <TouchableOpacity
-                style={[styles.toggleBtn, leaderboardType === 'money' && styles.toggleActive]}
-                onPress={() => setLeaderboardType('money')}
-              >
-                <Text style={[styles.toggleText, leaderboardType === 'money' && { color: isDarkMode ? '#000000' : '#ffffff' }]}>Money (Net Profit)</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.toggleBtn, leaderboardType === 'accuracy' && styles.toggleActive]}
-                onPress={() => setLeaderboardType('accuracy')}
-              >
-                <Text style={[styles.toggleText, leaderboardType === 'accuracy' && { color: isDarkMode ? '#000000' : '#ffffff' }]}>Accuracy (%)</Text>
-              </TouchableOpacity>
-            </View>
+            {(() => {
+              const combinedLeaderboardMap = {};
+              allLeaderboardDocs.forEach((doc) => {
+                if (!['r32_normal', 'r16', 'qf', 'sf', 'final', 'final_leaderboard'].includes(doc.stage)) return;
+                const userId = doc.userId;
+                if (!combinedLeaderboardMap[userId]) {
+                  combinedLeaderboardMap[userId] = {
+                    userId,
+                    userName: doc.userName || allUsers[userId]?.name || 'Anonymous',
+                    netProfit: 0,
+                    totalWon: 0,
+                    totalLost: 0,
+                    correctPredictions: 0,
+                    totalPredictions: 0,
+                    accuracyPercent: 0
+                  };
+                }
+                combinedLeaderboardMap[userId].netProfit += Number(doc.netProfit || 0);
+                combinedLeaderboardMap[userId].totalWon += Number(doc.totalWon || 0);
+                combinedLeaderboardMap[userId].totalLost += Number(doc.totalLost || 0);
+                combinedLeaderboardMap[userId].correctPredictions += Number(doc.correctPredictions || 0);
+                combinedLeaderboardMap[userId].totalPredictions += Number(doc.totalPredictions || 0);
+              });
 
-            <View style={styles.tableCard}>
-              <View style={styles.tableHeaderRow}>
-                <Text style={[styles.tableHeadCell, { flex: 1 }]}>Rank</Text>
-                <Text style={[styles.tableHeadCell, { flex: 3 }]}>Name</Text>
-                {leaderboardType === 'money' ? (
-                  <Text style={[styles.tableHeadCell, { flex: 2, textAlign: 'right' }]}>Profit (₹)</Text>
-                ) : (
-                  <Text style={[styles.tableHeadCell, { flex: 2, textAlign: 'right' }]}>Accuracy</Text>
-                )}
-              </View>
+              const finalLeaderboardRows = Object.values(combinedLeaderboardMap)
+                .filter(entry => entry.totalPredictions > 0 || entry.netProfit !== 0)
+                .map(entry => ({
+                  ...entry,
+                  accuracyPercent: entry.totalPredictions > 0
+                    ? Number(((entry.correctPredictions / entry.totalPredictions) * 100).toFixed(2))
+                    : 0
+                }))
+                .sort((a, b) => {
+                  if (leaderboardType === 'money') {
+                    return (b.netProfit || 0) - (a.netProfit || 0);
+                  }
+                  const accDiff = (b.accuracyPercent || 0) - (a.accuracyPercent || 0);
+                  return accDiff !== 0 ? accDiff : (b.correctPredictions || 0) - (a.correctPredictions || 0);
+                });
 
-              {(leaderboardType === 'money' ? leaderboardMoney : leaderboardAccuracy).map((player, idx) => {
-                const isMe = player.userId === currentUser.uid;
-                return (
-                  <View style={[styles.tableDataRow, isMe && styles.meRow]} key={player.userId}>
-                    <Text style={[styles.tableCell, { flex: 1, fontWeight: '800' }]}>
-                      {idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx + 1}`}
-                    </Text>
-                    <Text style={[styles.tableCell, { flex: 3, fontWeight: '700' }]}>{player.userName}</Text>
-                    {leaderboardType === 'money' ? (
-                      <Text style={[styles.tableCell, { flex: 2, textAlign: 'right', fontWeight: '800', color: player.netProfit >= 0 ? '#00e676' : '#ff3d71' }]}>
-                        ₹{Number(player.netProfit).toFixed(2)}
-                      </Text>
-                    ) : (
-                      <Text style={[styles.tableCell, { flex: 2, textAlign: 'right', fontWeight: '800', color: isDarkMode ? '#ffd700' : '#854d0e' }]}>
-                        {Number(player.accuracyPercent).toFixed(2)}%
+              const leaderboardRows = selectedStageTab === 'final_leaderboard'
+                ? finalLeaderboardRows
+                : (leaderboardType === 'money' ? leaderboardMoney : leaderboardAccuracy);
+
+              return (
+                <>
+                  <View style={styles.toggleRow}>
+                    <TouchableOpacity
+                      style={[styles.toggleBtn, leaderboardType === 'money' && styles.toggleActive]}
+                      onPress={() => setLeaderboardType('money')}
+                    >
+                      <Text style={[styles.toggleText, leaderboardType === 'money' && { color: isDarkMode ? '#000000' : '#ffffff' }]}>Money (Net Profit)</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.toggleBtn, leaderboardType === 'accuracy' && styles.toggleActive]}
+                      onPress={() => setLeaderboardType('accuracy')}
+                    >
+                      <Text style={[styles.toggleText, leaderboardType === 'accuracy' && { color: isDarkMode ? '#000000' : '#ffffff' }]}>Accuracy (%)</Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  <View style={styles.tableCard}>
+                    {selectedStageTab === 'final_leaderboard' && (
+                      <Text style={{ paddingHorizontal: 12, paddingTop: 10, color: colors.textSub, fontSize: 12, fontWeight: '700' }}>
+                        Combined standings from Round of 32 through Finals.
                       </Text>
                     )}
+                    <View style={styles.tableHeaderRow}>
+                      <Text style={[styles.tableHeadCell, { flex: 1 }]}>Rank</Text>
+                      <Text style={[styles.tableHeadCell, { flex: 3 }]}>Name</Text>
+                      {leaderboardType === 'money' ? (
+                        <Text style={[styles.tableHeadCell, { flex: 2, textAlign: 'right' }]}>Profit (₹)</Text>
+                      ) : (
+                        <Text style={[styles.tableHeadCell, { flex: 2, textAlign: 'right' }]}>Accuracy</Text>
+                      )}
+                    </View>
+
+                    {leaderboardRows.map((player, idx) => {
+                      const isMe = player.userId === currentUser.uid;
+                      return (
+                        <View style={[styles.tableDataRow, isMe && styles.meRow]} key={player.userId}>
+                          <Text style={[styles.tableCell, { flex: 1, fontWeight: '800' }]}>
+                            {idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx + 1}`}
+                          </Text>
+                          <Text style={[styles.tableCell, { flex: 3, fontWeight: '700' }]}>{player.userName}</Text>
+                          {leaderboardType === 'money' ? (
+                            <Text style={[styles.tableCell, { flex: 2, textAlign: 'right', fontWeight: '800', color: player.netProfit >= 0 ? '#00e676' : '#ff3d71' }]}>
+                              ₹{Number(player.netProfit).toFixed(2)}
+                            </Text>
+                          ) : (
+                            <Text style={[styles.tableCell, { flex: 2, textAlign: 'right', fontWeight: '800', color: isDarkMode ? '#ffd700' : '#854d0e' }]}>
+                              {Number(player.accuracyPercent).toFixed(2)}%
+                            </Text>
+                          )}
+                        </View>
+                      );
+                    })}
                   </View>
-                );
-              })}
-            </View>
+                </>
+              );
+            })()}
           </View>
         )}
 
@@ -2122,6 +2180,9 @@ export default function App() {
 
           const handleSubmitFinalist = async () => {
             setFinalistError('');
+            if (alreadyPlaced) {
+              return setFinalistError('Your finalist picks are already locked in and cannot be changed.');
+            }
             if (!finalistPrimary || !finalistSecondary) {
               return setFinalistError('Please select both picks.');
             }
@@ -2164,12 +2225,12 @@ export default function App() {
                   {allFinalistPicks
                     .filter(p => actualFinalists.includes(p.primaryPick) || actualFinalists.includes(p.secondaryPick))
                     .sort((a, b) => {
-                      const scoreA = (actualFinalists.includes(a.primaryPick) ? 1000 : 0) + (actualFinalists.includes(a.secondaryPick) ? 500 : 0);
-                      const scoreB = (actualFinalists.includes(b.primaryPick) ? 1000 : 0) + (actualFinalists.includes(b.secondaryPick) ? 500 : 0);
+                      const scoreA = (actualFinalists.includes(a.primaryPick) ? TOP_PICK_PRIZE : 0) + (actualFinalists.includes(a.secondaryPick) ? DARK_HORSE_PRIZE : 0);
+                      const scoreB = (actualFinalists.includes(b.primaryPick) ? TOP_PICK_PRIZE : 0) + (actualFinalists.includes(b.secondaryPick) ? DARK_HORSE_PRIZE : 0);
                       return scoreB - scoreA;
                     })
                     .map(p => {
-                      const prize = (actualFinalists.includes(p.primaryPick) ? 1000 : 0) + (actualFinalists.includes(p.secondaryPick) ? 500 : 0);
+                      const prize = (actualFinalists.includes(p.primaryPick) ? TOP_PICK_PRIZE : 0) + (actualFinalists.includes(p.secondaryPick) ? DARK_HORSE_PRIZE : 0);
                       const u = allUsers[p.userId] || { name: p.userId };
                       return (
                         <View key={p.id} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6, borderBottomWidth: 0.5, borderBottomColor: colors.cardBorder }}>
@@ -2185,28 +2246,28 @@ export default function App() {
                 </View>
               )}
 
-              {/* My Picks - Locked State (only shown when placement window is closed) */}
-              {alreadyPlaced && !isOpen && (
+              {/* My Picks - Locked State */}
+              {alreadyPlaced && (
                 <View style={[styles.glassCard, { marginBottom: 16, padding: 16, borderColor: colors.primaryBorder, borderWidth: 1.5 }]}>
                   <Text style={{ fontSize: 13, fontWeight: '900', color: colors.primary, marginBottom: 12, textTransform: 'uppercase', letterSpacing: 0.6 }}>🔒 Your Locked Picks</Text>
                   <View style={{ flexDirection: 'row', gap: 12, marginBottom: 8 }}>
                     <View style={{ flex: 1, backgroundColor: isDarkMode ? 'rgba(255,183,125,0.08)' : 'rgba(133,77,14,0.06)', borderRadius: 10, padding: 12, borderWidth: 1, borderColor: isDarkMode ? 'rgba(255,183,125,0.25)' : 'rgba(133,77,14,0.2)', alignItems: 'center' }}>
-                      <Text style={{ fontSize: 10, fontWeight: '800', color: colors.textSub, textTransform: 'uppercase', marginBottom: 4 }}>🥇 Top Pick · ₹1000</Text>
+                      <Text style={{ fontSize: 10, fontWeight: '800', color: colors.textSub, textTransform: 'uppercase', marginBottom: 4 }}>🥇 Top Pick · ₹{TOP_PICK_PRIZE.toLocaleString()}</Text>
                       {getTeamFlag(myFinalistPick.primaryPick)}
                       <Text style={{ color: colors.textMain, fontWeight: '900', fontSize: 14, marginTop: 4, textAlign: 'center' }}>{myFinalistPick.primaryPick}</Text>
                       {isSettled && (
                         <Text style={{ fontSize: 11, fontWeight: '800', marginTop: 4, color: actualFinalists.includes(myFinalistPick.primaryPick) ? '#00e676' : '#ff3d71' }}>
-                          {actualFinalists.includes(myFinalistPick.primaryPick) ? '✅ +₹1000' : '❌ Miss'}
+                          {actualFinalists.includes(myFinalistPick.primaryPick) ? `✅ +₹${TOP_PICK_PRIZE.toLocaleString()}` : '❌ Miss'}
                         </Text>
                       )}
                     </View>
                     <View style={{ flex: 1, backgroundColor: isDarkMode ? 'rgba(255,183,125,0.05)' : 'rgba(133,77,14,0.04)', borderRadius: 10, padding: 12, borderWidth: 1, borderColor: isDarkMode ? 'rgba(255,183,125,0.15)' : 'rgba(133,77,14,0.12)', alignItems: 'center' }}>
-                      <Text style={{ fontSize: 10, fontWeight: '800', color: colors.textSub, textTransform: 'uppercase', marginBottom: 4 }}>🎯 Dark Horse · ₹500</Text>
+                      <Text style={{ fontSize: 10, fontWeight: '800', color: colors.textSub, textTransform: 'uppercase', marginBottom: 4 }}>🎯 Dark Horse · ₹{DARK_HORSE_PRIZE.toLocaleString()}</Text>
                       {getTeamFlag(myFinalistPick.secondaryPick)}
                       <Text style={{ color: colors.textMain, fontWeight: '900', fontSize: 14, marginTop: 4, textAlign: 'center' }}>{myFinalistPick.secondaryPick}</Text>
                       {isSettled && (
                         <Text style={{ fontSize: 11, fontWeight: '800', marginTop: 4, color: actualFinalists.includes(myFinalistPick.secondaryPick) ? '#00e676' : '#ff3d71' }}>
-                          {actualFinalists.includes(myFinalistPick.secondaryPick) ? '✅ +₹500' : '❌ Miss'}
+                          {actualFinalists.includes(myFinalistPick.secondaryPick) ? `✅ +₹${DARK_HORSE_PRIZE.toLocaleString()}` : '❌ Miss'}
                         </Text>
                       )}
                     </View>
@@ -2215,8 +2276,8 @@ export default function App() {
                 </View>
               )}
 
-              {/* Placement Form (shown if window is open) */}
-              {isOpen && (
+              {/* Placement Form (shown only before first submission while window is open) */}
+              {isOpen && !alreadyPlaced && (
                 <View style={[styles.glassCard, { padding: 16, marginBottom: 16 }]}>
                   <Text style={{ fontSize: 13, fontWeight: '900', color: colors.primary, marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 }}>
                     {alreadyPlaced ? '✏️ Update Your Finalist Picks' : 'Place Your Finalist Picks'}
@@ -2225,7 +2286,7 @@ export default function App() {
                     Select from the qualified Round of 16 teams. You can modify your picks while this window is open.
                   </Text>
 
-                  <Text style={{ fontSize: 12, fontWeight: '800', color: colors.textSub, marginBottom: 6, textTransform: 'uppercase' }}>🥇 Top Pick — ₹1000 Prize</Text>
+                  <Text style={{ fontSize: 12, fontWeight: '800', color: colors.textSub, marginBottom: 6, textTransform: 'uppercase' }}>🥇 Top Pick — ₹{TOP_PICK_PRIZE.toLocaleString()} Prize</Text>
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 14 }} contentContainerStyle={{ gap: 8, paddingBottom: 4 }}>
                     {r16QualifiedTeams.map(team => (
                       <TouchableOpacity
@@ -2243,7 +2304,7 @@ export default function App() {
                     ))}
                   </ScrollView>
 
-                  <Text style={{ fontSize: 12, fontWeight: '800', color: colors.textSub, marginBottom: 6, textTransform: 'uppercase' }}>🎯 Dark Horse — ₹500 Prize</Text>
+                  <Text style={{ fontSize: 12, fontWeight: '800', color: colors.textSub, marginBottom: 6, textTransform: 'uppercase' }}>🎯 Dark Horse — ₹{DARK_HORSE_PRIZE.toLocaleString()} Prize</Text>
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }} contentContainerStyle={{ gap: 8, paddingBottom: 4 }}>
                     {r16QualifiedTeams.map(team => (
                       <TouchableOpacity
@@ -2283,7 +2344,7 @@ export default function App() {
                     disabled={finalistSaving}
                   >
                     <Text style={{ color: isDarkMode ? '#000' : '#fff', fontWeight: '900', fontSize: 15, letterSpacing: 0.5 }}>
-                      {finalistSaving ? 'Saving Picks...' : (alreadyPlaced ? '💾 Save Updated Picks' : '🔒 Lock in My Finalists')}
+                      {finalistSaving ? 'Saving Picks...' : '🔒 Lock in My Finalists'}
                     </Text>
                   </TouchableOpacity>
                 </View>
