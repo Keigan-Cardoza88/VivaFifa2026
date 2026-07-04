@@ -2112,7 +2112,7 @@ export default function App() {
         {activeTab === 'finalists' && (() => {
           const r16QualifiedTeams = [
             'Argentina', 'Belgium', 'Brazil', 'Canada', 'Colombia', 'Egypt', 'England', 'France',
-            'Mexico', 'Morocco', 'Norway', 'Paraguay', 'Portugal', 'Spain', 'Switzerland', 'United States'
+            'Mexico', 'Morocco', 'Norway', 'Paraguay', 'Portugal', 'Spain', 'Switzerland', 'USA'
           ];
 
           const isOpen = settings?.finalistsOpen === true;
