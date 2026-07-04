@@ -274,6 +274,13 @@ export default function App() {
   const [finalistSecondary, setFinalistSecondary] = useState('');
   const [finalistSaving, setFinalistSaving] = useState(false);
   const [finalistError, setFinalistError] = useState('');
+
+  useEffect(() => {
+    if (myFinalistPick) {
+      setFinalistPrimary(myFinalistPick.primaryPick || '');
+      setFinalistSecondary(myFinalistPick.secondaryPick || '');
+    }
+  }, [myFinalistPick]);
   useEffect(() => {
     if (Platform.OS === 'web') {
       const checkVersion = async () => {
@@ -2103,11 +2110,10 @@ export default function App() {
 
         {/* TAB: FINALISTS */}
         {activeTab === 'finalists' && (() => {
-          const r32Teams = [...new Set(
-            matches
-              .filter(m => Number(m.matchId) >= 149 && Number(m.matchId) <= 164)
-              .flatMap(m => [m.teamA, m.teamB].filter(Boolean))
-          )].sort();
+          const r16QualifiedTeams = [
+            'Argentina', 'Belgium', 'Brazil', 'Canada', 'Colombia', 'Egypt', 'England', 'France',
+            'Mexico', 'Morocco', 'Norway', 'Paraguay', 'Portugal', 'Spain', 'Switzerland', 'United States'
+          ];
 
           const isOpen = settings?.finalistsOpen === true;
           const isSettled = settings?.finalistsSettled === true;
@@ -2179,8 +2185,8 @@ export default function App() {
                 </View>
               )}
 
-              {/* My Picks - Locked State */}
-              {alreadyPlaced && (
+              {/* My Picks - Locked State (only shown when placement window is closed) */}
+              {alreadyPlaced && !isOpen && (
                 <View style={[styles.glassCard, { marginBottom: 16, padding: 16, borderColor: colors.primaryBorder, borderWidth: 1.5 }]}>
                   <Text style={{ fontSize: 13, fontWeight: '900', color: colors.primary, marginBottom: 12, textTransform: 'uppercase', letterSpacing: 0.6 }}>🔒 Your Locked Picks</Text>
                   <View style={{ flexDirection: 'row', gap: 12, marginBottom: 8 }}>
@@ -2209,15 +2215,19 @@ export default function App() {
                 </View>
               )}
 
-              {/* Placement Form */}
-              {!alreadyPlaced && isOpen && (
+              {/* Placement Form (shown if window is open) */}
+              {isOpen && (
                 <View style={[styles.glassCard, { padding: 16, marginBottom: 16 }]}>
-                  <Text style={{ fontSize: 13, fontWeight: '900', color: colors.primary, marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 }}>Place Your Finalist Picks</Text>
-                  <Text style={{ fontSize: 11, color: colors.textSub, marginBottom: 14, fontWeight: '600' }}>Pick once. Locked immediately after. Window closes before Match 8 is settled.</Text>
+                  <Text style={{ fontSize: 13, fontWeight: '900', color: colors.primary, marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                    {alreadyPlaced ? '✏️ Update Your Finalist Picks' : 'Place Your Finalist Picks'}
+                  </Text>
+                  <Text style={{ fontSize: 11, color: colors.textSub, marginBottom: 14, fontWeight: '600' }}>
+                    Select from the qualified Round of 16 teams. You can modify your picks while this window is open.
+                  </Text>
 
                   <Text style={{ fontSize: 12, fontWeight: '800', color: colors.textSub, marginBottom: 6, textTransform: 'uppercase' }}>🥇 Top Pick — ₹1000 Prize</Text>
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 14 }} contentContainerStyle={{ gap: 8, paddingBottom: 4 }}>
-                    {r32Teams.map(team => (
+                    {r16QualifiedTeams.map(team => (
                       <TouchableOpacity
                         key={`primary_${team}`}
                         style={[
@@ -2235,7 +2245,7 @@ export default function App() {
 
                   <Text style={{ fontSize: 12, fontWeight: '800', color: colors.textSub, marginBottom: 6, textTransform: 'uppercase' }}>🎯 Dark Horse — ₹500 Prize</Text>
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }} contentContainerStyle={{ gap: 8, paddingBottom: 4 }}>
-                    {r32Teams.map(team => (
+                    {r16QualifiedTeams.map(team => (
                       <TouchableOpacity
                         key={`secondary_${team}`}
                         style={[
@@ -2273,7 +2283,7 @@ export default function App() {
                     disabled={finalistSaving}
                   >
                     <Text style={{ color: isDarkMode ? '#000' : '#fff', fontWeight: '900', fontSize: 15, letterSpacing: 0.5 }}>
-                      {finalistSaving ? 'Locking Picks...' : '🔒 Lock in My Finalists'}
+                      {finalistSaving ? 'Saving Picks...' : (alreadyPlaced ? '💾 Save Updated Picks' : '🔒 Lock in My Finalists')}
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -2288,29 +2298,32 @@ export default function App() {
                 </View>
               )}
 
-              {/* Community Picks Overview */}
-              {alreadyPlaced && !isSettled && allFinalistPicks.length > 0 && (
+              {/* Group Picks Overview - Displays all player predictions */}
+              {allFinalistPicks.length > 0 && (
                 <View style={[styles.glassCard, { padding: 14, marginTop: 4 }]}>
-                  <Text style={{ fontSize: 12, fontWeight: '800', color: colors.textSub, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 }}>📊 Group Picks ({allFinalistPicks.length} placed)</Text>
-                  {(() => {
-                    const teamCounts = {};
-                    allFinalistPicks.forEach(p => {
-                      teamCounts[p.primaryPick] = (teamCounts[p.primaryPick] || 0) + 2;
-                      teamCounts[p.secondaryPick] = (teamCounts[p.secondaryPick] || 0) + 1;
-                    });
-                    return Object.entries(teamCounts)
-                      .sort((a, b) => b[1] - a[1])
-                      .slice(0, 6)
-                      .map(([team, count]) => (
-                        <View key={team} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5, borderBottomWidth: 0.5, borderBottomColor: colors.cardBorder }}>
-                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                            {getTeamFlag(team)}
-                            <Text style={{ color: colors.textMain, fontWeight: '700', fontSize: 12 }}>{team}</Text>
-                          </View>
-                          <Text style={{ color: colors.primary, fontWeight: '800', fontSize: 12 }}>{count} pts</Text>
+                  <Text style={{ fontSize: 12, fontWeight: '800', color: colors.textSub, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 }}>📊 Group Picks ({allFinalistPicks.length})</Text>
+                  {allFinalistPicks.map(p => {
+                    const u = allUsers[p.userId] || { name: 'Anonymous' };
+                    const hasPrimaryVal = r16QualifiedTeams.includes(p.primaryPick);
+                    const hasSecondaryVal = r16QualifiedTeams.includes(p.secondaryPick);
+                    return (
+                      <View key={p.id} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 0.5, borderBottomColor: colors.cardBorder }}>
+                        <Text style={{ color: colors.textMain, fontWeight: '700', fontSize: 12, flex: 1 }}>{u.name}</Text>
+                        <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                          {getTeamFlag(p.primaryPick)}
+                          <Text style={{ color: hasPrimaryVal ? colors.textMain : '#ff3d71', fontWeight: '800', fontSize: 11 }} numberOfLines={1}>
+                            {p.primaryPick} {!hasPrimaryVal && '(Change)'}
+                          </Text>
                         </View>
-                      ));
-                  })()}
+                        <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                          {getTeamFlag(p.secondaryPick)}
+                          <Text style={{ color: hasSecondaryVal ? colors.textMain : '#ff3d71', fontWeight: '800', fontSize: 11 }} numberOfLines={1}>
+                            {p.secondaryPick} {!hasSecondaryVal && '(Change)'}
+                          </Text>
+                        </View>
+                      </View>
+                    );
+                  })}
                 </View>
               )}
             </View>
