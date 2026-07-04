@@ -2304,21 +2304,19 @@ export default function App() {
                   <Text style={{ fontSize: 12, fontWeight: '800', color: colors.textSub, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 }}>📊 Group Picks ({allFinalistPicks.length})</Text>
                   {allFinalistPicks.map(p => {
                     const u = allUsers[p.userId] || { name: 'Anonymous' };
-                    const hasPrimaryVal = r16QualifiedTeams.includes(p.primaryPick);
-                    const hasSecondaryVal = r16QualifiedTeams.includes(p.secondaryPick);
                     return (
                       <View key={p.id} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 0.5, borderBottomColor: colors.cardBorder }}>
                         <Text style={{ color: colors.textMain, fontWeight: '700', fontSize: 12, flex: 1 }}>{u.name}</Text>
                         <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                           {getTeamFlag(p.primaryPick)}
-                          <Text style={{ color: hasPrimaryVal ? colors.textMain : '#ff3d71', fontWeight: '800', fontSize: 11 }} numberOfLines={1}>
-                            {p.primaryPick} {!hasPrimaryVal && '(Change)'}
+                          <Text style={{ color: colors.textMain, fontWeight: '800', fontSize: 11 }} numberOfLines={1}>
+                            {p.primaryPick}
                           </Text>
                         </View>
                         <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                           {getTeamFlag(p.secondaryPick)}
-                          <Text style={{ color: hasSecondaryVal ? colors.textMain : '#ff3d71', fontWeight: '800', fontSize: 11 }} numberOfLines={1}>
-                            {p.secondaryPick} {!hasSecondaryVal && '(Change)'}
+                          <Text style={{ color: colors.textMain, fontWeight: '800', fontSize: 11 }} numberOfLines={1}>
+                            {p.secondaryPick}
                           </Text>
                         </View>
                       </View>
