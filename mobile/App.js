@@ -1617,9 +1617,35 @@ export default function App() {
                   if (itemStage === 'group' && Number(matchItem.matchId) < 45) {
                     itemStakes = { team: 50, goal: 50 };
                   }
-                  const itemTotalStake = (itemStakes.team || 100) + (itemStakes.goal || 50);
-                  const gross = betItem ? (betItem.amountWon || 0) : 0;
-                  return betItem ? (gross - itemTotalStake) : -itemTotalStake;
+                  const teamStake = itemStakes.team || 100;
+                  const goalStake = itemStakes.goal || 50;
+                  const penaltyStake = itemStakes.penalty !== undefined ? itemStakes.penalty : 50;
+
+                  if (!betItem) {
+                    return -(teamStake + goalStake);
+                  }
+
+                  const won = betItem.amountWon || 0;
+                  let matchTeamLost = teamStake;
+                  const activeGoalCost = betItem.winViaPenalties ? penaltyStake : goalStake;
+                  let matchGoalLost = activeGoalCost;
+
+                  if (betItem.isDefault) {
+                    matchTeamLost = teamStake;
+                    matchGoalLost = activeGoalCost;
+                  } else {
+                    if (betItem.teamBetResult === 'refunded') {
+                      matchTeamLost = 0;
+                    }
+                    if (betItem.goalBetResult === 'refunded') {
+                      matchGoalLost = 0;
+                    } else if (betItem.goalBetResult === 'refunded_partial') {
+                      matchGoalLost = activeGoalCost * 0.5;
+                    }
+                  }
+
+                  const lost = matchTeamLost + matchGoalLost;
+                  return won - lost;
                 };
 
                 const netA = getNet(a);
@@ -1665,7 +1691,7 @@ export default function App() {
                   }
                 };
 
-                const userNet = isPostponed ? 0 : (bet ? ((bet.amountWon || 0) - totalStake) : -totalStake);
+                const userNet = getNet(match);
 
                 return (
                   <View key={match.id}>
