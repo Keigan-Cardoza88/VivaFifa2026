@@ -1592,6 +1592,55 @@ export default function App() {
                 const matchStageForLeaderboard = m.stage === 'third_place' ? 'final' : m.stage;
                 return matchStageForLeaderboard === selectedStageTab;
               });
+
+              const getNet = (matchItem) => {
+                const betItem = myBets[matchItem.matchId];
+                const isMatchPostponed = matchItem.status === 'postponed';
+                if (isMatchPostponed) return 0;
+                const itemStage = matchItem.stage;
+                let itemStakes = settings?.stakes?.[itemStage] || {
+                  group: { team: 100, goal: 50 },
+                  r32: { team: 75, goal: 75 },
+                  r16: { team: 100, goal: 100 },
+                  qf: { team: 125, goal: 125 },
+                  sf: { team: 150, goal: 150 },
+                  third_place: { team: 150, goal: 150 },
+                  final: { team: 200, goal: 200 }
+                }[itemStage] || { team: 100, goal: 50 };
+                if (itemStage === 'group' && Number(matchItem.matchId) < 45) {
+                  itemStakes = { team: 50, goal: 50 };
+                }
+                const teamStake = itemStakes.team || 100;
+                const goalStake = itemStakes.goal || 50;
+                const penaltyStake = itemStakes.penalty !== undefined ? itemStakes.penalty : 50;
+
+                if (!betItem) {
+                  return -(teamStake + goalStake);
+                }
+
+                const won = betItem.amountWon || 0;
+                let matchTeamLost = teamStake;
+                const activeGoalCost = betItem.winViaPenalties ? penaltyStake : goalStake;
+                let matchGoalLost = activeGoalCost;
+
+                if (betItem.isDefault) {
+                  matchTeamLost = teamStake;
+                  matchGoalLost = activeGoalCost;
+                } else {
+                  if (betItem.teamBetResult === 'refunded') {
+                    matchTeamLost = 0;
+                  }
+                  if (betItem.goalBetResult === 'refunded') {
+                    matchGoalLost = 0;
+                  } else if (betItem.goalBetResult === 'refunded_partial') {
+                    matchGoalLost = activeGoalCost * 0.5;
+                  }
+                }
+
+                const lost = matchTeamLost + matchGoalLost;
+                return won - lost;
+              };
+
               settled.sort((a, b) => {
                 if (historySort === 'latest') {
                   return (b.kickoffTimeIST?.seconds || 0) - (a.kickoffTimeIST?.seconds || 0);
@@ -1599,54 +1648,6 @@ export default function App() {
                 if (historySort === 'earliest') {
                   return (a.kickoffTimeIST?.seconds || 0) - (b.kickoffTimeIST?.seconds || 0);
                 }
-
-                const getNet = (matchItem) => {
-                  const betItem = myBets[matchItem.matchId];
-                  const isMatchPostponed = matchItem.status === 'postponed';
-                  if (isMatchPostponed) return 0;
-                  const itemStage = matchItem.stage;
-                  let itemStakes = settings?.stakes?.[itemStage] || {
-                    group: { team: 100, goal: 50 },
-                    r32: { team: 75, goal: 75 },
-                    r16: { team: 100, goal: 100 },
-                    qf: { team: 125, goal: 125 },
-                    sf: { team: 150, goal: 150 },
-                    third_place: { team: 150, goal: 150 },
-                    final: { team: 200, goal: 200 }
-                  }[itemStage] || { team: 100, goal: 50 };
-                  if (itemStage === 'group' && Number(matchItem.matchId) < 45) {
-                    itemStakes = { team: 50, goal: 50 };
-                  }
-                  const teamStake = itemStakes.team || 100;
-                  const goalStake = itemStakes.goal || 50;
-                  const penaltyStake = itemStakes.penalty !== undefined ? itemStakes.penalty : 50;
-
-                  if (!betItem) {
-                    return -(teamStake + goalStake);
-                  }
-
-                  const won = betItem.amountWon || 0;
-                  let matchTeamLost = teamStake;
-                  const activeGoalCost = betItem.winViaPenalties ? penaltyStake : goalStake;
-                  let matchGoalLost = activeGoalCost;
-
-                  if (betItem.isDefault) {
-                    matchTeamLost = teamStake;
-                    matchGoalLost = activeGoalCost;
-                  } else {
-                    if (betItem.teamBetResult === 'refunded') {
-                      matchTeamLost = 0;
-                    }
-                    if (betItem.goalBetResult === 'refunded') {
-                      matchGoalLost = 0;
-                    } else if (betItem.goalBetResult === 'refunded_partial') {
-                      matchGoalLost = activeGoalCost * 0.5;
-                    }
-                  }
-
-                  const lost = matchTeamLost + matchGoalLost;
-                  return won - lost;
-                };
 
                 const netA = getNet(a);
                 const netB = getNet(b);
