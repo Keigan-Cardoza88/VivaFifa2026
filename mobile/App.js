@@ -1695,8 +1695,8 @@ export default function App() {
                 const userNet = getNet(match);
 
                 return (
-                  <View key={match.id}>
-                    <TouchableOpacity style={[styles.historyCard, styles.glassCard]} onPress={toggleExpand}>
+                  <View key={match.id} style={[styles.historyCard, styles.glassCard, { padding: 0, overflow: 'hidden' }]}>
+                    <TouchableOpacity style={{ padding: 18 }} onPress={toggleExpand} activeOpacity={0.7}>
                       <View style={styles.matchHeaderRow}>
                         <Text style={styles.matchStage}>{match.stage.toUpperCase()}</Text>
                         <Text style={styles.matchTime}>{isExpanded ? '▼ Hide Details' : '▶ Show Details'}</Text>
@@ -1740,78 +1740,78 @@ export default function App() {
                           </Text>
                         </View>
                       </View>
-
-                      {isExpanded && (
-                        <View style={styles.expandedBetsContainer}>
-                          <View style={styles.expandedBetsDivider} />
-                          <Text style={styles.expandedBetsTitle}>All Player Predictions</Text>
-                          {eligibleExpandedMatchBets.length === 0 ? (
-                            <Text style={styles.expandedBetsEmpty}>Loading or no bets placed...</Text>
-                          ) : (
-                            <ScrollView
-                              horizontal
-                              showsHorizontalScrollIndicator={false}
-                              contentContainerStyle={[styles.bracketHorizontalScrollContent, { minWidth: '100%', paddingRight: 0 }]}>
-                              <View style={[styles.expandedBetsTable, { minWidth: selectedStageTab === 'group' ? 720 : 620 }]}>
-                                <View style={styles.expandedBetsHeader}>
-                                  <Text style={[styles.expandedBetsHeadCell, { flex: 2.2 }]}>Player</Text>
-                                  <Text style={[styles.expandedBetsHeadCell, { flex: 2 }]}>Prediction</Text>
-                                  <Text style={[styles.expandedBetsHeadCell, { flex: 1.5, textAlign: 'center' }]}>Goals</Text>
-                                  <Text style={[styles.expandedBetsHeadCell, { flex: 1.1, textAlign: 'right' }]}>Team</Text>
-                                  <Text style={[styles.expandedBetsHeadCell, { flex: 1.1, textAlign: 'right' }]}>Goal</Text>
-                                  {selectedStageTab === 'group' && <Text style={[styles.expandedBetsHeadCell, { flex: 1.5, textAlign: 'right' }]}>Ref Bonus</Text>}
-                                  <Text style={[styles.expandedBetsHeadCell, { flex: 1.3, textAlign: 'right' }]}>Net</Text>
-                                </View>
-                                {eligibleExpandedMatchBets.map((b) => {
-                                  const u = allUsers[b.userId] || { name: 'Player' };
-                                  const matchPayouts = computeMatchBetPayouts(eligibleExpandedMatchBets, match);
-                                  const teamNet = isPostponed ? 0 : (
-                                    (b.teamBetResult === 'won' || b.teamBetResult === 'draw_win')
-                                      ? matchPayouts.teamSharePerWinner
-                                      : (b.teamBetResult === 'refunded' ? 0 : -matchPayouts.teamStake)
-                                  );
-                                  const gotOneSideCorrect = !b.isDefault && (b.goalsTeamA === Number(match.resultTeamAGoals) || b.goalsTeamB === Number(match.resultTeamBGoals));
-                                  const refereeBonus = selectedStageTab === 'group' ? (isPostponed ? 0 : (b.refereeBonus !== undefined ? b.refereeBonus : (gotOneSideCorrect ? 25 : 0))) : 0;
-                                  const goalNet = isPostponed ? 0 : (
-                                    (b.goalBetResult === 'won' || b.goalBetResult === 'won_partial')
-                                      ? (matchPayouts.goalSharePerWinner - matchPayouts.goalStake)
-                                      : (b.goalBetResult === 'refunded' ? 0 : -matchPayouts.goalStake)
-                                  );
-                                  const net = isPostponed ? 0 : (teamNet + goalNet + refereeBonus);
-                                  return (
-                                    <View style={styles.expandedBetsRow} key={b.betId}>
-                                      <Text style={[styles.expandedBetsCell, { flex: 2.2, fontWeight: '700' }]} numberOfLines={1}>
-                                        {u.name}
-                                      </Text>
-                                      <Text style={[styles.expandedBetsCell, { flex: 2 }]}>
-                                        {b.teamPrediction === 'teamA' ? getTeamFlag(match.teamA) : (b.teamPrediction === 'teamB' ? getTeamFlag(match.teamB) : 'Draw')} {b.teamPrediction === 'teamA' ? match.teamA : (b.teamPrediction === 'teamB' ? match.teamB : 'Draw')}
-                                      </Text>
-                                      <Text style={[styles.expandedBetsCell, { flex: 1.5, textAlign: 'center', fontWeight: '800', color: isDarkMode ? '#ffd700' : '#854d0e' }]}>
-                                        {b.winViaPenalties ? 'Shootout' : (b.goalsTeamA < 0 ? 'N/A' : `${b.goalsTeamA} - ${b.goalsTeamB}`)}
-                                      </Text>
-                                      <Text style={[styles.expandedBetsCell, { flex: 1.1, textAlign: 'right', fontWeight: '800', color: teamNet >= 0 ? '#00e676' : '#ff3d71' }]}>
-                                        {teamNet >= 0 ? '+' : ''}₹{Number(teamNet).toFixed(2)}
-                                      </Text>
-                                      <Text style={[styles.expandedBetsCell, { flex: 1.1, textAlign: 'right', fontWeight: '800', color: goalNet >= 0 ? '#00e676' : '#ff3d71' }]}>
-                                        {goalNet >= 0 ? '+' : ''}₹{Number(goalNet).toFixed(2)}
-                                      </Text>
-                                      {selectedStageTab === 'group' && (
-                                        <Text style={[styles.expandedBetsCell, { flex: 1.5, textAlign: 'right', fontWeight: '800', color: refereeBonus > 0 ? '#00e676' : '#82776a' }]}>
-                                          {refereeBonus > 0 ? `+${refereeBonus}` : '+0'}
-                                        </Text>
-                                      )}
-                                      <Text style={[styles.expandedBetsCell, { flex: 1.3, textAlign: 'right', fontWeight: '800', color: isPostponed ? '#94a3b8' : (net >= 0 ? '#00e676' : '#ff3d71') }]}>
-                                        {isPostponed ? '' : (net >= 0 ? '+' : '')}₹{Number(net).toFixed(2)}
-                                      </Text>
-                                    </View>
-                                  );
-                                })}
-                              </View>
-                            </ScrollView>
-                          )}
-                        </View>
-                      )}
                     </TouchableOpacity>
+
+                    {isExpanded && (
+                      <View style={[styles.expandedBetsContainer, { marginTop: 0, paddingHorizontal: 18, paddingBottom: 18 }]}>
+                        <View style={styles.expandedBetsDivider} />
+                        <Text style={styles.expandedBetsTitle}>All Player Predictions</Text>
+                        {eligibleExpandedMatchBets.length === 0 ? (
+                          <Text style={styles.expandedBetsEmpty}>Loading or no bets placed...</Text>
+                        ) : (
+                          <ScrollView
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            contentContainerStyle={[styles.bracketHorizontalScrollContent, { minWidth: '100%', paddingRight: 0 }]}>
+                            <View style={[styles.expandedBetsTable, { minWidth: selectedStageTab === 'group' ? 720 : 620 }]}>
+                              <View style={styles.expandedBetsHeader}>
+                                <Text style={[styles.expandedBetsHeadCell, { flex: 2.2 }]}>Player</Text>
+                                <Text style={[styles.expandedBetsHeadCell, { flex: 2 }]}>Prediction</Text>
+                                <Text style={[styles.expandedBetsHeadCell, { flex: 1.5, textAlign: 'center' }]}>Goals</Text>
+                                <Text style={[styles.expandedBetsHeadCell, { flex: 1.1, textAlign: 'right' }]}>Team</Text>
+                                <Text style={[styles.expandedBetsHeadCell, { flex: 1.1, textAlign: 'right' }]}>Goal</Text>
+                                {selectedStageTab === 'group' && <Text style={[styles.expandedBetsHeadCell, { flex: 1.5, textAlign: 'right' }]}>Ref Bonus</Text>}
+                                <Text style={[styles.expandedBetsHeadCell, { flex: 1.3, textAlign: 'right' }]}>Net</Text>
+                              </View>
+                              {eligibleExpandedMatchBets.map((b) => {
+                                const u = allUsers[b.userId] || { name: 'Player' };
+                                const matchPayouts = computeMatchBetPayouts(eligibleExpandedMatchBets, match);
+                                const teamNet = isPostponed ? 0 : (
+                                  (b.teamBetResult === 'won' || b.teamBetResult === 'draw_win')
+                                    ? matchPayouts.teamSharePerWinner
+                                    : (b.teamBetResult === 'refunded' ? 0 : -matchPayouts.teamStake)
+                                );
+                                const gotOneSideCorrect = !b.isDefault && (b.goalsTeamA === Number(match.resultTeamAGoals) || b.goalsTeamB === Number(match.resultTeamBGoals));
+                                const refereeBonus = selectedStageTab === 'group' ? (isPostponed ? 0 : (b.refereeBonus !== undefined ? b.refereeBonus : (gotOneSideCorrect ? 25 : 0))) : 0;
+                                const goalNet = isPostponed ? 0 : (
+                                  (b.goalBetResult === 'won' || b.goalBetResult === 'won_partial')
+                                    ? (matchPayouts.goalSharePerWinner - matchPayouts.goalStake)
+                                    : (b.goalBetResult === 'refunded' ? 0 : -matchPayouts.goalStake)
+                                );
+                                const net = isPostponed ? 0 : (teamNet + goalNet + refereeBonus);
+                                return (
+                                  <View style={styles.expandedBetsRow} key={b.betId}>
+                                    <Text style={[styles.expandedBetsCell, { flex: 2.2, fontWeight: '700' }]} numberOfLines={1}>
+                                      {u.name}
+                                    </Text>
+                                    <Text style={[styles.expandedBetsCell, { flex: 2 }]}>
+                                      {b.teamPrediction === 'teamA' ? getTeamFlag(match.teamA) : (b.teamPrediction === 'teamB' ? getTeamFlag(match.teamB) : 'Draw')} {b.teamPrediction === 'teamA' ? match.teamA : (b.teamPrediction === 'teamB' ? match.teamB : 'Draw')}
+                                    </Text>
+                                    <Text style={[styles.expandedBetsCell, { flex: 1.5, textAlign: 'center', fontWeight: '800', color: isDarkMode ? '#ffd700' : '#854d0e' }]}>
+                                      {b.winViaPenalties ? 'Shootout' : (b.goalsTeamA < 0 ? 'N/A' : `${b.goalsTeamA} - ${b.goalsTeamB}`)}
+                                    </Text>
+                                    <Text style={[styles.expandedBetsCell, { flex: 1.1, textAlign: 'right', fontWeight: '800', color: teamNet >= 0 ? '#00e676' : '#ff3d71' }]}>
+                                      {teamNet >= 0 ? '+' : ''}₹{Number(teamNet).toFixed(2)}
+                                    </Text>
+                                    <Text style={[styles.expandedBetsCell, { flex: 1.1, textAlign: 'right', fontWeight: '800', color: goalNet >= 0 ? '#00e676' : '#ff3d71' }]}>
+                                      {goalNet >= 0 ? '+' : ''}₹{Number(goalNet).toFixed(2)}
+                                    </Text>
+                                    {selectedStageTab === 'group' && (
+                                      <Text style={[styles.expandedBetsCell, { flex: 1.5, textAlign: 'right', fontWeight: '800', color: refereeBonus > 0 ? '#00e676' : '#82776a' }]}>
+                                        {refereeBonus > 0 ? `+${refereeBonus}` : '+0'}
+                                      </Text>
+                                    )}
+                                    <Text style={[styles.expandedBetsCell, { flex: 1.3, textAlign: 'right', fontWeight: '800', color: isPostponed ? '#94a3b8' : (net >= 0 ? '#00e676' : '#ff3d71') }]}>
+                                      {isPostponed ? '' : (net >= 0 ? '+' : '')}₹{Number(net).toFixed(2)}
+                                    </Text>
+                                  </View>
+                                );
+                              })}
+                            </View>
+                          </ScrollView>
+                        )}
+                      </View>
+                    )}
                   </View>
                 );
               });
