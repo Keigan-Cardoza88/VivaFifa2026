@@ -915,7 +915,7 @@ async function resettleMatchDirectly(db, matchId) {
       group: { team: 100, goal: 50 }
     }
   };
-  let stageStakes = settings.stakes[stage] || { team: 100, goal: 50 };
+  let stageStakes = (settings.stakes && settings.stakes[stage]) || { team: 100, goal: 50 };
   if (stage === 'group' && Number(matchId) < 45) {
     stageStakes = { team: 50, goal: 50 };
   }
